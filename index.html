@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>魔法迷宮｜登入與選關</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="levels.js"></script>
+  <script src="storage.js"></script>
+  <script src="auth.js"></script>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="brand">
+        <div class="logo"></div>
+        <div>
+          <h1>魔法迷宮｜積木程式逃出迷宮</h1>
+          <p>用積木寫程式，讓角色逃出迷宮，收集道具解鎖新世界 ✨</p>
+        </div>
+      </div>
+      <div class="badge" id="sessionBadge">尚未登入</div>
+    </div>
+
+<div class="row">
+  <!-- LEFT: Login + Class Rank (stacked) -->
+  <div class="stack">
+    <!-- 學生登入 -->
+    <div class="card">
+      <h2 style="margin:0 0 10px 0;">學生登入</h2>
+      <label>五碼學號（前三碼班級＋後兩碼座號，例如 30105）</label>
+      <input id="studentId" placeholder="30105" inputmode="numeric" maxlength="5" />
+
+      <div class="btnbar">
+        <button class="primary" id="btnStudentLogin">登入並選關</button>
+        <button id="btnLogout">登出</button>
+      </div>
+
+      <div class="small" style="margin-top:8px;">
+        教師測試帳號：teacher.html（教師碼：<b>teacher123</b>）
+      </div>
+
+      <div class="hr"></div>
+
+      <div class="btnbar">
+        <button id="btnTeacher">進入教師後台</button>
+        <button id="btnClassRank">更新本班總分排行榜</button>
+      </div>
+
+      <div class="toast" id="toast"></div>
+    </div>
+
+    <!-- ✅ 本班排行榜（移到左側登入下方） -->
+    <div class="card">
+      <h2 style="margin:0 0 10px 0;">本班排行榜（總分：所有已通關關卡的最佳分數加總）</h2>
+      <div id="rankArea" class="small">請先以學生登入後再查看。</div>
+    </div>
+  </div>
+
+  <!-- RIGHT: Levels -->
+  <div class="card">
+    <h2 style="margin:0 0 10px 0;">世界與關卡</h2>
+    <div id="worldList"></div>
+    <div class="small" style="margin-top:10px;">
+      小提醒：先用「向前走」與「左/右轉」，進階再用「重複」減少積木數量。
+    </div>
+  </div>
+</div>
+
+
+<script>
+  const toast = (msg)=> document.getElementById("toast").textContent = msg;
+
+  function renderSession(){
+    const s = StorageAPI.getSession();
+    const el = document.getElementById("sessionBadge");
+    if(!s){
+      el.textContent = "尚未登入";
+      return null;
+    }
+    if(s.role === "student"){
+      // ✅ 顯示五碼學號（例如 30101）
+      el.textContent = `學生：${s.userId}`;
+    }else{
+      el.textContent = `教師模式`;
+    }
+    return s;
+  }
+
+  function getWorldUnlocked(world, progress, userId){
+    const rule = world.unlockRule;
+    if(rule.type === "always") return true;
+    if(rule.type === "passCountInWorld"){
+      const need = rule.need;
+      const w = rule.worldId;
+      const best = progress[userId]?.best || {};
+      const passed = Object.keys(best).filter(k => k.startsWith(w + "-")).length;
+      return passed >= need;
+    }
+    return false;
+  }
+
+  function renderWorlds(){
+    const s = StorageAPI.getSession();
+    const isTeacher = (s?.role === "teacher");
+    const progress = StorageAPI.getProgress();
+    const userId = s?.role==="student" ? s.userId : null;
+
+    const wrap = document.getElementById("worldList");
+    wrap.innerHTML = "";
+
+    LEVELS.forEach(world=>{
+      // 👩‍🏫 教師模式：所有世界一律視為已解鎖
+      const unlocked = isTeacher ? true : (userId ? getWorldUnlocked(world, progress, userId) : false);
+
+      const wCard = document.createElement("div");
+      wCard.className = "card";
+      wCard.style.marginBottom = "10px";
+      wCard.style.padding = "12px";
+
+      const title = document.createElement("div");
+      title.style.display = "flex";
+      title.style.justifyContent = "space-between";
+      title.style.alignItems = "center";
+      title.innerHTML = `<div><b>${world.worldName}</b></div>
+                         <div class="badge">${isTeacher ? "教師可進入" : (unlocked ? "已解鎖" : "未解鎖")}</div>`;
+      wCard.appendChild(title);
+
+      const list = document.createElement("div");
+      list.style.marginTop = "10px";
+      list.style.display = "grid";
+      list.style.gridTemplateColumns = "1fr 1fr";
+      list.style.gap = "8px";
+
+world.levels.forEach((lv, idx)=>{
+  const levelKey = `${world.worldId}-${lv.levelId}`;
+
+  // ✅ 取得本關最佳紀錄（有就代表通關過）
+  const best = userId ? progress[userId]?.best?.[levelKey] : null;
+
+  // ✅ 關卡解鎖規則：同世界「第 1 關永遠解鎖」，其餘要前一關通關才解鎖
+  const prevLv = world.levels[idx - 1];
+  const prevKey = prevLv ? `${world.worldId}-${prevLv.levelId}` : null;
+  const prevBest = (userId && prevKey) ? progress[userId]?.best?.[prevKey] : null;
+  const levelUnlocked = isTeacher ? true : ((idx === 0) ? true : !!prevBest);
+
+  const btn = document.createElement("button");
+  btn.classList.add("level-btn"); // ✅ 關鍵：套用我們的狀態樣式
+
+  // ✅ 是否可點：教師模式可直接進入；學生需符合解鎖規則
+  const canPlay = isTeacher ? true : !!(unlocked && userId && levelUnlocked);
+  btn.disabled = !canPlay;
+
+  // ✅ 狀態上色
+  if(!canPlay){
+    btn.classList.add("locked");
+  }else if(!isTeacher && best?.stars >= 3){
+    btn.classList.add("gold");
+  }else if(!isTeacher && best){
+    btn.classList.add("completed");
+  }
+
+  // ✅ 按鈕文字
+  btn.textContent = isTeacher ? `👩‍🏫 ${lv.name}` : lv.name;
+  if(!isTeacher && best){
+    btn.textContent = `${lv.name}｜★${best.stars} 分${best.score}`;
+  }
+
+  btn.onclick = ()=>{
+    if(!canPlay) return;
+    location.href = `game.html?world=${encodeURIComponent(world.worldId)}&level=${encodeURIComponent(lv.levelId)}`;
+  };
+
+  list.appendChild(btn);
+});
+
+
+      wCard.appendChild(list);
+      const hint = document.createElement("div");
+      hint.className = "small";
+      hint.style.marginTop = "8px";
+      hint.textContent = isTeacher
+        ? "教師模式：可直接進入任一關（進關會自動載入最佳解法）。"
+        : (userId ? (unlocked ? "選一關開始寫積木程式！" : "先完成前面世界的指定關數才能解鎖。") : "請先登入才能選關。");
+      wCard.appendChild(hint);
+
+      wrap.appendChild(wCard);
+    });
+  }
+
+  function renderClassRank(){
+    const s = StorageAPI.getSession();
+    const area = document.getElementById("rankArea");
+    if(!s || s.role !== "student"){
+      area.textContent = "請先以學生登入後再查看。";
+      return;
+    }
+
+    const progress = StorageAPI.getProgress();
+    const classId = s.classId;
+
+    // ✅ 本班學生：用 progress 裡所有 userId 前三碼相同者
+    const uids = Object.keys(progress)
+      .filter(uid => uid !== "teacher")
+      .filter(uid => uid.slice(0,3) === classId);
+
+    if(uids.length === 0){
+      area.textContent = "目前尚無排行榜資料。";
+      return;
+    }
+
+    const rows = uids.map(uid=>{
+      const best = progress[uid]?.best || {};
+      const passed = Object.keys(best).length;
+      const total = Object.keys(best).reduce((sum,k)=> sum + (Number(best[k]?.score)||0), 0);
+      return {
+        uid,
+        seat: uid.slice(3,5),
+        passed,
+        total
+      };
+    }).sort((a,b)=> b.total - a.total || b.passed - a.passed || a.seat.localeCompare(b.seat));
+
+    area.innerHTML = "";
+
+    const table = document.createElement("table");
+    table.className = "table";
+    table.innerHTML = `
+      <thead><tr>
+        <th>名次</th><th>座號</th><th>通關數</th><th>總分</th>
+      </tr></thead>
+      <tbody>
+        ${rows.slice(0, 30).map((r,i)=>`
+          <tr>
+            <td>${i+1}</td>
+            <td>${r.seat}</td>
+            <td>${r.passed}</td>
+            <td>${r.total}</td>
+          </tr>
+        `).join("")}
+      </tbody>
+    `;
+    area.appendChild(table);
+
+    const small = document.createElement("div");
+    small.className = "small";
+    small.style.marginTop = "10px";
+    small.textContent = "說明：總分＝每一關「最佳分數」加總（不再做每關獨立排行榜）。";
+    area.appendChild(small);
+  }
+
+  // events
+  document.getElementById("btnStudentLogin").onclick = ()=>{
+    const studentId = document.getElementById("studentId").value.trim();
+
+    if(!/^\d{5}$/.test(studentId)){
+      toast("學號請輸入 5 位數，例如 30105");
+      return;
+    }
+
+    const s = Auth.loginStudent({ studentId });
+    if(!s){
+      toast("登入失敗：學號格式錯誤");
+      return;
+    }
+
+    toast("登入成功！請選關開始。");
+    renderSession();
+    renderWorlds();
+    renderClassRank();
+  };
+
+  document.getElementById("btnLogout").onclick = ()=>{
+    Auth.logout();
+    toast("已登出。");
+    renderSession();
+    renderWorlds();
+    renderClassRank();
+  };
+
+  document.getElementById("btnTeacher").onclick = ()=>{
+    location.href = "teacher.html";
+  };
+
+  document.getElementById("btnClassRank").onclick = ()=>{
+    renderClassRank();
+    toast("已更新本班排行榜（總分）。");
+  };
+
+  // init
+  renderSession();
+  renderWorlds();
+  renderClassRank();
+</script>
+</body>
+</html>

@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>魔法迷宮｜教師後台</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="brand">
+        <div class="logo"></div>
+        <div>
+          <h1>教師後台</h1>
+          <p>僅保留：清除全部學生總分／清除個別學生總分</p>
+        </div>
+      </div>
+      <div class="badge" id="sessionBadge">教師未登入</div>
+    </div>
+
+    <div class="row">
+      <div class="card">
+        <h2 style="margin:0 0 10px 0;">教師登入</h2>
+        <label>教師密碼：1070</label>
+        <input id="teacherCode" placeholder="1070" inputmode="numeric" />
+        <div class="btnbar">
+          <button class="primary" id="btnTeacherLogin">登入</button>
+          <button id="btnTeacherLogout">登出</button>
+          <button id="btnBack">回首頁</button>
+        </div>
+        <div class="toast" id="toast"></div>
+      </div>
+
+      <div class="card">
+        <h2 style="margin:0 0 10px 0;">快速操作</h2>
+        <label>篩選班級（3位數，例如 301）</label>
+        <input id="filterClass" placeholder="301" inputmode="numeric" />
+        <div class="btnbar">
+          <button id="btnRefresh">更新列表</button>
+          <button class="danger" id="btnClearAll">清除全部學生總分</button>
+        </div>
+        <div class="small" style="margin-top:8px;">
+          說明：清除「總分」會清空該生（或全部學生）的所有關卡最佳紀錄與排行榜紀錄。
+        </div>
+      </div>
+    </div>
+
+    <!-- ✅ 未登入時會被 teacher.js 隱藏 -->
+    <div class="card" id="tableCard" style="margin-top:14px; display:none;">
+      <h2 style="margin:0 0 10px 0;">學生總分管理</h2>
+      <div id="tableArea" class="small">請先登入教師帳號。</div>
+    </div>
+  </div>
+
+  <!-- ✅ 只需要這三支 -->
+  <script src="storage.js"></script>
+  <script src="auth.js"></script>
+  <script src="teacher.js"></script>
+  <script>
+    TeacherPage.init();
+  </script>
+</body>
+</html>

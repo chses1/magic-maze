@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>魔法迷宮｜遊戲</title>
+  <link rel="stylesheet" href="styles.css" />
+
+  <!-- Blockly CDN（主程式 + 繁中語系） -->
+  <script src="https://unpkg.com/blockly/blockly.min.js"></script>
+  <script src="https://unpkg.com/blockly/msg/zh-hant.js"></script>
+
+  <script src="levels.js"></script>
+  <script src="storage.js"></script>
+  <script src="auth.js"></script>
+  <script src="blockly_setup.js"></script>
+  <script src="game.js"></script>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="brand">
+        <div class="logo"></div>
+        <div>
+          <h1 id="title">遊戲中...</h1>
+          <p id="subtitle">用積木控制角色前進、轉向，走到出口 E</p>
+        </div>
+      </div>
+      <div class="badge" id="sessionBadge"></div>
+    </div>
+
+    <div class="gameLayout">
+      <div class="card stage">
+        <div class="stageTop">
+          <div class="kpi">
+            <span class="badge">步數：<strong id="steps">0</strong></span>
+            <span class="badge">撞牆：<strong id="bumps">0</strong></span>
+            <span class="badge">鑰匙：<strong id="hasKey">否</strong></span>
+            <span class="badge">金幣：<strong id="coin">否</strong></span>
+          </div>
+          <div class="btnbar" style="margin:0;">
+            <button class="primary" id="btnRun">▶ 執行</button>
+            <button id="btnStep">⏭ 步進</button>
+            <button id="btnPause">⏸ 暫停</button>
+            <button id="btnReset">↩ 重來</button>
+            <button class="danger" id="btnExit">⛔ 結束</button>
+          </div>
+        </div>
+
+        <div class="gridWrap">
+          <div id="grid" class="grid"></div>
+        </div>
+        <div class="toast" id="toast"></div>
+<div class="toast infoPanel" id="info"></div>
+
+
+        <div class="hr"></div>
+        <div id="result" class="small"></div>
+      </div>
+
+      <div class="card">
+        <h2 style="margin:0 0 10px 0;">積木程式區</h2>
+        <div id="blocklyDiv" style="height:520px; width:100%; border-radius:14px; overflow:hidden;"></div>
+        <div class="small" style="margin-top:10px;">
+          小提醒：先用「向前走」與「左/右轉」，進階再用「重複」減少積木數量。
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  // ✅ 啟用繁中語系（一定要在建立 workspace 之前）
+  Blockly.setLocale(Blockly.Msg);
+
+  // ✅ 允許學生 / 教師都能進入遊戲
+  const s = Auth.requireAnyRole(["student","teacher"]);
+
+  // ✅ 右上角顯示身分
+  const badge = document.getElementById("sessionBadge");
+  badge.textContent = (s.role === "teacher")
+    ? "👩‍🏫 教師模式（已解鎖全關 + 自動載入最佳解法）"
+    : `學生：${s.userId}`;
+
+  window.GamePage.init();
+</script>
+</body>
+</html>
