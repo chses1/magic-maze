@@ -51,7 +51,7 @@ window.GamePage = (()=>{
       introBody: "你將使用程式積木控制角色穿越迷宮，學會轉向、拿鑰匙、避開陷阱，並在每一關拿到新的戰鬥卡牌。",
       bossHint: "完成所有試煉後，你將挑戰第一位關主──森林狼王！",
       cardsTitle: "本世界可獲得卡牌",
-      cardsRule: "每張卡牌之後可在 Boss 戰使用 1 次。",
+      cardsRule: "下方顯示的是本世界四關會依序獲得的不同卡牌；不是每一關都拿到同一套。每張卡牌在 Boss 戰可使用 1 次。",
       bossTitle: "森林狼王",
       bossBody: "森林的守護者正在深處等待你。完成前面所有試煉後，就能帶著卡牌挑戰牠。",
       bossStageTitle: "Boss 戰：森林狼王",
@@ -183,7 +183,58 @@ window.GamePage = (()=>{
     style.id = "world1-ui-style";
     style.textContent = `
       body.world1-skin {
-        background: linear-gradient(180deg, #eff8ef 0%, #e8f2e8 100%);
+        background: linear-gradient(180deg, #d7e0d2 0%, #c8d2c4 100%);
+        color: #15281a;
+      }
+      body.world1-skin #title {
+        color: #1d2f22 !important;
+        font-size: clamp(28px, 4vw, 42px);
+        font-weight: 900;
+        letter-spacing: .5px;
+        text-shadow: none !important;
+      }
+      body.world1-skin #subtitle {
+        color: #39503b !important;
+        font-size: clamp(16px, 2.2vw, 22px);
+        font-weight: 800;
+        text-shadow: none !important;
+      }
+      body.world1-skin #steps,
+      body.world1-skin #bumps,
+      body.world1-skin #hasKey,
+      body.world1-skin #time {
+        color: #18301e !important;
+        font-weight: 900 !important;
+      }
+      body.world1-skin #btnRun,
+      body.world1-skin #btnPause,
+      body.world1-skin #btnReset,
+      body.world1-skin #btnExit {
+        color: #ffffff !important;
+        font-weight: 900 !important;
+        text-shadow: none !important;
+        opacity: 1 !important;
+      }
+      body.world1-skin #btnPause,
+      body.world1-skin #btnReset {
+        color: #1d2f22 !important;
+        background: #edf4ea !important;
+        border: 2px solid #a5b9a3 !important;
+      }
+      body.world1-skin #btnExit {
+        color: #8b2c2c !important;
+        background: #fff5f5 !important;
+        border: 2px solid #e6a9a9 !important;
+      }
+      body.world1-skin #toast {
+        color: #ffffff !important;
+        background: #2e4131 !important;
+        border: 2px solid #8ab28f !important;
+        font-weight: 800 !important;
+        text-shadow: none !important;
+      }
+      body.world1-skin #result {
+        color: #1a251c !important;
       }
       .stage-world-hero {
         position: relative;
@@ -193,7 +244,7 @@ window.GamePage = (()=>{
         margin: 12px 0 14px;
         border: 2px solid rgba(166, 219, 174, .95);
         box-shadow: 0 10px 28px rgba(0,0,0,.12);
-        background: linear-gradient(180deg, rgba(255,255,255,.96) 0%, rgba(245,255,246,.96) 100%);
+        background: linear-gradient(180deg, rgba(255,255,255,.98) 0%, rgba(241,248,241,.98) 100%);
         display: grid;
         grid-template-columns: minmax(0,1fr) 180px;
         gap: 10px;
@@ -201,7 +252,7 @@ window.GamePage = (()=>{
         padding: 18px;
       }
       .stage-world-hero h3 { margin: 0 0 8px; font-size: 28px; color: #1b4e27; }
-      .stage-world-hero p { margin: 6px 0; line-height: 1.65; color: #22452b; }
+      .stage-world-hero p { margin: 6px 0; line-height: 1.65; color: #17351f; }
       .stage-world-hero-boss { display:flex; align-items:flex-end; justify-content:center; min-height:140px; }
       .stage-world-hero-boss img { max-width: 170px; max-height: 170px; object-fit: contain; filter: drop-shadow(0 8px 16px rgba(0,0,0,.16)); }
       .stage-copy-card, .stage-reward-card {
@@ -303,6 +354,39 @@ window.GamePage = (()=>{
       .boss-log-entry strong { color:#1e4f2a; }
       .boss-empty-tip { color:#4d6c54; }
       .boss-footer-tip { margin-top:8px; font-size:14px; color:#3d5b45; }
+      .boss-phase-badge {
+        display:inline-flex; align-items:center; gap:8px; margin-top:10px; padding:8px 14px;
+        border-radius:999px; font-weight:900; background:#fff4d8; color:#7b4f00; border:1px solid #efd79a;
+      }
+      .boss-intent-box {
+        margin-top: 14px; text-align:left; background:linear-gradient(180deg,#fffaf1,#fff3df);
+        border:1px solid #efd8a6; border-radius:16px; padding:12px;
+      }
+      .boss-intent-title { font-size:14px; font-weight:900; color:#7b5208; margin-bottom:6px; }
+      .boss-intent-main { font-size:20px; font-weight:900; color:#5c3516; }
+      .boss-intent-sub { margin-top:4px; font-size:13px; color:#785b3b; line-height:1.5; }
+      .boss-fx-box {
+        margin-top: 12px; min-height: 52px; display:flex; align-items:center; justify-content:center;
+        text-align:center; padding:10px 12px; border-radius:14px; background:#f6fff6; border:1px dashed #bfd9c3;
+        color:#25452d; font-weight:800;
+      }
+      .boss-status-stack { display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:10px; margin-top:10px; }
+      .boss-mini-card { background:#f6fff6; border:1px solid #d4ead6; border-radius:14px; padding:10px 12px; }
+      .boss-mini-card b { display:block; margin-bottom:4px; color:#22452b; }
+      .boss-action-buttons button.secondary {
+        background: linear-gradient(180deg, #8eb7ff, #5f89ec);
+      }
+      .boss-action-buttons button.utility {
+        background: linear-gradient(180deg, #9acb9f, #69ad73);
+      }
+      .boss-card.is-used {
+        opacity:.6;
+        filter:grayscale(.15);
+      }
+      .boss-card-tag {
+        display:inline-block; margin-top:6px; padding:4px 8px; border-radius:999px;
+        background:#eef8ef; color:#31593b; font-size:12px; font-weight:800;
+      }
       @media (max-width: 860px) {
         .stage-world-hero { grid-template-columns: 1fr; }
         .stage-world-hero-boss { justify-content:flex-start; }
@@ -312,9 +396,115 @@ window.GamePage = (()=>{
     document.head.appendChild(style);
   }
 
+
+  function setPanelTheme(el, opts = {}){
+    if (!el) return;
+    el.style.background = opts.background || '#f5f8f3';
+    el.style.border = opts.border || '1px solid #b8c8b7';
+    el.style.borderRadius = opts.radius || '20px';
+    el.style.boxShadow = opts.shadow || '0 10px 26px rgba(0,0,0,.10)';
+    el.style.color = opts.color || '#18301e';
+  }
+
+  function applyMainContrast(){
+    const titleEl = document.getElementById('title');
+    const subtitleEl = document.getElementById('subtitle');
+    const toastEl = document.getElementById('toast');
+    const resultEl = document.getElementById('result');
+    const gridEl = document.getElementById('grid');
+    const blocklyEl = document.getElementById('blocklyDiv');
+    const btnRun = document.getElementById('btnRun');
+    const btnPause = document.getElementById('btnPause');
+    const btnReset = document.getElementById('btnReset');
+    const btnExit = document.getElementById('btnExit');
+    const ids = ['steps','bumps','hasKey','time'];
+
+    if (titleEl) {
+      titleEl.style.color = '#1d2f22';
+      titleEl.style.fontWeight = '900';
+    }
+    if (subtitleEl) {
+      subtitleEl.style.color = '#3a503d';
+      subtitleEl.style.fontWeight = '800';
+    }
+    ids.forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.style.color = '#18301e';
+      el.style.fontWeight = '900';
+      if (el.parentElement) {
+        el.parentElement.style.color = '#18301e';
+        el.parentElement.style.fontWeight = '800';
+        el.parentElement.style.background = '#eef3eb';
+        el.parentElement.style.borderRadius = '999px';
+        el.parentElement.style.padding = '6px 12px';
+        el.parentElement.style.border = '1px solid #c0cdbd';
+      }
+    });
+
+    [btnRun, btnPause, btnReset, btnExit].forEach(btn => {
+      if (!btn) return;
+      btn.style.opacity = '1';
+      btn.style.fontWeight = '900';
+      btn.style.textShadow = 'none';
+    });
+    if (btnRun) {
+      btnRun.style.background = 'linear-gradient(135deg, #6e6df6, #53c3ef)';
+      btnRun.style.color = '#fff';
+      btnRun.style.border = 'none';
+    }
+    if (btnPause) {
+      btnPause.style.background = '#edf4ea';
+      btnPause.style.color = '#1c2e21';
+      btnPause.style.border = '2px solid #adbeaa';
+    }
+    if (btnReset) {
+      btnReset.style.background = '#edf4ea';
+      btnReset.style.color = '#1c2e21';
+      btnReset.style.border = '2px solid #adbeaa';
+    }
+    if (btnExit) {
+      btnExit.style.background = '#fff5f5';
+      btnExit.style.color = '#8b2c2c';
+      btnExit.style.border = '2px solid #e4aaaa';
+    }
+    if (toastEl) {
+      toastEl.style.background = '#2e4131';
+      toastEl.style.color = '#fff';
+      toastEl.style.fontWeight = '800';
+      toastEl.style.borderRadius = '18px';
+      toastEl.style.padding = '14px 16px';
+      toastEl.style.border = '2px solid #8ab28f';
+    }
+    if (resultEl) {
+      resultEl.style.color = '#18231b';
+    }
+
+    if (gridEl) {
+      const wrap = gridEl.parentElement;
+      const panel = wrap && wrap.parentElement ? wrap.parentElement : wrap;
+      setPanelTheme(wrap, {background:'#aeb8aa22', border:'1px solid #b8c8b7'});
+      setPanelTheme(panel, {background:'#eef3eb', border:'1px solid #c0cdbd'});
+      if (wrap) wrap.style.color = '#18301e';
+    }
+
+    if (blocklyEl) {
+      const wrap = blocklyEl.parentElement;
+      const panel = wrap && wrap.parentElement ? wrap.parentElement : wrap;
+      setPanelTheme(panel, {background:'#eef3eb', border:'1px solid #c0cdbd'});
+      if (panel) panel.style.color = '#18301e';
+      if (wrap && wrap.previousElementSibling) {
+        wrap.previousElementSibling.style.color = '#18301e';
+        wrap.previousElementSibling.style.fontWeight = '900';
+        wrap.previousElementSibling.style.textShadow = 'none';
+      }
+    }
+  }
+
   function ensureInfoPanels(){
     ensureStyles();
     document.body.classList.add("world1-skin");
+    applyMainContrast();
     const titleEl = document.getElementById("title");
     const subtitleEl = document.getElementById("subtitle");
     if (!titleEl || !subtitleEl) return;
@@ -412,7 +602,7 @@ window.GamePage = (()=>{
     }
     if (rewardCard) {
       rewardCard.innerHTML = `
-        <h3>${UI.world1.cardsTitle}</h3>
+        <h3>${UI.world1.cardsTitle}</h3><p style="margin-top:0;color:#294d31;font-weight:700;">1-1 補血小藥水｜1-2 小刀攻擊｜1-3 木盾防禦｜1-4 冰凍藤蔓</p>
         <p>${UI.world1.cardsRule}</p>
         <div class="stage-reward-list">${worldCardsHtml()}</div>
         <div class="boss-preview">
@@ -426,39 +616,81 @@ window.GamePage = (()=>{
     }
   }
 
+  
   function getCardsForBoss(){
     return [CARD_DATA.potion, CARD_DATA.dagger, CARD_DATA.shield, CARD_DATA.freeze].map(card => ({...card, used:false}));
   }
 
   function createBossState(){
     return {
-      playerMaxHp: 28,
-      playerHp: 28,
+      playerMaxHp: 30,
+      playerHp: 30,
       playerShield: 0,
-      bossMaxHp: 28,
-      bossHp: 28,
+      playerPower: 0,
+      bossMaxHp: 36,
+      bossHp: 36,
       turn: 1,
       bossFreezeTurns: 0,
       bossPatternIndex: 0,
+      phase: 1,
       cards: getCardsForBoss(),
-      log: ["戰鬥開始！輪到你行動。"],
+      log: ["戰鬥開始！先觀察狼王的下一招，再決定是否防禦或進攻。"],
       finished: false,
       startedAt: Date.now(),
+      fxText: '⚔️ Boss 戰開始！',
+      lastBossAction: '尚未行動',
+      lastPlayerAction: '尚未行動',
     };
   }
 
-  function bossPatternAction(index){
-    return index % 3 === 2 ? {type:'skill', damage:8, label:'狂暴撕咬'} : {type:'attack', damage:5, label:'利爪攻擊'};
+  function getBossPhase(){
+    if (!bossState) return 1;
+    return bossState.bossHp <= Math.ceil(bossState.bossMaxHp * 0.5) ? 2 : 1;
+  }
+
+  function getBossPattern(phase){
+    if (phase >= 2) {
+      return [
+        {type:'attack', label:'飛撲猛擊', damage:6, icon:'⚡', hint:'較高傷害，適合先補血或防禦。'},
+        {type:'multi', label:'雙爪連擊', hits:[4,4], icon:'🌀', hint:'連續兩次傷害，護盾很有用。'},
+        {type:'skill', label:'狼王怒嚎', damage:10, icon:'🔥', hint:'第二階段大招，沒準備會很痛。'},
+      ];
+    }
+    return [
+      {type:'attack', label:'利爪攻擊', damage:5, icon:'🩸', hint:'普通攻擊。'},
+      {type:'attack', label:'利爪攻擊', damage:5, icon:'🩸', hint:'普通攻擊。'},
+      {type:'skill', label:'狂暴撕咬', damage:8, icon:'⚠️', hint:'第一階段大招，建議先防禦。'},
+    ];
+  }
+
+  function bossPatternAction(index, phase){
+    const pattern = getBossPattern(phase || getBossPhase());
+    return pattern[index % pattern.length];
+  }
+
+  function getBossIntentPreview(){
+    const phase = getBossPhase();
+    return bossPatternAction(bossState.bossPatternIndex, phase);
+  }
+
+  function syncBossPhase(){
+    const nextPhase = getBossPhase();
+    if (nextPhase !== bossState.phase) {
+      bossState.phase = nextPhase;
+      pushBossLog(`<strong>狼王變化：</strong>森林狼王進入第 ${nextPhase} 階段，攻擊變得更兇猛了！`);
+      bossState.fxText = `🔥 狼王進入第 ${nextPhase} 階段！`;
+    }
   }
 
   function bossCardsHtml(){
     return bossState.cards.map(card => `
-      <div class="boss-card">
+      <div class="boss-card ${card.used ? 'is-used' : ''}">
         <img src="${card.img}" alt="${card.title}">
         <div>
           <div><b>${card.title}</b></div>
           <div style="font-size:13px; color:#41624a; margin:4px 0 8px;">${card.desc}</div>
           <button type="button" data-card="${card.key}" ${card.used || bossState.finished ? 'disabled' : ''}>${card.used ? '已使用' : '使用卡牌'}</button>
+          <div class="boss-card-tag">${card.used ? '本場已消耗' : '限用 1 次'}</div>
         </div>
       </div>
     `).join('');
@@ -470,10 +702,10 @@ window.GamePage = (()=>{
   }
 
   function updateBossButtons(){
-    const useBasic = document.getElementById('bossBasicAttack');
-    const endTurn = document.getElementById('bossEndTurn');
-    if (useBasic) useBasic.disabled = bossState.finished;
-    if (endTurn) endTurn.disabled = bossState.finished;
+    ['bossBasicAttack','bossDefend','bossFocus','bossEndTurn'].forEach(id => {
+      const btn = document.getElementById(id);
+      if (btn) btn.disabled = bossState.finished;
+    });
 
     document.querySelectorAll('#bossCards [data-card]').forEach(btn => {
       const card = bossState.cards.find(c => c.key === btn.dataset.card);
@@ -485,18 +717,21 @@ window.GamePage = (()=>{
   function renderBossStage(){
     const bossEl = ensureBossStage();
     if (!bossEl || !bossState) return;
+    syncBossPhase();
     const playerPct = Math.max(0, bossState.playerHp) / bossState.playerMaxHp * 100;
     const bossPct = Math.max(0, bossState.bossHp) / bossState.bossMaxHp * 100;
+    const intent = getBossIntentPreview();
 
     bossEl.innerHTML = `
       <div class="boss-stage-top">
         <h3>${UI.world1.bossStageTitle}</h3>
         <p>${UI.world1.bossStageIntro}</p>
-        <p><b>背景圖已改為只在 Boss 戰區域顯示，避免主畫面文字看不清楚。</b></p>
+        <p><b>這版 Boss 戰加入「下一招預告、階段變化、強化攻擊、明顯防禦選擇」，比較像真正的關主戰。</b></p>
       </div>
       <div class="boss-stage-main">
         <div class="boss-art-panel">
           <img src="${ASSETS.boss}" alt="${UI.world1.bossTitle}">
+          <div class="boss-phase-badge">第 ${bossState.phase} 階段 ${bossState.phase === 1 ? '🌿 森林試探' : '🔥 狂暴模式'}</div>
           <div class="hp-bar-wrap">
             <div class="hp-label"><span>森林狼王</span><span>${bossState.bossHp} / ${bossState.bossMaxHp}</span></div>
             <div class="hp-bar"><div class="hp-fill-boss" style="width:${bossPct}%"></div></div>
@@ -505,6 +740,12 @@ window.GamePage = (()=>{
             <div class="hp-label"><span>玩家生命值</span><span>${bossState.playerHp} / ${bossState.playerMaxHp}</span></div>
             <div class="hp-bar"><div class="hp-fill-player" style="width:${playerPct}%"></div></div>
           </div>
+          <div class="boss-intent-box">
+            <div class="boss-intent-title">下一招預告</div>
+            <div class="boss-intent-main">${intent.icon} ${intent.label}</div>
+            <div class="boss-intent-sub">${intent.hint}</div>
+          </div>
+          <div class="boss-fx-box">${bossState.fxText || '準備行動中…'}</div>
         </div>
         <div class="boss-panel-grid">
           <div class="boss-status-box">
@@ -512,17 +753,24 @@ window.GamePage = (()=>{
             <div class="boss-status-row">
               <span class="boss-pill">第 ${bossState.turn} 回合</span>
               <span class="boss-pill">護盾：${bossState.playerShield}</span>
-              <span class="boss-pill">冰凍剩餘：${bossState.bossFreezeTurns}</span>
+              <span class="boss-pill">蓄力：${bossState.playerPower}</span>
+              <span class="boss-pill">冰凍：${bossState.bossFreezeTurns}</span>
             </div>
-            <div class="boss-footer-tip">狼王攻擊節奏：普通攻擊、普通攻擊、狂暴撕咬，接著循環。</div>
+            <div class="boss-status-stack">
+              <div class="boss-mini-card"><b>玩家上一動</b>${bossState.lastPlayerAction}</div>
+              <div class="boss-mini-card"><b>狼王上一動</b>${bossState.lastBossAction}</div>
+            </div>
+            <div class="boss-footer-tip">教學重點：讓孩子先看預告，再思考「我要攻擊、補血，還是先防禦？」</div>
           </div>
           <div class="boss-action-box">
             <div class="boss-section-title">玩家行動</div>
             <div class="boss-action-buttons">
-              <button type="button" id="bossBasicAttack">木棒敲擊（4 傷害）</button>
+              <button type="button" id="bossBasicAttack">普通攻擊（4＋蓄力）</button>
+              <button type="button" class="secondary" id="bossDefend">防禦姿態（+6 護盾）</button>
+              <button type="button" class="utility" id="bossFocus">專注蓄力（下次 +2）</button>
               <button type="button" class="danger" id="bossEndTurn">略過回合</button>
             </div>
-            <div class="boss-footer-tip">你每回合可以用一次行動。使用卡牌後也會直接結束你的行動。</div>
+            <div class="boss-footer-tip">普通攻擊會吃到蓄力加成；蓄力用掉後就會歸零。</div>
           </div>
           <div class="boss-card-box">
             <div class="boss-section-title">可用卡牌</div>
@@ -537,8 +785,12 @@ window.GamePage = (()=>{
     `;
 
     const basicBtn = document.getElementById('bossBasicAttack');
+    const defendBtn = document.getElementById('bossDefend');
+    const focusBtn = document.getElementById('bossFocus');
     const endBtn = document.getElementById('bossEndTurn');
     if (basicBtn) basicBtn.onclick = ()=> playerBossAction('basic');
+    if (defendBtn) defendBtn.onclick = ()=> playerBossAction('defend');
+    if (focusBtn) focusBtn.onclick = ()=> playerBossAction('focus');
     if (endBtn) endBtn.onclick = ()=> playerBossAction('skip');
     document.querySelectorAll('#bossCards [data-card]').forEach(btn => {
       btn.onclick = ()=> playerBossAction(btn.dataset.card);
@@ -548,18 +800,30 @@ window.GamePage = (()=>{
 
   function pushBossLog(html){
     bossState.log.unshift(html);
-    bossState.log = bossState.log.slice(0, 12);
+    bossState.log = bossState.log.slice(0, 14);
   }
 
-  function applyDamageToPlayer(rawDamage){
+  function applyDamageToBoss(rawDamage, sourceLabel){
+    const damage = Math.max(0, rawDamage);
+    bossState.bossHp = Math.max(0, bossState.bossHp - damage);
+    if (sourceLabel) pushBossLog(`<strong>玩家：</strong>${sourceLabel}造成 ${damage} 點傷害。`);
+    bossState.fxText = `💥 對狼王造成 ${damage} 點傷害！`;
+    return damage;
+  }
+
+  function applyDamageToPlayer(rawDamage, sourceLabel){
     let damage = rawDamage;
     if (bossState.playerShield > 0) {
       const blocked = Math.min(bossState.playerShield, damage);
       bossState.playerShield -= blocked;
       damage -= blocked;
-      if (blocked > 0) pushBossLog(`<strong>防禦：</strong>木盾抵擋了 ${blocked} 點傷害。`);
+      if (blocked > 0) pushBossLog(`<strong>防禦：</strong>護盾擋下了 ${blocked} 點傷害。`);
     }
     bossState.playerHp = Math.max(0, bossState.playerHp - damage);
+    if (sourceLabel) {
+      pushBossLog(`<strong>狼王：</strong>${sourceLabel}，你受到 ${damage} 點傷害。`);
+    }
+    bossState.fxText = damage > 0 ? `😵 你受到 ${damage} 點傷害！` : '🛡️ 你完全擋住了這次攻擊！';
     return damage;
   }
 
@@ -567,17 +831,22 @@ window.GamePage = (()=>{
     if (bossState.finished) return;
     if (bossState.bossFreezeTurns > 0) {
       bossState.bossFreezeTurns -= 1;
+      bossState.lastBossAction = '被冰凍，無法行動';
+      bossState.fxText = '❄️ 狼王被冰凍，這回合無法行動！';
       pushBossLog(`<strong>狼王：</strong>被冰凍藤蔓纏住，這回合無法行動！`);
       return;
     }
 
-    const action = bossPatternAction(bossState.bossPatternIndex);
+    const action = bossPatternAction(bossState.bossPatternIndex, getBossPhase());
     bossState.bossPatternIndex += 1;
-    const dealt = applyDamageToPlayer(action.damage);
-    if (action.type === 'skill') {
-      pushBossLog(`<strong>狼王技能：</strong>${action.label}！你受到 ${dealt} 點傷害。`);
+    bossState.lastBossAction = action.label;
+
+    if (action.type === 'multi') {
+      let total = 0;
+      for (const hit of action.hits) total += applyDamageToPlayer(hit, `${action.label}（${hit}）`);
+      pushBossLog(`<strong>狼王連擊：</strong>${action.label}總共造成 ${total} 點傷害。`);
     } else {
-      pushBossLog(`<strong>狼王攻擊：</strong>${action.label}，你受到 ${dealt} 點傷害。`);
+      applyDamageToPlayer(action.damage, action.label);
     }
   }
 
@@ -587,7 +856,7 @@ window.GamePage = (()=>{
     const turnsUsed = bossState.turn;
     const session = (window.StorageAPI && typeof StorageAPI.getSession === 'function') ? StorageAPI.getSession() : null;
     if (win) {
-      const score = Math.max(100, 1200 - (turnsUsed-1)*80 - Math.max(0, bossState.playerMaxHp - bossState.playerHp) * 6);
+      const score = Math.max(100, 1500 - (turnsUsed-1)*70 - Math.max(0, bossState.playerMaxHp - bossState.playerHp) * 5);
       const record = { score, stars: 3, steps: turnsUsed, timeMs: Date.now() - bossState.startedAt, bumps: 0, at: Date.now() };
       if (session && window.StorageAPI) {
         try {
@@ -598,7 +867,7 @@ window.GamePage = (()=>{
       showResult(buildResultCard(
         'good',
         'Boss 戰勝利！',
-        `你擊敗了森林狼王！<br>通往下一個世界的道路已經開啟。`,
+        `你擊敗了森林狼王！<br>這個版本的 Boss 戰已經具有教學用的「預判 → 決策 → 結果」節奏。`,
         `<div class="result-stats">
           <span class="result-badge">回合數：${turnsUsed}</span>
           <span class="result-badge">剩餘生命：${bossState.playerHp}</span>
@@ -610,7 +879,7 @@ window.GamePage = (()=>{
       showResult(buildResultCard(
         'bad',
         '挑戰失敗',
-        `你被森林狼王擊退了……<br>先回去補強迷宮關卡，再回來挑戰。`
+        `你被森林狼王擊退了……<br>請孩子重新觀察「下一招預告」，思考哪一回合該先防禦。`
       ));
       toast('森林狼王擊退了你，再試一次！');
     }
@@ -620,29 +889,48 @@ window.GamePage = (()=>{
     if (!bossState || bossState.finished) return;
 
     if (actionKey === 'basic') {
-      bossState.bossHp = Math.max(0, bossState.bossHp - 4);
-      pushBossLog(`<strong>玩家：</strong>木棒敲擊造成 4 點傷害。`);
+      const extra = bossState.playerPower;
+      const total = 4 + extra;
+      applyDamageToBoss(total, `普通攻擊${extra > 0 ? `（含蓄力 +${extra}）` : ''}`);
+      bossState.lastPlayerAction = `普通攻擊 ${total}`;
+      bossState.playerPower = 0;
+    } else if (actionKey === 'defend') {
+      bossState.playerShield += 6;
+      bossState.lastPlayerAction = '防禦姿態';
+      bossState.fxText = '🛡️ 你架起防禦姿態，護盾 +6！';
+      pushBossLog(`<strong>玩家：</strong>進入防禦姿態，護盾增加 6。`);
+    } else if (actionKey === 'focus') {
+      bossState.playerPower += 2;
+      bossState.lastPlayerAction = '專注蓄力';
+      bossState.fxText = '✨ 你正在蓄力，下次攻擊會更痛！';
+      pushBossLog(`<strong>玩家：</strong>專注蓄力，下次普通攻擊 +2 傷害。`);
     } else if (actionKey === 'skip') {
-      pushBossLog(`<strong>玩家：</strong>這回合先觀察狼王的動作。`);
+      bossState.lastPlayerAction = '略過回合';
+      bossState.fxText = '👀 你選擇觀察狼王。';
+      pushBossLog(`<strong>玩家：</strong>先觀察狼王的動作。`);
     } else {
       const card = bossState.cards.find(c => c.key === actionKey);
       if (!card || card.used) return;
       card.used = true;
+      bossState.lastPlayerAction = `使用卡牌：${card.title}`;
       if (card.key === 'potion') {
-        bossState.playerHp = Math.min(bossState.playerMaxHp, bossState.playerHp + 6);
-        pushBossLog(`<strong>玩家卡牌：</strong>${card.title}恢復了 6 點生命值。`);
+        bossState.playerHp = Math.min(bossState.playerMaxHp, bossState.playerHp + 8);
+        bossState.fxText = '💚 恢復 8 點生命值！';
+        pushBossLog(`<strong>玩家卡牌：</strong>${card.title}恢復了 8 點生命值。`);
       } else if (card.key === 'dagger') {
-        bossState.bossHp = Math.max(0, bossState.bossHp - 7);
-        pushBossLog(`<strong>玩家卡牌：</strong>${card.title}造成 7 點傷害。`);
+        applyDamageToBoss(7, card.title);
       } else if (card.key === 'shield') {
-        bossState.playerShield += 5;
-        pushBossLog(`<strong>玩家卡牌：</strong>${card.title}提供 5 點護盾。`);
+        bossState.playerShield += 8;
+        bossState.fxText = '🪵 木盾展開，護盾 +8！';
+        pushBossLog(`<strong>玩家卡牌：</strong>${card.title}提供 8 點護盾。`);
       } else if (card.key === 'freeze') {
         bossState.bossFreezeTurns = 1;
+        bossState.fxText = '❄️ 狼王將被凍住下一回合！';
         pushBossLog(`<strong>玩家卡牌：</strong>${card.title}讓狼王下一回合無法行動。`);
       }
     }
 
+    syncBossPhase();
     if (bossState.bossHp <= 0) {
       finishBossBattle(true);
       return;
@@ -675,7 +963,7 @@ window.GamePage = (()=>{
     showResult(buildResultCard(
       'warn',
       'Boss 戰說明',
-      '你每回合可以選擇基本攻擊、使用卡牌，或略過回合。請注意狼王每三回合會使出一次狂暴撕咬。'
+      '這版 Boss 戰加入了「下一招預告」與「第二階段」。建議教學生先讀懂敵人的預告，再做選擇，這樣比較像真正的策略遊戲。'
     ));
     toast('Boss 戰開始！輪到你行動。');
   }
@@ -891,89 +1179,91 @@ window.GamePage = (()=>{
     tickTimer = setInterval(()=>render(), 300);
   }
 
-function makeAPI(){
-  // Blockly 產生的程式常常會呼叫 api.__highlight(blockId)
-  // 這裡提供一個安全版本：有就高亮，沒有就當作 no-op
-  async function __highlight(blockId){
-    try{
-      if (workspace && typeof workspace.highlightBlock === "function"){
-        workspace.highlightBlock(blockId);
-      } else if (window.Blockly && typeof Blockly.getMainWorkspace === "function"){
-        Blockly.getMainWorkspace().highlightBlock(blockId);
+  function makeAPI(){
+    async function __highlight(blockId){
+      try{
+        if (workspace && typeof workspace.highlightBlock === "function") {
+          workspace.highlightBlock(blockId || null);
+        } else if (window.Blockly && typeof Blockly.getMainWorkspace === "function") {
+          const ws = Blockly.getMainWorkspace();
+          if (ws && typeof ws.highlightBlock === "function") ws.highlightBlock(blockId || null);
+        }
+      }catch(e){
+        // ignore highlight errors so Blockly visual effects never break gameplay
       }
-    }catch(e){
-      // 不要讓高亮失敗影響主程式
+      await sleep(0);
     }
-  }
 
-  async function __unhighlight(){
-    try{
-      if (workspace && typeof workspace.highlightBlock === "function"){
-        workspace.highlightBlock(null);
-      } else if (window.Blockly && typeof Blockly.getMainWorkspace === "function"){
-        Blockly.getMainWorkspace().highlightBlock(null);
-      }
-    }catch(e){}
-  }
+    async function __unhighlight(){
+      try{
+        if (workspace && typeof workspace.highlightBlock === "function") {
+          workspace.highlightBlock(null);
+        } else if (window.Blockly && typeof Blockly.getMainWorkspace === "function") {
+          const ws = Blockly.getMainWorkspace();
+          if (ws && typeof ws.highlightBlock === "function") ws.highlightBlock(null);
+        }
+      }catch(e){}
+      await sleep(0);
+    }
 
-  async function __sleep(ms){
-    return new Promise(r=>setTimeout(r, ms || 0));
-  }
+    async function __sleep(ms){
+      await sleep(ms || 0);
+    }
 
-  return {
-    __highlight,
-    __unhighlight,
-    __sleep,
+    return {
+      __highlight,
+      __unhighlight,
+      __sleep,
 
-    async moveForward(){
-      await ensureNotPaused();
-      if(abortRun) throw new Error("aborted");
+      async moveForward(){
+        await ensureNotPaused();
+        if(abortRun) throw new Error("aborted");
 
-      const d = DIRS[dir];
-      const nx = px + d.dx;
-      const ny = py + d.dy;
+        const d = DIRS[dir];
+        const nx = px + d.dx;
+        const ny = py + d.dy;
 
-      steps++;
+        steps++;
 
-      if(!canMoveTo(nx, ny)){
-        bumps++;
-        toast(doorBlockedAhead(nx,ny) ? UI.common.doorLocked : UI.common.wall);
+        if(!canMoveTo(nx, ny)){
+          bumps++;
+          toast(doorBlockedAhead(nx,ny) ? UI.common.doorLocked : UI.common.wall);
+          render();
+          await sleep(220);
+          return;
+        }
+
+        if(grid[ny][nx] === "D" && hasKey){
+          grid[ny][nx] = ".";
+          toast(UI.common.doorOpen);
+        }
+
+        px = nx; py = ny;
+        checkTile();
         render();
-        await __sleep(220);
-        return;
+
+        if(reachedExit()){
+          throw new Error("WIN");
+        }
+
+        await sleep(220);
+      },
+
+      async turnLeft(){
+        await ensureNotPaused();
+        dir = (dir + 3) % 4;
+        render();
+        await sleep(120);
+      },
+
+      async turnRight(){
+        await ensureNotPaused();
+        dir = (dir + 1) % 4;
+        render();
+        await sleep(120);
       }
-
-      if(grid[ny][nx] === "D" && hasKey){
-        grid[ny][nx] = ".";
-        toast(UI.common.doorOpen);
-      }
-
-      px = nx; py = ny;
-      checkTile();
-      render();
-
-      if(reachedExit()){
-        throw new Error("WIN");
-      }
-
-      await __sleep(220);
-    },
-
-    async turnLeft(){
-      await ensureNotPaused();
-      dir = (dir + 3) % 4;
-      render();
-      await __sleep(120);
-    },
-
-    async turnRight(){
-      await ensureNotPaused();
-      dir = (dir + 1) % 4;
-      render();
-      await __sleep(120);
-    }
-  };
-}
+    };
+  }
 
   async function runProgram(){
     if (isBossLevel()) return;
@@ -1021,10 +1311,12 @@ function makeAPI(){
         StorageAPI.updateLeaderboard(session, levelKey(), record);
         const copy = getLevelCopy(world.worldId, level.levelId);
 
+        const isFinalTrialOfWorld1 = world.worldId === "world1" && level.levelId === "level4";
+
         showResult(buildResultCard(
           "good",
           "通關成功！",
-          `${copy.success}<br>獲得卡牌：<b>${copy.reward}</b>`,
+          `${copy.success}<br>${isFinalTrialOfWorld1 ? '你已完成第一世界所有試煉，準備挑戰森林狼王！' : `獲得卡牌：<b>${copy.reward}</b>`}`,
           `<div class="result-stats">
             <span class="result-badge">分數：${score}</span>
             <span class="result-badge">星等：★${stars}</span>
@@ -1034,10 +1326,19 @@ function makeAPI(){
           </div>
           <div class="stage-current-reward" style="margin-top:12px;">
             <img src="${copy.rewardImg}" alt="${copy.reward}">
-            <div><b>新卡牌解鎖：${copy.reward}</b><br>${copy.rewardDesc}</div>
+            <div><b>${isFinalTrialOfWorld1 ? '最終卡牌解鎖' : '新卡牌解鎖'}：${copy.reward}</b><br>${copy.rewardDesc}</div>
           </div>
           <div style="margin-top:8px;">${improved ? "🎉 這是你的最佳紀錄，已存檔！" : "已完成本關，紀錄已更新。"}</div>`
         ));
+
+        if (isFinalTrialOfWorld1) {
+          toast('最後試煉完成！即將進入 Boss 戰！');
+          setTimeout(() => {
+            location.href = `game.html?world=${world.worldId}&level=boss`;
+          }, 900);
+          return;
+        }
+
         toast(UI.common.winToast);
       }else if(err?.message === "aborted"){
         resetRunState();
@@ -1097,6 +1398,7 @@ function makeAPI(){
     workspace = BlocklySetup.createWorkspace("blocklyDiv");
     bindUI();
     resetLevel();
+    applyMainContrast();
   }
 
   return { init };
