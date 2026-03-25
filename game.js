@@ -192,6 +192,13 @@ window.GamePage = (()=>{
     return String(world?.worldName || worldId || "世界");
   }
 
+  function getCleanLevelTitle(){
+    const raw = String(level?.name || getLevelCopy(world?.worldId, level?.levelId).title || '').trim();
+    if (!raw) return '關卡';
+    if (/boss/i.test(raw)) return 'Boss 戰';
+    return raw.replace(/^第\s*\d+\s*關\s*[:：]\s*/, '').trim();
+  }
+
   function createFallbackBossLevel(worldId){
     const normalizedWorldId = normalizeWorldId(worldId);
     if (normalizedWorldId !== "W1") return null;
@@ -258,11 +265,12 @@ window.GamePage = (()=>{
         overflow: hidden;
       }
       body.world1-skin .container {
-        width: min(1600px, calc(100vw - 16px));
-        min-height: calc(100vh - 16px);
+        width: min(calc((100vh - 16px) * 16 / 9), calc(100vw - 16px));
+        height: min(calc(100vw * 9 / 16), calc(100vh - 16px));
         margin: 8px auto;
         display: flex;
         flex-direction: column;
+        overflow: hidden;
       }
       body.world1-skin .header {
         flex: 0 0 auto;
@@ -343,13 +351,11 @@ window.GamePage = (()=>{
         display: none !important;
       }
       .stage-copy-card {
-        margin: 8px 0 10px;
-        padding: 12px 14px;
-        border-radius: 18px;
-        background: linear-gradient(180deg, #ffffff 0%, #f3fff4 100%);
-        border: 2px solid #cde8cf;
-        box-shadow: 0 6px 18px rgba(0,0,0,.08);
-        color: #173a1f;
+        display: none !important;
+      }
+      body.world1-skin .stage .hr,
+      body.world1-skin #result:empty {
+        display: none;
       }
       .stage-world-hero h3 { margin: 0 0 8px; font-size: 28px; color: #1b4e27; }
       .stage-world-hero p { margin: 6px 0; line-height: 1.65; color: #17351f; }
@@ -634,8 +640,10 @@ window.GamePage = (()=>{
         body.world1-skin { overflow: auto; }
         body.world1-skin .container {
           width: min(100vw - 12px, 1600px);
+          height: auto;
           min-height: auto;
           margin: 6px auto;
+          overflow: visible;
         }
         body.world1-skin .gameLayout {
           grid-template-columns: 1fr;
@@ -644,12 +652,9 @@ window.GamePage = (()=>{
           height: 420px !important;
         }
       }
-              @media (min-width: 981px) {
-        body.world1-skin .container {
-          aspect-ratio: 16 / 9;
-        }
+      @media (min-width: 981px) {
         body.world1-skin #blocklyDiv {
-          height: min(52vh, 520px) !important;
+          height: clamp(300px, 42vh, 460px) !important;
         }
         body.world1-skin .gridWrap {
           min-height: 0;
@@ -780,18 +785,10 @@ window.GamePage = (()=>{
     ensureStyles();
     document.body.classList.add("world1-skin");
     applyMainContrast();
-    const subtitleEl = document.getElementById("subtitle");
     const badgeEl = document.getElementById("sessionBadge");
     if (badgeEl) badgeEl.style.display = 'none';
-    if (!subtitleEl) return;
-
-    let copyCard = document.getElementById("stageCopyCard");
-    if (!copyCard) {
-      copyCard = document.createElement("section");
-      copyCard.id = "stageCopyCard";
-      copyCard.className = "stage-copy-card";
-      subtitleEl.insertAdjacentElement("afterend", copyCard);
-    }
+    const copyCard = document.getElementById("stageCopyCard");
+    if (copyCard) copyCard.remove();
   }
 
   function ensureBossStage(){
@@ -828,17 +825,6 @@ window.GamePage = (()=>{
 
   function fillInfoPanels(){
     ensureInfoPanels();
-    const copy = getLevelCopy(world.worldId, level.levelId);
-    const copyCard = document.getElementById("stageCopyCard");
-
-    if (copyCard) {
-      copyCard.innerHTML = `
-        <h3>${copy.title}</h3>
-        <p>${copy.intro}</p>
-        <p class="stage-copy-hint">${copy.hint}</p>
-        <div class="stage-stars-reward">⭐ 三星成績通關可獲得神秘道具：<b>${copy.reward}</b></div>
-      `;
-    }
   }
 
   
@@ -1415,7 +1401,13 @@ window.GamePage = (()=>{
 
   function showResult(text){
     const el = document.getElementById("result");
-    if (el) el.innerHTML = text;
+    const hr = document.querySelector('.stage .hr');
+    const hasContent = !!String(text || '').trim();
+    if (el) {
+      el.innerHTML = text;
+      el.style.display = hasContent ? '' : 'none';
+    }
+    if (hr) hr.style.display = hasContent ? '' : 'none';
   }
 
   function stopTimers(){
@@ -1441,7 +1433,7 @@ window.GamePage = (()=>{
     level = pack.lv;
     const copy = getLevelCopy(world.worldId, level.levelId);
 
-    document.getElementById("title").textContent = `${getWorldDisplayName(world.worldId)} ➜ ${copy.title}`;
+    document.getElementById("title").textContent = `${getWorldDisplayName(world.worldId)} ➜ ${getCleanLevelTitle()}`;
     document.getElementById("subtitle").textContent = isBossLevel() ? `卡牌回合戰（擊敗森林狼王）` : `目標步數：${level.targetSteps}｜三星可獲得：${copy.reward}`;
 
     fillInfoPanels();
@@ -1461,11 +1453,7 @@ window.GamePage = (()=>{
     bumps = 0;
     startAt = 0;
     resetRunState();
-    showResult(buildResultCard(
-      "warn",
-      "關卡開始",
-      `${copy.intro}<br><br><b>提示：</b>${copy.hint}`
-    ));
+    showResult("");
     toast(UI.common.startTip);
     render();
   }
