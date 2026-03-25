@@ -246,9 +246,45 @@ window.GamePage = (()=>{
         letter-spacing: .5px;
         text-shadow: none !important;
       }
+      body.world1-skin {
+        min-height: 100vh;
+        overflow: hidden;
+      }
+      body.world1-skin .container {
+        width: min(1600px, calc(100vw - 16px));
+        min-height: calc(100vh - 16px);
+        margin: 8px auto;
+        display: flex;
+        flex-direction: column;
+      }
+      body.world1-skin .header {
+        flex: 0 0 auto;
+        padding-bottom: 8px;
+      }
+      body.world1-skin .gameLayout {
+        flex: 1 1 auto;
+        min-height: 0;
+        display: grid;
+        grid-template-columns: minmax(520px, 1.02fr) minmax(380px, .98fr);
+        gap: 14px;
+        align-items: stretch;
+      }
+      body.world1-skin .gameLayout > .card {
+        min-height: 0;
+        overflow: hidden;
+      }
+      body.world1-skin .stage {
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr) auto auto;
+        gap: 10px;
+      }
+      body.world1-skin .stageTop {
+        flex-wrap: wrap;
+        gap: 8px;
+      }
       body.world1-skin #subtitle {
         color: #39503b !important;
-        font-size: clamp(16px, 2.2vw, 22px);
+        font-size: clamp(15px, 1.6vw, 20px);
         font-weight: 800;
         text-shadow: none !important;
       }
@@ -289,32 +325,25 @@ window.GamePage = (()=>{
       body.world1-skin #result {
         color: #1a251c !important;
       }
-      .stage-world-hero {
-        position: relative;
-        overflow: hidden;
-        border-radius: 22px;
-        min-height: 160px;
-        margin: 12px 0 14px;
-        border: 2px solid rgba(166, 219, 174, .95);
-        box-shadow: 0 10px 28px rgba(0,0,0,.12);
-        background: linear-gradient(180deg, rgba(255,255,255,.98) 0%, rgba(241,248,241,.98) 100%);
-        display: grid;
-        grid-template-columns: minmax(0,1fr) 180px;
-        gap: 10px;
-        align-items: center;
-        padding: 18px;
+      .stage-world-hero,
+      .stage-reward-card {
+        display: none !important;
+      }
+      .stage-copy-card {
+        margin: 8px 0 10px;
+        padding: 12px 14px;
+        border-radius: 18px;
+        background: linear-gradient(180deg, #ffffff 0%, #f3fff4 100%);
+        border: 2px solid #cde8cf;
+        box-shadow: 0 6px 18px rgba(0,0,0,.08);
+        color: #173a1f;
       }
       .stage-world-hero h3 { margin: 0 0 8px; font-size: 28px; color: #1b4e27; }
       .stage-world-hero p { margin: 6px 0; line-height: 1.65; color: #17351f; }
       .stage-world-hero-boss { display:flex; align-items:flex-end; justify-content:center; min-height:140px; }
       .stage-world-hero-boss img { max-width: 170px; max-height: 170px; object-fit: contain; filter: drop-shadow(0 8px 16px rgba(0,0,0,.16)); }
-      .stage-copy-card, .stage-reward-card {
-        background: linear-gradient(180deg, #ffffff 0%, #f3fff4 100%);
-        border: 2px solid #cde8cf; border-radius: 18px; padding: 14px 16px; margin: 10px 0;
-        box-shadow: 0 6px 18px rgba(0,0,0,.08); color: #173a1f;
-      }
-      .stage-copy-card h3, .stage-reward-card h3 { margin: 0 0 8px; font-size: 20px; }
-      .stage-copy-card p, .stage-reward-card p { margin: 6px 0; line-height: 1.6; }
+      .stage-copy-card h3 { margin: 0 0 6px; font-size: 18px; }
+      .stage-copy-card p { margin: 4px 0; line-height: 1.55; }
       .stage-copy-hint { color: #2d6c3d; font-weight: 700; }
       .stage-reward-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin-top: 10px; }
       .stage-reward-item {
@@ -323,10 +352,19 @@ window.GamePage = (()=>{
       }
       .stage-reward-item img { width: 56px; height: 56px; object-fit: contain; flex: 0 0 56px; border-radius: 10px; background: rgba(255,255,255,.88); }
       .stage-current-reward {
-        display:flex; gap:12px; align-items:center; margin-top:12px; padding:10px 12px; border-radius:14px;
+        display:flex; gap:10px; align-items:center; margin-top:8px; padding:10px 12px; border-radius:14px;
         background: #ecf8ef; border: 1px dashed #9fd0a6;
       }
-      .stage-current-reward img { width:64px; height:64px; object-fit:contain; border-radius:12px; background:#fff; }
+      .stage-current-reward img { width:52px; height:52px; object-fit:contain; border-radius:12px; background:#fff; }
+      .stage-stars-reward {
+        margin-top: 8px;
+        padding: 10px 12px;
+        border-radius: 14px;
+        background: #fff9ea;
+        border: 1px dashed #e5cf9d;
+        color: #6f5419;
+        font-weight: 800;
+      }
       .result-card { background: #fff; border: 2px solid #dce7ff; border-radius: 16px; padding: 14px 16px; line-height: 1.7; }
       .result-card h3 { margin: 0 0 8px; font-size: 20px; }
       .result-good { border-color: #bfe3c5; background: #f4fff6; }
@@ -579,9 +617,21 @@ window.GamePage = (()=>{
           grid-template-columns: repeat(2, minmax(0, 1fr));
         }
       }
+      @media (max-width: 980px) {
+        body.world1-skin { overflow: auto; }
+        body.world1-skin .container {
+          width: min(100vw - 12px, 1600px);
+          min-height: auto;
+          margin: 6px auto;
+        }
+        body.world1-skin .gameLayout {
+          grid-template-columns: 1fr;
+        }
+        body.world1-skin #blocklyDiv {
+          height: 420px !important;
+        }
+      }
       @media (max-width: 860px) {
-        .stage-world-hero { grid-template-columns: 1fr; }
-        .stage-world-hero-boss { justify-content:flex-start; }
         .boss-arena { min-height: 320px; }
         .boss-portrait-wrap img { max-height: 240px; }
         .boss-action-buttons,
@@ -702,32 +752,17 @@ window.GamePage = (()=>{
     ensureStyles();
     document.body.classList.add("world1-skin");
     applyMainContrast();
-    const titleEl = document.getElementById("title");
     const subtitleEl = document.getElementById("subtitle");
-    if (!titleEl || !subtitleEl) return;
-
-    let heroCard = document.getElementById("stageWorldHero");
-    if (!heroCard) {
-      heroCard = document.createElement("section");
-      heroCard.id = "stageWorldHero";
-      heroCard.className = "stage-world-hero";
-      subtitleEl.insertAdjacentElement("afterend", heroCard);
-    }
+    const badgeEl = document.getElementById("sessionBadge");
+    if (badgeEl) badgeEl.style.display = 'none';
+    if (!subtitleEl) return;
 
     let copyCard = document.getElementById("stageCopyCard");
     if (!copyCard) {
       copyCard = document.createElement("section");
       copyCard.id = "stageCopyCard";
       copyCard.className = "stage-copy-card";
-      heroCard.insertAdjacentElement("afterend", copyCard);
-    }
-
-    let rewardCard = document.getElementById("stageRewardCard");
-    if (!rewardCard) {
-      rewardCard = document.createElement("section");
-      rewardCard.id = "stageRewardCard";
-      rewardCard.className = "stage-reward-card";
-      copyCard.insertAdjacentElement("afterend", rewardCard);
+      subtitleEl.insertAdjacentElement("afterend", copyCard);
     }
   }
 
@@ -737,8 +772,8 @@ window.GamePage = (()=>{
       bossEl = document.createElement("section");
       bossEl.id = "bossStage";
       bossEl.className = "boss-stage";
-      const rewardCard = document.getElementById("stageRewardCard");
-      if (rewardCard) rewardCard.insertAdjacentElement("afterend", bossEl);
+      const anchor = document.getElementById("stageCopyCard") || document.getElementById("stageRewardCard");
+      if (anchor) anchor.insertAdjacentElement("afterend", bossEl);
     }
     return bossEl;
   }
@@ -766,49 +801,14 @@ window.GamePage = (()=>{
   function fillInfoPanels(){
     ensureInfoPanels();
     const copy = getLevelCopy(world.worldId, level.levelId);
-    const heroCard = document.getElementById("stageWorldHero");
     const copyCard = document.getElementById("stageCopyCard");
-    const rewardCard = document.getElementById("stageRewardCard");
-
-    if (heroCard) {
-      heroCard.innerHTML = `
-        <div>
-          <h3>${UI.world1.introTitle}</h3>
-          <p>${UI.world1.introBody}</p>
-          <p><b>${UI.world1.bossHint}</b></p>
-        </div>
-        <div class="stage-world-hero-boss">
-          <img src="${ASSETS.boss}" alt="${UI.world1.bossTitle}">
-        </div>
-      `;
-    }
 
     if (copyCard) {
       copyCard.innerHTML = `
         <h3>${copy.title}</h3>
         <p>${copy.intro}</p>
         <p class="stage-copy-hint">${copy.hint}</p>
-        <div class="stage-current-reward">
-          <img src="${copy.rewardImg}" alt="${copy.reward}">
-          <div>
-            <b>${isBossLevel() ? '本關目標' : '本關可獲得卡牌'}：${copy.reward}</b><br>
-            ${copy.rewardDesc}
-          </div>
-        </div>
-      `;
-    }
-    if (rewardCard) {
-      rewardCard.innerHTML = `
-        <h3>${UI.world1.cardsTitle}</h3><p style="margin-top:0;color:#294d31;font-weight:700;">1-1 補血小藥水｜1-2 小刀攻擊｜1-3 木盾防禦｜1-4 冰凍藤蔓</p>
-        <p>${UI.world1.cardsRule}</p>
-        <div class="stage-reward-list">${worldCardsHtml()}</div>
-        <div class="boss-preview">
-          <img src="${ASSETS.boss}" alt="${UI.world1.bossTitle}">
-          <div>
-            <b>${UI.world1.bossTitle}</b><br>
-            ${UI.world1.bossBody}
-          </div>
-        </div>
+        <div class="stage-stars-reward">⭐ 三星成績通關可獲得神秘道具：<b>${copy.reward}</b></div>
       `;
     }
   }
@@ -1413,8 +1413,8 @@ window.GamePage = (()=>{
     level = pack.lv;
     const copy = getLevelCopy(world.worldId, level.levelId);
 
-    document.getElementById("title").textContent = `${UI.world1.introTitle}｜${copy.title}`;
-    document.getElementById("subtitle").textContent = isBossLevel() ? `卡牌回合戰（擊敗森林狼王）` : `目標步數：${level.targetSteps}（走到出口 🚪）`;
+    document.getElementById("title").textContent = `${copy.title}`;
+    document.getElementById("subtitle").textContent = isBossLevel() ? `卡牌回合戰（擊敗森林狼王）` : `目標步數：${level.targetSteps}｜三星可獲得：${copy.reward}`;
 
     fillInfoPanels();
 
@@ -1579,12 +1579,12 @@ window.GamePage = (()=>{
         StorageAPI.updateLeaderboard(session, levelKey(), record);
         const copy = getLevelCopy(world.worldId, level.levelId);
 
-        const isFinalTrialOfWorld1 = world.worldId === "world1" && level.levelId === "level4";
+        const isFinalTrialOfWorld1 = normalizeWorldId(world.worldId) === "W1" && normalizeLevelId(level.levelId) === "L5";
 
         showResult(buildResultCard(
           "good",
           "通關成功！",
-          `${copy.success}<br>${isFinalTrialOfWorld1 ? '你已完成第一世界所有試煉，準備挑戰森林狼王！' : `獲得卡牌：<b>${copy.reward}</b>`}`,
+          `${copy.success}<br>${isFinalTrialOfWorld1 ? '你已完成第一世界所有關卡！請回首頁從第五關後方的 Boss 按鈕再次挑戰森林狼王。' : `獲得三星神秘道具：<b>${copy.reward}</b>`}`,
           `<div class="result-stats">
             <span class="result-badge">分數：${score}</span>
             <span class="result-badge">星等：★${stars}</span>
@@ -1594,20 +1594,13 @@ window.GamePage = (()=>{
           </div>
           <div class="stage-current-reward" style="margin-top:12px;">
             <img src="${copy.rewardImg}" alt="${copy.reward}">
-            <div><b>${isFinalTrialOfWorld1 ? '最終卡牌解鎖' : '新卡牌解鎖'}：${copy.reward}</b><br>${copy.rewardDesc}</div>
+            <div><b>${isFinalTrialOfWorld1 ? 'Boss 挑戰資格已開啟' : '三星神秘道具'}：${copy.reward}</b><br>${copy.rewardDesc}</div>
           </div>
+          ${isFinalTrialOfWorld1 ? `<div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap;"><button type="button" onclick="location.href='index.html'" style="border:none;border-radius:14px;padding:10px 16px;font-weight:900;background:linear-gradient(180deg,#6dc87b,#4aae5d);color:#fff;cursor:pointer;">回首頁挑戰 Boss</button></div>` : ''}
           <div style="margin-top:8px;">${improved ? "🎉 這是你的最佳紀錄，已存檔！" : "已完成本關，紀錄已更新。"}</div>`
         ));
 
-        if (isFinalTrialOfWorld1) {
-          toast('最後試煉完成！即將進入 Boss 戰！');
-          setTimeout(() => {
-            location.href = `boss.html?world=${world.worldId}`;
-          }, 900);
-          return;
-        }
-
-        toast(UI.common.winToast);
+        toast(isFinalTrialOfWorld1 ? '第一世界全數完成！請回首頁挑戰 Boss。' : UI.common.winToast);
       }else if(err?.message === "aborted"){
         resetRunState();
         toast(UI.common.stopped);

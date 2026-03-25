@@ -100,6 +100,48 @@
     return false;
   }
 
+
+  function normalizeWorldId(worldId){
+    const raw = String(worldId || '').trim();
+    if(!raw) return '';
+    const m = raw.match(/^world\s*(\d+)$/i);
+    if(m) return `W${m[1]}`;
+    return raw.toUpperCase();
+  }
+
+  function normalizeLevelId(levelId){
+    const raw = String(levelId || '').trim();
+    if(!raw) return '';
+    if(/^boss$/i.test(raw)) return 'boss';
+    const m = raw.match(/^level\s*(\d+)$/i);
+    if(m) return `L${m[1]}`;
+    return raw.toUpperCase();
+  }
+
+  function hasPassedLevel(progress, userId, worldId, levelId){
+    const best = progress[userId]?.best || {};
+    const keys = Object.keys(best);
+    return keys.some(key => {
+      const [w, l] = String(key).split('-');
+      return normalizeWorldId(w) === normalizeWorldId(worldId) && normalizeLevelId(l) === normalizeLevelId(levelId);
+    });
+  }
+
+  function getBestRecord(progress, userId, worldId, levelId){
+    const best = progress[userId]?.best || {};
+    const keys = Object.keys(best);
+    const foundKey = keys.find(key => {
+      const [w, l] = String(key).split('-');
+      return normalizeWorldId(w) === normalizeWorldId(worldId) && normalizeLevelId(l) === normalizeLevelId(levelId);
+    });
+    return foundKey ? best[foundKey] : null;
+  }
+
+  function world1BossUnlocked(progress, userId){
+    if(!userId) return false;
+    return ['L1','L2','L3','L4','L5'].every(levelId => hasPassedLevel(progress, userId, 'W1', levelId));
+  }
+
   function renderWorlds(){
     const s = StorageAPI.getSession();
     const isTeacher = (s?.role === "teacher");
@@ -136,12 +178,12 @@ world.levels.forEach((lv, idx)=>{
   const levelKey = `${world.worldId}-${lv.levelId}`;
 
   // ✅ 取得本關最佳紀錄（有就代表通關過）
-  const best = userId ? progress[userId]?.best?.[levelKey] : null;
+  const best = userId ? getBestRecord(progress, userId, world.worldId, lv.levelId) : null;
 
   // ✅ 關卡解鎖規則：同世界「第 1 關永遠解鎖」，其餘要前一關通關才解鎖
   const prevLv = world.levels[idx - 1];
   const prevKey = prevLv ? `${world.worldId}-${prevLv.levelId}` : null;
-  const prevBest = (userId && prevKey) ? progress[userId]?.best?.[prevKey] : null;
+  const prevBest = (userId && prevKey) ? getBestRecord(progress, userId, world.worldId, prevLv.levelId) : null;
   const levelUnlocked = isTeacher ? true : ((idx === 0) ? true : !!prevBest);
 
   const btn = document.createElement("button");
@@ -174,6 +216,19 @@ world.levels.forEach((lv, idx)=>{
   list.appendChild(btn);
 });
 
+      const isWorld1 = normalizeWorldId(world.worldId) === 'W1';
+      const canShowBossBtn = isTeacher || (userId && world1BossUnlocked(progress, userId));
+      if (isWorld1 && canShowBossBtn) {
+        const bossBtn = document.createElement('button');
+        bossBtn.classList.add('level-btn');
+        bossBtn.style.gridColumn = '1 / -1';
+        bossBtn.classList.add('gold');
+        bossBtn.textContent = '🐺 Boss 戰：森林狼王';
+        bossBtn.onclick = () => {
+          location.href = `boss.html?world=${encodeURIComponent(world.worldId)}`;
+        };
+        list.appendChild(bossBtn);
+      }
 
       wCard.appendChild(list);
       const hint = document.createElement("div");
@@ -181,7 +236,7 @@ world.levels.forEach((lv, idx)=>{
       hint.style.marginTop = "8px";
       hint.textContent = isTeacher
         ? "教師模式：可直接進入任一關（進關會自動載入最佳解法）。"
-        : (userId ? (unlocked ? "選一關開始寫積木程式！" : "先完成前面世界的指定關數才能解鎖。") : "請先登入才能選關。");
+        : (userId ? (unlocked ? (normalizeWorldId(world.worldId) === 'W1' && world1BossUnlocked(progress, userId) ? '第五關後方已開啟 Boss 挑戰按鈕。' : '選一關開始寫積木程式！') : '先完成前面世界的指定關數才能解鎖。') : '請先登入才能選關。');
       wCard.appendChild(hint);
 
       wrap.appendChild(wCard);

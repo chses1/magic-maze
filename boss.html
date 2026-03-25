@@ -146,13 +146,52 @@
     .footer-tip{margin-top:8px;color:#49614f;font-weight:700;line-height:1.45;font-size:clamp(12px,.82vw,13px)}
     .inline-log{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
     .boss-log-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:#edf4eb;color:#35513d;font-size:clamp(11px,.78vw,13px);font-weight:800;border:1px solid #d7e3d5}
-    .result-card{padding:14px 16px}
-    .result-card h3{margin:0 0 6px;font-size:clamp(19px,1.5vw,24px)}
-    .result-card p{margin:0;color:#38523f;line-height:1.55;font-weight:700;font-size:clamp(13px,.92vw,15px)}
-    .result-card.good{border-color:#b9d8bb;background:#f1fbf1}
-    .result-card.bad{border-color:#efc2ba;background:#fff4f1}
-    .result-badges{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
-    .result-badges span{padding:7px 11px;border-radius:999px;background:#fff;border:1px solid #d9e4d6;font-weight:900;font-size:clamp(12px,.84vw,14px)}
+    .result-card{
+      position:fixed;
+      inset:0;
+      z-index:9999;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+      background:rgba(20,35,24,.38);
+      backdrop-filter:blur(3px);
+    }
+    .result-card[hidden]{display:none !important}
+    .result-inner{
+      width:min(680px, calc(100vw - 28px));
+      border:2px solid var(--line);
+      border-radius:28px;
+      box-shadow:0 20px 50px rgba(0,0,0,.22);
+      padding:24px 22px 20px;
+      background:linear-gradient(180deg,#ffffff 0%,#f5faf3 100%);
+      text-align:center;
+    }
+    .result-card h3{margin:0 0 8px;font-size:clamp(24px,2vw,34px)}
+    .result-card p{margin:0;color:#38523f;line-height:1.7;font-weight:700;font-size:clamp(15px,1vw,18px)}
+    .result-card.good .result-inner{border-color:#b9d8bb;background:linear-gradient(180deg,#fbfffb 0%,#eef9ee 100%)}
+    .result-card.bad .result-inner{border-color:#efc2ba;background:linear-gradient(180deg,#fffdfc 0%,#fff2ef 100%)}
+    .result-badges{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:14px}
+    .result-badges span{padding:8px 12px;border-radius:999px;background:#fff;border:1px solid #d9e4d6;font-weight:900;font-size:clamp(12px,.84vw,14px)}
+    .result-actions{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+      margin-top:16px;
+    }
+    .result-actions button{
+      border:none;
+      border-radius:16px;
+      padding:13px 14px;
+      font-size:clamp(14px,.95vw,16px);
+      font-weight:900;
+      cursor:pointer;
+      box-shadow:0 8px 18px rgba(57,100,70,.12);
+    }
+    .result-actions .next{background:linear-gradient(180deg,var(--green1),var(--green2));color:#fff}
+    .result-actions .retry{background:linear-gradient(180deg,var(--blue1),var(--blue2));color:#fff}
+    .result-actions .back{background:#fff;color:#36533f;border:1px solid var(--line)}
+    .result-actions.single{grid-template-columns:1fr}
     @media (max-width: 1100px){
       body{padding:8px}
       .page{width:min(100vw - 16px, 1500px);aspect-ratio:auto;min-height:calc(100vh - 16px)}
@@ -167,8 +206,9 @@
       .top-actions{flex-wrap:wrap}
       .toolbar{width:100%;flex-wrap:wrap}
       .toolbar button{flex:1}
-      .cards,.action-buttons{grid-template-columns:1fr}
-      .panel,.intent-box,.card-box,.action-box,.result-card{border-radius:20px}
+      .cards,.action-buttons,.result-actions{grid-template-columns:1fr}
+      .panel,.intent-box,.card-box,.action-box{border-radius:20px}
+      .result-inner{border-radius:22px;padding:20px 16px 16px}
     }
   </style>
 </head>
@@ -177,10 +217,10 @@
     <div class="top-actions">
       <div class="title-wrap">
         <h1>Boss 戰：森林狼王</h1>
-        <p>完全獨立頁模式。這頁不載入迷宮、積木區、教師浮動工具。</p>
+        <p>完全獨立頁模式。若挑戰失敗會回到首頁，請先補齊未達三星關卡的神秘道具再回來挑戰。</p>
       </div>
       <div class="toolbar">
-        <button class="ghost" id="btnBackGame">回上一關</button>
+        <button class="ghost" id="btnBackGame">回首頁</button>
         <button class="ghost" id="btnRetry">重新挑戰</button>
         <button class="warn" id="btnExit">離開關卡</button>
       </div>
@@ -236,7 +276,7 @@
       </div>
     </section>
 
-    <section class="result-card" id="resultCard" hidden></section>
+    <section class="result-card" id="resultCard" hidden aria-live="polite"></section>
   </div>
 
   <script src="storage.js"></script>

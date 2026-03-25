@@ -162,6 +162,29 @@
     }
   }
 
+  function getNextWorldId(currentWorldId){
+    const raw = String(currentWorldId || '').trim();
+    const match = raw.match(/(\d+)/);
+    if (!match) return 'world2';
+    return `world${Number(match[1]) + 1}`;
+  }
+
+  function goHome(){
+    location.href = 'index.html';
+  }
+
+  function goToNextWorldFirstLevel(){
+    const nextWorld = getNextWorldId(worldId);
+    location.href = `game.html?world=${encodeURIComponent(nextWorld)}&level=level1`;
+  }
+
+  function goToRetryBoss(){
+    bossState = createBossState();
+    const resultEl = document.getElementById('resultCard');
+    resultEl.hidden = true;
+    render();
+  }
+
   function finishBossBattle(win){
     bossState.finished = true;
     saveBossResult(win);
@@ -170,25 +193,52 @@
     const resultEl = document.getElementById('resultCard');
     const turnsUsed = bossState.turn;
     const score = Math.max(100, 1500 - (turnsUsed - 1) * 70 - Math.max(0, bossState.playerMaxHp - bossState.playerHp) * 5);
+
     if (win) {
       resultEl.className = 'result-card good';
       resultEl.innerHTML = `
-        <h3>Boss 戰勝利！</h3>
-        <p>你擊敗了森林狼王！這版重新調整後，必須搭配卡牌與判斷時機，不能只靠普通攻擊硬打。</p>
-        <div class="result-badges">
-          <span>回合數：${turnsUsed}</span>
-          <span>剩餘生命：${bossState.playerHp}</span>
-          <span>Boss 分數：${score}</span>
+        <div class="result-inner">
+          <h3>Boss 戰勝利！</h3>
+          <p>你成功擊敗森林狼王，第一世界正式通關！<br>現在可以前往下一個世界的第一關，或留在這裡重新挑戰一次。</p>
+          <div class="result-badges">
+            <span>回合數：${turnsUsed}</span>
+            <span>剩餘生命：${bossState.playerHp}</span>
+            <span>Boss 分數：${score}</span>
+          </div>
+          <div class="result-actions">
+            <button type="button" class="next" id="resultNextWorld">進入下一世界第 1 關</button>
+            <button type="button" class="retry" id="resultRetryWin">重新挑戰</button>
+          </div>
         </div>
       `;
     } else {
       resultEl.className = 'result-card bad';
       resultEl.innerHTML = `
-        <h3>挑戰失敗</h3>
-        <p>你被森林狼王擊退了。先看上方下一招預告，再決定這回合要攻擊、防禦或用卡牌。</p>
+        <div class="result-inner">
+          <h3>挑戰失敗</h3>
+          <p>這次被森林狼王擊退了。<br>系統將返回首頁，請先挑戰未達三星的關卡取得神秘道具，再回來挑戰。</p>
+          <div class="result-actions single">
+            <button type="button" class="back" id="resultBackHome">回首頁</button>
+          </div>
+        </div>
       `;
     }
+
     resultEl.hidden = false;
+
+    const nextBtn = document.getElementById('resultNextWorld');
+    const retryWinBtn = document.getElementById('resultRetryWin');
+    const backHomeBtn = document.getElementById('resultBackHome');
+
+    if (nextBtn) nextBtn.onclick = goToNextWorldFirstLevel;
+    if (retryWinBtn) retryWinBtn.onclick = goToRetryBoss;
+    if (backHomeBtn) backHomeBtn.onclick = goHome;
+
+    if (!win) {
+      setTimeout(() => {
+        if (bossState && bossState.finished) goHome();
+      }, 1200);
+    }
   }
 
   function playerBossAction(actionKey){
@@ -279,16 +329,10 @@
     document.getElementById('bossFocus').onclick = () => playerBossAction('focus');
     document.getElementById('bossEndTurn').onclick = () => playerBossAction('skip');
     document.getElementById('btnRetry').onclick = () => {
-      bossState = createBossState();
-      document.getElementById('resultCard').hidden = true;
-      render();
+      goToRetryBoss();
     };
-    document.getElementById('btnExit').onclick = () => {
-      location.href = 'index.html';
-    };
-    document.getElementById('btnBackGame').onclick = () => {
-      location.href = `game.html?world=${encodeURIComponent(worldId)}&level=level4`;
-    };
+    document.getElementById('btnExit').onclick = goHome;
+    document.getElementById('btnBackGame').onclick = goHome;
     document.querySelectorAll('#bossCards [data-card]').forEach(btn => {
       btn.onclick = () => playerBossAction(btn.dataset.card);
     });
