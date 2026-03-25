@@ -4,6 +4,30 @@ window.TeacherPage = (()=>{
 
   const STORAGE_PREFIX = 'maze_best_solution::';
 
+  const WORLD_NAME_MAP = {
+    W1: '世界1｜魔法學院（序列）',
+    W2: '世界2｜符文森林（迴圈）',
+    W3: '世界3｜敬請期待',
+    W4: '世界4｜敬請期待'
+  };
+
+  const LEVEL_NAME_MAP = {
+    W1: {
+      L1: '第1關：學院大門',
+      L2: '第2關：分岔路口',
+      L3: '第3關：岔路不通',
+      L4: '第4關：小心陷阱',
+      boss: '第5關：Boss 戰'
+    },
+    W2: {
+      L1: '第1關：森林入口',
+      L2: '第2關：符文小徑',
+      L3: '第3關：古樹廣場',
+      L4: '第4關：藤蔓祭壇',
+      boss: '第5關：Boss 戰'
+    }
+  };
+
   const toast = (msg)=> {
     const el = document.getElementById('toast');
     if(el) el.textContent = msg;
@@ -274,6 +298,17 @@ window.TeacherPage = (()=>{
     });
   }
 
+  function getDisplayWorldName(world){
+    const worldId = String(world?.id || world?.worldId || '');
+    return WORLD_NAME_MAP[worldId] || String(world?.name || world?.worldName || worldId);
+  }
+
+  function getDisplayLevelName(worldId, level){
+    const levelId = String(level?.id || level?.levelId || '');
+    const mapped = LEVEL_NAME_MAP[String(worldId)]?.[levelId];
+    return mapped || String(level?.name || level?.levelName || levelId);
+  }
+
   function getWorldList(){
     return getLevelsData().map(world => ({
       id: String(world.worldId),
@@ -294,7 +329,7 @@ window.TeacherPage = (()=>{
 
     const current = normalizeWorldId(worldSelect.value) || worlds[0].id;
     worldSelect.innerHTML = worlds.map(world => (
-      `<option value="${world.id}">${world.id}｜${world.name}</option>`
+      `<option value="${world.id}">${world.id}｜${getDisplayWorldName(world)}</option>`
     )).join('');
 
     worldSelect.value = worlds.some(w => w.id === current) ? current : worlds[0].id;
@@ -313,12 +348,15 @@ window.TeacherPage = (()=>{
       return;
     }
 
-    const levelOptions = world.levels.map(level => ({
-      id: String(level.levelId),
-      name: String(level.name || level.levelId)
-    }));
+    const levelOptions = world.levels
+      .filter(level => !/boss/i.test(String(level.levelId || level.id || '')))
+      .slice(0, 4)
+      .map(level => ({
+        id: String(level.levelId || level.id),
+        name: getDisplayLevelName(worldId, level)
+      }));
 
-    const bossOption = { id: 'boss', name: 'Boss 戰' };
+    const bossOption = { id: 'boss', name: getDisplayLevelName(worldId, { id: 'boss', name: '第5關：Boss 戰' }) };
     const allOptions = [...levelOptions, bossOption];
 
     levelSelect.innerHTML = allOptions.map(level => (
@@ -351,9 +389,15 @@ window.TeacherPage = (()=>{
   }
 
   async function openBoss(){
-    const picked = validateToolSelection('查看 Boss 戰', true);
+    const picked = validateToolSelection('前往關卡', true);
     if(!picked) return;
-    await goToAppPage('boss.html', `world=${encodeURIComponent(picked.world)}&level=boss`);
+
+    if(isBossLevel(picked.level)){
+      await goToAppPage('boss.html', `world=${encodeURIComponent(picked.world)}&level=boss`);
+      return;
+    }
+
+    await goToAppPage('game.html', `world=${encodeURIComponent(picked.world)}&level=${encodeURIComponent(picked.level)}`);
   }
 
   function saveBestPlaceholder(){

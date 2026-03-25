@@ -68,44 +68,44 @@ window.GamePage = (()=>{
 
   const LEVEL_COPY = {
     "world1-level1": {
-      title: "1-1 初入森林",
-      intro: "這是你的第一場試煉。試著使用前進、左轉、右轉積木，幫助角色順利找到出口吧！",
-      hint: "提示：先觀察路線，再排列積木，成功率會更高喔！",
+      title: "第1關：學院大門",
+      intro: "請用程式積木控制角色穿越迷宮，順利抵達出口。",
+      hint: "請先觀察路線，再用積木排出正確順序。",
       reward: CARD_DATA.potion.title,
       rewardDesc: CARD_DATA.potion.desc,
       rewardImg: CARD_DATA.potion.img,
-      success: "你成功走出森林小路了！",
-      fail: "這次沒有成功走到出口，再試一次吧！"
+      success: "你成功走出迷宮了！",
+      fail: "這次還沒成功，再試一次吧！"
     },
     "world1-level2": {
-      title: "1-2 鑰匙小徑",
-      intro: "前方有一扇上鎖的門。想要通過，必須先拿到鑰匙！試著安排正確順序，找到出口吧！",
-      hint: "提示：有些目標不能直接前進，先完成條件再行動！",
+      title: "第2關：分岔路口",
+      intro: "請用程式積木控制角色穿越迷宮，順利抵達出口。",
+      hint: "請先觀察路線，再用積木排出正確順序。",
       reward: CARD_DATA.dagger.title,
       rewardDesc: CARD_DATA.dagger.desc,
       rewardImg: CARD_DATA.dagger.img,
-      success: "你學會先拿鑰匙再開門了！",
-      fail: "門還沒打開，想想看是不是漏掉鑰匙了？"
+      success: "你成功走出迷宮了！",
+      fail: "這次還沒成功，再試一次吧！"
     },
     "world1-level3": {
-      title: "1-3 陷阱草原",
-      intro: "草原上藏著危險陷阱！除了找到出口，你還要盡量避開危險路線，才能獲得更高評價！",
-      hint: "提示：不只是走得到，走得安全、走得漂亮也很重要！",
+      title: "第3關：岔路不通",
+      intro: "請用程式積木控制角色穿越迷宮，順利抵達出口。",
+      hint: "請先觀察路線，再用積木排出正確順序。",
       reward: CARD_DATA.shield.title,
       rewardDesc: CARD_DATA.shield.desc,
       rewardImg: CARD_DATA.shield.img,
-      success: "你成功避開森林陷阱！",
-      fail: "這次的路線不太理想，重新規劃看看吧！"
+      success: "你成功走出迷宮了！",
+      fail: "這次還沒成功，再試一次吧！"
     },
     "world1-level4": {
-      title: "1-4 守衛遺跡",
-      intro: "最後的迷宮試煉開始了！這一關結合了轉向、鑰匙、門與陷阱，請運用你學會的技巧，找出最好的路線吧！",
-      hint: "提示：這是進入 Boss 戰前的最後準備，盡力拿高星吧！",
+      title: "第4關：小心陷阱",
+      intro: "請用程式積木控制角色穿越迷宮，順利抵達出口。",
+      hint: "請先觀察路線，再用積木排出正確順序。",
       reward: CARD_DATA.freeze.title,
       rewardDesc: CARD_DATA.freeze.desc,
       rewardImg: CARD_DATA.freeze.img,
-      success: "你通過森林遺跡的最後試煉！森林深處傳來低沉的吼聲……",
-      fail: "離成功只差一點點，再試一次，你一定可以！"
+      success: "你成功走出迷宮了！",
+      fail: "這次還沒成功，再試一次吧！"
     },
     "world1-boss": {
       title: "1-BOSS 森林狼王",
@@ -184,6 +184,13 @@ window.GamePage = (()=>{
   function getLevelCopy(worldId, levelId){
     return LEVEL_COPY[levelKeyRaw(worldId, levelId)] || DEFAULT_COPY;
   }
+  
+  function getWorldDisplayName(worldId){
+    const key = normalizeWorldId(worldId);
+    if (key === "W1") return "魔法學院";
+    if (key === "W2") return "符文森林";
+    return String(world?.worldName || worldId || "世界");
+  }
 
   function createFallbackBossLevel(worldId){
     const normalizedWorldId = normalizeWorldId(worldId);
@@ -259,14 +266,20 @@ window.GamePage = (()=>{
       }
       body.world1-skin .header {
         flex: 0 0 auto;
-        padding-bottom: 8px;
+        padding-bottom: 6px;
+      }
+      body.world1-skin .brand .logo {
+        display: none !important;
+      }
+      body.world1-skin .brand {
+        align-items: flex-start;
       }
       body.world1-skin .gameLayout {
         flex: 1 1 auto;
         min-height: 0;
         display: grid;
-        grid-template-columns: minmax(520px, 1.02fr) minmax(380px, .98fr);
-        gap: 14px;
+        grid-template-columns: minmax(520px, 1.06fr) minmax(420px, .94fr);
+        gap: 12px;
         align-items: stretch;
       }
       body.world1-skin .gameLayout > .card {
@@ -275,7 +288,7 @@ window.GamePage = (()=>{
       }
       body.world1-skin .stage {
         display: grid;
-        grid-template-rows: auto minmax(0, 1fr) auto auto;
+        grid-template-rows: auto minmax(0, 1fr) auto;
         gap: 10px;
       }
       body.world1-skin .stageTop {
@@ -629,6 +642,21 @@ window.GamePage = (()=>{
         }
         body.world1-skin #blocklyDiv {
           height: 420px !important;
+        }
+      }
+              @media (min-width: 981px) {
+        body.world1-skin .container {
+          aspect-ratio: 16 / 9;
+        }
+        body.world1-skin #blocklyDiv {
+          height: min(52vh, 520px) !important;
+        }
+        body.world1-skin .gridWrap {
+          min-height: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          overflow: hidden;
         }
       }
       @media (max-width: 860px) {
@@ -1413,7 +1441,7 @@ window.GamePage = (()=>{
     level = pack.lv;
     const copy = getLevelCopy(world.worldId, level.levelId);
 
-    document.getElementById("title").textContent = `${copy.title}`;
+    document.getElementById("title").textContent = `${getWorldDisplayName(world.worldId)} ➜ ${copy.title}`;
     document.getElementById("subtitle").textContent = isBossLevel() ? `卡牌回合戰（擊敗森林狼王）` : `目標步數：${level.targetSteps}｜三星可獲得：${copy.reward}`;
 
     fillInfoPanels();

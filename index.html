@@ -8,6 +8,26 @@
   <script src="levels.js"></script>
   <script src="storage.js"></script>
   <script src="auth.js"></script>
+  <style>
+    #worldList .level-grid{
+      margin-top:10px;
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:8px;
+    }
+    #worldList .boss-btn{
+      grid-column:1 / -1;
+      background:linear-gradient(180deg,#ffd34d 0%,#f0b90b 100%);
+      color:#3f2c00;
+      border:1px solid rgba(167,122,0,.28);
+      box-shadow:0 8px 18px rgba(240,185,11,.22);
+      font-weight:900;
+    }
+    #worldList .boss-btn.locked{
+      opacity:.7;
+      filter:grayscale(.08);
+    }
+  </style>
 </head>
 <body>
   <div class="container">
@@ -22,84 +42,91 @@
       <div class="badge" id="sessionBadge">尚未登入</div>
     </div>
 
-<div class="row">
-  <!-- LEFT: Login + Class Rank (stacked) -->
-  <div class="stack">
-    <!-- 學生登入 -->
-    <div class="card">
-      <h2 style="margin:0 0 10px 0;">學生登入</h2>
-      <label>五碼學號（前三碼班級＋後兩碼座號，例如 30105）</label>
-      <input id="studentId" placeholder="30105" inputmode="numeric" maxlength="5" />
+    <div class="row">
+      <div class="stack">
+        <div class="card">
+          <h2 style="margin:0 0 10px 0;">學生登入</h2>
+          <label>五碼學號（前三碼班級＋後兩碼座號，例如 30105）</label>
+          <input id="studentId" placeholder="30105" inputmode="numeric" maxlength="5" />
 
-      <div class="btnbar">
-        <button class="primary" id="btnStudentLogin">登入並選關</button>
-        <button id="btnLogout">登出</button>
+          <div class="btnbar">
+            <button class="primary" id="btnStudentLogin">登入並選關</button>
+            <button id="btnLogout">登出</button>
+          </div>
+
+          <div class="small" style="margin-top:8px;">
+            教師測試帳號：teacher.html（教師碼：<b>teacher123</b>）
+          </div>
+
+          <div class="hr"></div>
+
+          <div class="btnbar">
+            <button id="btnTeacher">進入教師後台</button>
+            <button id="btnClassRank">更新本班總分排行榜</button>
+          </div>
+
+          <div class="toast" id="toast"></div>
+        </div>
+
+        <div class="card">
+          <h2 style="margin:0 0 10px 0;">本班排行榜（總分：所有已通關關卡的最佳分數加總）</h2>
+          <div id="rankArea" class="small">請先以學生登入後再查看。</div>
+        </div>
       </div>
 
-      <div class="small" style="margin-top:8px;">
-        教師測試帳號：teacher.html（教師碼：<b>teacher123</b>）
+      <div class="card">
+        <h2 style="margin:0 0 10px 0;">世界與關卡</h2>
+        <div id="worldList"></div>
+        <div class="small" style="margin-top:10px;">
+          小提醒：先用「向前走」與「左/右轉」，進階再用「重複」減少積木數量。
+        </div>
       </div>
-
-      <div class="hr"></div>
-
-      <div class="btnbar">
-        <button id="btnTeacher">進入教師後台</button>
-        <button id="btnClassRank">更新本班總分排行榜</button>
-      </div>
-
-      <div class="toast" id="toast"></div>
-    </div>
-
-    <!-- ✅ 本班排行榜（移到左側登入下方） -->
-    <div class="card">
-      <h2 style="margin:0 0 10px 0;">本班排行榜（總分：所有已通關關卡的最佳分數加總）</h2>
-      <div id="rankArea" class="small">請先以學生登入後再查看。</div>
-    </div>
-  </div>
-
-  <!-- RIGHT: Levels -->
-  <div class="card">
-    <h2 style="margin:0 0 10px 0;">世界與關卡</h2>
-    <div id="worldList"></div>
-    <div class="small" style="margin-top:10px;">
-      小提醒：先用「向前走」與「左/右轉」，進階再用「重複」減少積木數量。
     </div>
   </div>
-</div>
-
 
 <script>
-  const toast = (msg)=> document.getElementById("toast").textContent = msg;
+  const HOME_WORLD_NAME = {
+    W1: '世界1｜魔法學院（序列）',
+    W2: '世界2｜符文森林（迴圈）'
+  };
+
+  const HOME_BOSS_LABEL = {
+    W1: '🐺 第5關：Boss 戰',
+    W2: '🌲 第5關：Boss 戰',
+    W3: '📚 第5關：Boss 戰',
+    W4: '⚙️ 第5關：Boss 戰'
+  };
+
+  const toast = (msg)=> document.getElementById('toast').textContent = msg;
 
   function renderSession(){
     const s = StorageAPI.getSession();
-    const el = document.getElementById("sessionBadge");
+    const el = document.getElementById('sessionBadge');
     if(!s){
-      el.textContent = "尚未登入";
+      el.textContent = '尚未登入';
       return null;
     }
-    if(s.role === "student"){
-      // ✅ 顯示五碼學號（例如 30101）
+    if(s.role === 'student'){
       el.textContent = `學生：${s.userId}`;
     }else{
-      el.textContent = `教師模式`;
+      el.textContent = '教師模式';
     }
     return s;
   }
 
   function getWorldUnlocked(world, progress, userId){
     const rule = world.unlockRule;
-    if(rule.type === "always") return true;
-    if(rule.type === "passCountInWorld"){
-      const need = rule.need;
+    if(!rule) return true;
+    if(rule.type === 'always') return true;
+    if(rule.type === 'passCountInWorld'){
+      const need = Number(rule.need || 0);
       const w = rule.worldId;
       const best = progress[userId]?.best || {};
-      const passed = Object.keys(best).filter(k => k.startsWith(w + "-")).length;
+      const passed = Object.keys(best).filter(k => k.startsWith(w + '-')).length;
       return passed >= need;
     }
     return false;
   }
-
 
   function normalizeWorldId(worldId){
     const raw = String(worldId || '').trim();
@@ -112,131 +139,138 @@
   function normalizeLevelId(levelId){
     const raw = String(levelId || '').trim();
     if(!raw) return '';
-    if(/^boss$/i.test(raw)) return 'boss';
+    if(/^boss$/i.test(raw)) return 'BOSS';
     const m = raw.match(/^level\s*(\d+)$/i);
     if(m) return `L${m[1]}`;
     return raw.toUpperCase();
   }
 
-  function hasPassedLevel(progress, userId, worldId, levelId){
-    const best = progress[userId]?.best || {};
-    const keys = Object.keys(best);
-    return keys.some(key => {
-      const [w, l] = String(key).split('-');
-      return normalizeWorldId(w) === normalizeWorldId(worldId) && normalizeLevelId(l) === normalizeLevelId(levelId);
-    });
-  }
-
   function getBestRecord(progress, userId, worldId, levelId){
     const best = progress[userId]?.best || {};
-    const keys = Object.keys(best);
-    const foundKey = keys.find(key => {
+    const targetWorld = normalizeWorldId(worldId);
+    const targetLevel = normalizeLevelId(levelId);
+    const foundKey = Object.keys(best).find(key => {
       const [w, l] = String(key).split('-');
-      return normalizeWorldId(w) === normalizeWorldId(worldId) && normalizeLevelId(l) === normalizeLevelId(levelId);
+      return normalizeWorldId(w) === targetWorld && normalizeLevelId(l) === targetLevel;
     });
     return foundKey ? best[foundKey] : null;
   }
 
-  function world1BossUnlocked(progress, userId){
+  function getDisplayWorldName(world){
+    const worldId = normalizeWorldId(world.worldId);
+    return HOME_WORLD_NAME[worldId] || world.worldName || world.worldId;
+  }
+
+  function getHomeNormalLevels(world){
+    const levels = Array.isArray(world.levels) ? world.levels.slice(0, 4) : [];
+    while(levels.length < 4){
+      const n = levels.length + 1;
+      levels.push({
+        levelId: `L${n}`,
+        name: `第${n}關：敬請期待`,
+        placeholder: true
+      });
+    }
+    return levels;
+  }
+
+  function isBossUnlocked(progress, userId, world){
     if(!userId) return false;
-    return ['L1','L2','L3','L4','L5'].every(levelId => hasPassedLevel(progress, userId, 'W1', levelId));
+    const normalLevels = getHomeNormalLevels(world);
+    return normalLevels.every(lv => !!getBestRecord(progress, userId, world.worldId, lv.levelId));
+  }
+
+  function buildBossButtonLabel(world){
+    const worldId = normalizeWorldId(world.worldId);
+    return HOME_BOSS_LABEL[worldId] || '👑 第5關：Boss 戰';
   }
 
   function renderWorlds(){
     const s = StorageAPI.getSession();
-    const isTeacher = (s?.role === "teacher");
+    const isTeacher = (s?.role === 'teacher');
     const progress = StorageAPI.getProgress();
-    const userId = s?.role==="student" ? s.userId : null;
+    const userId = s?.role === 'student' ? s.userId : null;
 
-    const wrap = document.getElementById("worldList");
-    wrap.innerHTML = "";
+    const wrap = document.getElementById('worldList');
+    wrap.innerHTML = '';
 
-    LEVELS.forEach(world=>{
-      // 👩‍🏫 教師模式：所有世界一律視為已解鎖
-      const unlocked = isTeacher ? true : (userId ? getWorldUnlocked(world, progress, userId) : false);
+    LEVELS.forEach(world => {
+      const worldUnlocked = isTeacher ? true : (userId ? getWorldUnlocked(world, progress, userId) : false);
+      const normalLevels = getHomeNormalLevels(world);
+      const bossUnlocked = isTeacher ? true : (worldUnlocked && userId && isBossUnlocked(progress, userId, world));
 
-      const wCard = document.createElement("div");
-      wCard.className = "card";
-      wCard.style.marginBottom = "10px";
-      wCard.style.padding = "12px";
+      const wCard = document.createElement('div');
+      wCard.className = 'card';
+      wCard.style.marginBottom = '10px';
+      wCard.style.padding = '12px';
 
-      const title = document.createElement("div");
-      title.style.display = "flex";
-      title.style.justifyContent = "space-between";
-      title.style.alignItems = "center";
-      title.innerHTML = `<div><b>${world.worldName}</b></div>
-                         <div class="badge">${isTeacher ? "教師可進入" : (unlocked ? "已解鎖" : "未解鎖")}</div>`;
+      const title = document.createElement('div');
+      title.style.display = 'flex';
+      title.style.justifyContent = 'space-between';
+      title.style.alignItems = 'center';
+      title.innerHTML = `<div><b>${getDisplayWorldName(world)}</b></div>
+                         <div class="badge">${isTeacher ? '教師可進入' : (worldUnlocked ? '已解鎖' : '未解鎖')}</div>`;
       wCard.appendChild(title);
 
-      const list = document.createElement("div");
-      list.style.marginTop = "10px";
-      list.style.display = "grid";
-      list.style.gridTemplateColumns = "1fr 1fr";
-      list.style.gap = "8px";
+      const list = document.createElement('div');
+      list.className = 'level-grid';
 
-world.levels.forEach((lv, idx)=>{
-  const levelKey = `${world.worldId}-${lv.levelId}`;
+      normalLevels.forEach((lv, idx) => {
+        const best = userId ? getBestRecord(progress, userId, world.worldId, lv.levelId) : null;
+        const prevLv = normalLevels[idx - 1];
+        const prevBest = (userId && prevLv) ? getBestRecord(progress, userId, world.worldId, prevLv.levelId) : null;
+        const levelUnlocked = isTeacher ? true : (idx === 0 ? true : !!prevBest);
+        const canPlay = isTeacher ? true : !!(worldUnlocked && userId && levelUnlocked);
 
-  // ✅ 取得本關最佳紀錄（有就代表通關過）
-  const best = userId ? getBestRecord(progress, userId, world.worldId, lv.levelId) : null;
+        const btn = document.createElement('button');
+        btn.classList.add('level-btn');
+        btn.disabled = !canPlay;
 
-  // ✅ 關卡解鎖規則：同世界「第 1 關永遠解鎖」，其餘要前一關通關才解鎖
-  const prevLv = world.levels[idx - 1];
-  const prevKey = prevLv ? `${world.worldId}-${prevLv.levelId}` : null;
-  const prevBest = (userId && prevKey) ? getBestRecord(progress, userId, world.worldId, prevLv.levelId) : null;
-  const levelUnlocked = isTeacher ? true : ((idx === 0) ? true : !!prevBest);
+        if(!canPlay){
+          btn.classList.add('locked');
+        }else if(!isTeacher && best?.stars >= 3){
+          btn.classList.add('gold');
+        }else if(!isTeacher && best){
+          btn.classList.add('completed');
+        }
 
-  const btn = document.createElement("button");
-  btn.classList.add("level-btn"); // ✅ 關鍵：套用我們的狀態樣式
+        btn.textContent = isTeacher ? `👩‍🏫 ${lv.name}` : lv.name;
+        if(!isTeacher && best){
+          btn.textContent = `${lv.name}｜★${best.stars} 分${best.score}`;
+        }
 
-  // ✅ 是否可點：教師模式可直接進入；學生需符合解鎖規則
-  const canPlay = isTeacher ? true : !!(unlocked && userId && levelUnlocked);
-  btn.disabled = !canPlay;
+        btn.onclick = ()=>{
+          if(!canPlay) return;
+          location.href = `game.html?world=${encodeURIComponent(world.worldId)}&level=${encodeURIComponent(lv.levelId)}`;
+        };
 
-  // ✅ 狀態上色
-  if(!canPlay){
-    btn.classList.add("locked");
-  }else if(!isTeacher && best?.stars >= 3){
-    btn.classList.add("gold");
-  }else if(!isTeacher && best){
-    btn.classList.add("completed");
-  }
+        list.appendChild(btn);
+      });
 
-  // ✅ 按鈕文字
-  btn.textContent = isTeacher ? `👩‍🏫 ${lv.name}` : lv.name;
-  if(!isTeacher && best){
-    btn.textContent = `${lv.name}｜★${best.stars} 分${best.score}`;
-  }
-
-  btn.onclick = ()=>{
-    if(!canPlay) return;
-    location.href = `game.html?world=${encodeURIComponent(world.worldId)}&level=${encodeURIComponent(lv.levelId)}`;
-  };
-
-  list.appendChild(btn);
-});
-
-      const isWorld1 = normalizeWorldId(world.worldId) === 'W1';
-      const canShowBossBtn = isTeacher || (userId && world1BossUnlocked(progress, userId));
-      if (isWorld1 && canShowBossBtn) {
+      if(isTeacher || bossUnlocked){
         const bossBtn = document.createElement('button');
-        bossBtn.classList.add('level-btn');
-        bossBtn.style.gridColumn = '1 / -1';
-        bossBtn.classList.add('gold');
-        bossBtn.textContent = '🐺 Boss 戰：森林狼王';
-        bossBtn.onclick = () => {
-          location.href = `boss.html?world=${encodeURIComponent(world.worldId)}`;
+        bossBtn.classList.add('level-btn', 'boss-btn');
+        bossBtn.textContent = buildBossButtonLabel(world);
+        bossBtn.onclick = ()=>{
+          toast('Boss 關按鈕版型已預留，之後再接上真正的 Boss 戰頁面。');
         };
         list.appendChild(bossBtn);
       }
 
       wCard.appendChild(list);
-      const hint = document.createElement("div");
-      hint.className = "small";
-      hint.style.marginTop = "8px";
+
+      const hint = document.createElement('div');
+      hint.className = 'small';
+      hint.style.marginTop = '8px';
       hint.textContent = isTeacher
-        ? "教師模式：可直接進入任一關（進關會自動載入最佳解法）。"
-        : (userId ? (unlocked ? (normalizeWorldId(world.worldId) === 'W1' && world1BossUnlocked(progress, userId) ? '第五關後方已開啟 Boss 挑戰按鈕。' : '選一關開始寫積木程式！') : '先完成前面世界的指定關數才能解鎖。') : '請先登入才能選關。');
+        ? '教師模式：可直接進入前四個一般關，並可看到第5關 Boss 預留按鈕。'
+        : (!userId
+            ? '請先登入才能選關。'
+            : (!worldUnlocked
+                ? '先完成前面世界的指定關數才能解鎖。'
+                : (bossUnlocked
+                    ? '已完成前四個一般關，現在已出現第5關 Boss 按鈕。'
+                    : '本世界共有 4 個一般關，全部完成後才會顯示第5關 Boss 按鈕。')));
       wCard.appendChild(hint);
 
       wrap.appendChild(wCard);
@@ -245,29 +279,27 @@ world.levels.forEach((lv, idx)=>{
 
   function renderClassRank(){
     const s = StorageAPI.getSession();
-    const area = document.getElementById("rankArea");
-    if(!s || s.role !== "student"){
-      area.textContent = "請先以學生登入後再查看。";
+    const area = document.getElementById('rankArea');
+    if(!s || s.role !== 'student'){
+      area.textContent = '請先以學生登入後再查看。';
       return;
     }
 
     const progress = StorageAPI.getProgress();
     const classId = s.classId;
-
-    // ✅ 本班學生：用 progress 裡所有 userId 前三碼相同者
     const uids = Object.keys(progress)
-      .filter(uid => uid !== "teacher")
+      .filter(uid => uid !== 'teacher')
       .filter(uid => uid.slice(0,3) === classId);
 
     if(uids.length === 0){
-      area.textContent = "目前尚無排行榜資料。";
+      area.textContent = '目前尚無排行榜資料。';
       return;
     }
 
-    const rows = uids.map(uid=>{
+    const rows = uids.map(uid => {
       const best = progress[uid]?.best || {};
       const passed = Object.keys(best).length;
-      const total = Object.keys(best).reduce((sum,k)=> sum + (Number(best[k]?.score)||0), 0);
+      const total = Object.keys(best).reduce((sum, key) => sum + (Number(best[key]?.score) || 0), 0);
       return {
         uid,
         seat: uid.slice(3,5),
@@ -276,73 +308,70 @@ world.levels.forEach((lv, idx)=>{
       };
     }).sort((a,b)=> b.total - a.total || b.passed - a.passed || a.seat.localeCompare(b.seat));
 
-    area.innerHTML = "";
+    area.innerHTML = '';
 
-    const table = document.createElement("table");
-    table.className = "table";
+    const table = document.createElement('table');
+    table.className = 'table';
     table.innerHTML = `
       <thead><tr>
         <th>名次</th><th>座號</th><th>通關數</th><th>總分</th>
       </tr></thead>
       <tbody>
-        ${rows.slice(0, 30).map((r,i)=>`
+        ${rows.slice(0, 30).map((r, i) => `
           <tr>
-            <td>${i+1}</td>
+            <td>${i + 1}</td>
             <td>${r.seat}</td>
             <td>${r.passed}</td>
             <td>${r.total}</td>
           </tr>
-        `).join("")}
+        `).join('')}
       </tbody>
     `;
     area.appendChild(table);
 
-    const small = document.createElement("div");
-    small.className = "small";
-    small.style.marginTop = "10px";
-    small.textContent = "說明：總分＝每一關「最佳分數」加總（不再做每關獨立排行榜）。";
+    const small = document.createElement('div');
+    small.className = 'small';
+    small.style.marginTop = '10px';
+    small.textContent = '說明：總分＝每一關最佳分數加總。';
     area.appendChild(small);
   }
 
-  // events
-  document.getElementById("btnStudentLogin").onclick = ()=>{
-    const studentId = document.getElementById("studentId").value.trim();
-
+  document.getElementById('btnStudentLogin').onclick = ()=>{
+    const studentId = document.getElementById('studentId').value.trim();
     if(!/^\d{5}$/.test(studentId)){
-      toast("學號請輸入 5 位數，例如 30105");
+      toast('學號請輸入 5 位數，例如 30105');
       return;
     }
 
     const s = Auth.loginStudent({ studentId });
     if(!s){
-      toast("登入失敗：學號格式錯誤");
+      toast('登入失敗：學號格式錯誤');
       return;
     }
 
-    toast("登入成功！請選關開始。");
+    toast('登入成功！請選關開始。');
     renderSession();
     renderWorlds();
     renderClassRank();
   };
 
-  document.getElementById("btnLogout").onclick = ()=>{
+  document.getElementById('btnLogout').onclick = ()=>{
     Auth.logout();
-    toast("已登出。");
+    toast('已登出。');
     renderSession();
     renderWorlds();
     renderClassRank();
   };
 
-  document.getElementById("btnTeacher").onclick = ()=>{
-    location.href = "teacher.html";
+  document.getElementById('btnTeacher').onclick = ()=>{
+    location.href = 'teacher.html';
   };
 
-  document.getElementById("btnClassRank").onclick = ()=>{
+  document.getElementById('btnClassRank').onclick = ()=>{
     renderClassRank();
-    toast("已更新本班排行榜（總分）。");
+    toast('已更新本班排行榜（總分）。');
   };
 
-  // init
   renderSession();
   renderWorlds();
   renderClassRank();
