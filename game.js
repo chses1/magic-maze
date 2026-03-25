@@ -156,19 +156,72 @@ window.GamePage = (()=>{
   }
 
   function levelKeyRaw(worldId, levelId){
-    return `${worldId}-${levelId}`;
+    return `${normalizeWorldId(worldId)}-${normalizeLevelId(levelId)}`;
+  }
+
+
+  function normalizeWorldId(worldId){
+    const raw = String(worldId || '').trim();
+    if(!raw) return '';
+    const m = raw.match(/^world\s*(\d+)$/i);
+    if(m) return `W${m[1]}`;
+    const w = raw.match(/^w\s*(\d+)$/i);
+    if(w) return `W${w[1]}`;
+    return raw.toUpperCase();
+  }
+
+  function normalizeLevelId(levelId){
+    const raw = String(levelId || '').trim();
+    if(!raw) return '';
+    if(/^boss$/i.test(raw)) return 'boss';
+    const m = raw.match(/^level\s*(\d+)$/i);
+    if(m) return `L${m[1]}`;
+    const l = raw.match(/^l\s*(\d+)$/i);
+    if(l) return `L${l[1]}`;
+    return raw;
   }
 
   function getLevelCopy(worldId, levelId){
     return LEVEL_COPY[levelKeyRaw(worldId, levelId)] || DEFAULT_COPY;
   }
 
+  function createFallbackBossLevel(worldId){
+    const normalizedWorldId = normalizeWorldId(worldId);
+    if (normalizedWorldId !== "W1") return null;
+    return {
+      levelId: "boss",
+      name: "森林狼王 Boss 戰",
+      targetSteps: 0,
+      map: ["S"],
+      startDir: 1,
+      isBoss: true,
+    };
+  }
+
   function findLevel(worldId, levelId){
-    const w = LEVELS.find(x=>x.worldId===worldId);
+    const normalizedWorldId = normalizeWorldId(worldId);
+    const normalizedLevelId = normalizeLevelId(levelId);
+
+    if (!normalizedWorldId || !normalizedLevelId || typeof LEVELS === "undefined" || !Array.isArray(LEVELS)) {
+      return null;
+    }
+
+    const w = LEVELS.find(x=>normalizeWorldId(x.worldId)===normalizedWorldId);
     if(!w) return null;
-    const lv = w.levels.find(x=>x.levelId===levelId);
+
+    let lv = Array.isArray(w.levels) ? w.levels.find(x=>normalizeLevelId(x.levelId)===normalizedLevelId) : null;
+
+    // 相容舊版 levels.js：如果世界資料裡還沒真的加入 boss 關卡，
+    // 但網址已經指定 level=boss，就自動補一個虛擬 Boss 關卡。
+    if(!lv && String(normalizedLevelId).toLowerCase() === 'boss'){
+      lv = createFallbackBossLevel(normalizedWorldId);
+    }
+
     if(!lv) return null;
-    return {w, lv};
+    if (lv && normalizeLevelId(lv.levelId) !== 'boss') {
+      lv = { ...lv, levelId: normalizeLevelId(lv.levelId) };
+    }
+    return {w: { ...w, worldId: normalizedWorldId }, lv};
   }
 
   function isBossLevel(){
@@ -287,110 +340,254 @@ window.GamePage = (()=>{
       }
       .boss-preview img { width: 96px; height: 96px; object-fit: contain; }
 
+ 
       .boss-stage {
-        margin: 14px 0;
+        margin: 12px auto 0;
+        width: min(1480px, calc(100vw - 16px));
+        aspect-ratio: 16 / 9;
+        min-height: calc(100vh - 16px);
+        max-height: calc(100vh - 16px);
         border-radius: 24px;
         overflow: hidden;
         border: 2px solid #bed7c3;
         box-shadow: 0 12px 32px rgba(0,0,0,.14);
-        background: linear-gradient(rgba(248,255,248,.82), rgba(241,251,241,.88)), url('${ASSETS.worldBg}') center/cover no-repeat;
+        background: linear-gradient(rgba(248,255,248,.82), rgba(241,251,241,.90)), url('${ASSETS.worldBg}') center/cover no-repeat;
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr) auto;
       }
       .boss-stage-top {
-        padding: 18px;
-        background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(255,255,255,.76));
-        border-bottom: 1px solid rgba(140,180,145,.35);
+        display:grid;
+        grid-template-columns: 1fr 1.1fr 1fr;
+        gap: 12px;
+        align-items: stretch;
+        padding: 14px 16px 10px;
       }
-      .boss-stage-top h3 { margin: 0 0 6px; font-size: 28px; color: #1b4e27; }
-      .boss-stage-top p { margin: 4px 0; line-height: 1.6; color: #23472c; }
-      .boss-stage-main {
-        display: grid;
-        grid-template-columns: minmax(250px, 340px) minmax(0, 1fr);
-        gap: 16px;
-        padding: 18px;
-        align-items: start;
-      }
-      .boss-art-panel {
-        background: rgba(255,255,255,.82);
-        border-radius: 20px;
-        padding: 16px;
-        border: 1px solid rgba(180,210,184,.85);
-        text-align: center;
-      }
-      .boss-art-panel img { width: 100%; max-width: 240px; max-height: 280px; object-fit: contain; filter: drop-shadow(0 12px 20px rgba(0,0,0,.18)); }
-      .hp-bar-wrap { margin-top: 10px; }
-      .hp-label { display:flex; justify-content:space-between; font-weight:700; margin-bottom:6px; color:#22452b; }
-      .hp-bar { height: 16px; border-radius: 999px; background: rgba(40,60,40,.14); overflow: hidden; }
-      .hp-fill-player, .hp-fill-boss { height:100%; border-radius:999px; transition: width .25s ease; }
-      .hp-fill-player { background: linear-gradient(90deg, #61c06c, #3ea654); }
-      .hp-fill-boss { background: linear-gradient(90deg, #ff8d75, #dd4f3b); }
-      .boss-panel-grid { display:grid; grid-template-columns: 1fr; gap: 14px; }
-      .boss-card-box, .boss-log-box, .boss-action-box, .boss-status-box {
+      .boss-top-panel,
+      .boss-intent-box {
         background: rgba(255,255,255,.88);
         border-radius: 18px;
         border: 1px solid rgba(180,210,184,.86);
-        padding: 14px;
+        padding: 12px 14px;
+        box-shadow: 0 6px 18px rgba(0,0,0,.06);
       }
-      .boss-section-title { font-size: 18px; font-weight: 800; color: #1c4a28; margin-bottom: 10px; }
-      .boss-status-row { display:flex; flex-wrap:wrap; gap:10px; }
-      .boss-pill { background: #eff9f0; border-radius: 999px; padding: 6px 12px; font-weight: 700; }
-      .boss-cards { display:grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
-      .boss-card {
-        display:grid; grid-template-columns: 62px 1fr; gap: 10px; align-items:center;
-        background:#f7fff7; border:1px solid #d5ead7; border-radius:16px; padding:10px;
+      .boss-top-panel.compact { padding: 12px 14px; }
+      .boss-top-name {
+        font-size: 13px;
+        font-weight: 900;
+        color: #47604b;
+        margin-bottom: 8px;
+        letter-spacing: .5px;
       }
-      .boss-card img { width:62px; height:62px; object-fit:contain; border-radius:12px; background:#fff; }
-      .boss-card button, .boss-action-buttons button {
-        border:none; border-radius:12px; padding:10px 12px; font-weight:800; cursor:pointer;
-        background: linear-gradient(180deg, #6dc87b, #4aae5d); color:#fff; box-shadow:0 4px 10px rgba(0,0,0,.12);
+      .boss-hp-head {
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        gap:10px;
+        margin-bottom:8px;
+        color:#1e4427;
       }
-      .boss-card button[disabled], .boss-action-buttons button[disabled] { opacity:.45; cursor:not-allowed; }
-      .boss-action-buttons { display:flex; flex-wrap:wrap; gap:10px; }
-      .boss-action-buttons .danger { background: linear-gradient(180deg, #ef8b6f, #dd5a47); }
-      .boss-log {
-        min-height: 140px; max-height: 220px; overflow:auto; background:#f8fff8; border-radius:14px; padding:10px 12px;
-        border:1px dashed #bfd9c3; line-height:1.65;
+      .boss-hp-head strong {
+        font-size: 20px;
+        font-weight: 900;
       }
-      .boss-log-entry { margin: 0 0 6px; }
-      .boss-log-entry strong { color:#1e4f2a; }
-      .boss-empty-tip { color:#4d6c54; }
-      .boss-footer-tip { margin-top:8px; font-size:14px; color:#3d5b45; }
-      .boss-phase-badge {
-        display:inline-flex; align-items:center; gap:8px; margin-top:10px; padding:8px 14px;
-        border-radius:999px; font-weight:900; background:#fff4d8; color:#7b4f00; border:1px solid #efd79a;
+      .boss-hp-num {
+        font-size: 18px;
+        font-weight: 900;
+        white-space: nowrap;
+      }
+      .hp-bar { height: 14px; border-radius: 999px; background: rgba(40,60,40,.14); overflow: hidden; }
+      .hp-fill-player, .hp-fill-boss { height:100%; border-radius:999px; transition: width .25s ease; }
+      .hp-fill-player { background: linear-gradient(90deg, #61c06c, #3ea654); }
+      .hp-fill-boss { background: linear-gradient(90deg, #ff8d75, #dd4f3b); }
+      .boss-bar-sub {
+        display:flex;
+        justify-content:space-between;
+        gap:8px;
+        margin-top:8px;
+        font-size:13px;
+        font-weight:800;
+        color:#58705c;
       }
       .boss-intent-box {
-        margin-top: 14px; text-align:left; background:linear-gradient(180deg,#fffaf1,#fff3df);
-        border:1px solid #efd8a6; border-radius:16px; padding:12px;
+        display:flex;
+        flex-direction:column;
+        justify-content:center;
+        text-align:center;
+        background:linear-gradient(180deg,#fffaf1,#fff3df);
+        border:1px solid #efd8a6;
       }
-      .boss-intent-title { font-size:14px; font-weight:900; color:#7b5208; margin-bottom:6px; }
-      .boss-intent-main { font-size:20px; font-weight:900; color:#5c3516; }
-      .boss-intent-sub { margin-top:4px; font-size:13px; color:#785b3b; line-height:1.5; }
+      .boss-intent-title { font-size:13px; font-weight:900; color:#7b5208; margin-bottom:6px; }
+      .boss-intent-main { font-size:26px; font-weight:900; color:#5c3516; line-height:1.2; }
+      .boss-intent-sub { margin-top:6px; font-size:13px; color:#785b3b; line-height:1.45; }
+      .boss-stage-main {
+        padding: 0 10px 8px;
+        min-height: 0;
+      }
+      .boss-arena {
+        position: relative;
+        min-height: 0;
+        height: 100%;
+        border-radius: 24px;
+        overflow: hidden;
+        border: 1px solid rgba(180,210,184,.86);
+        background:
+          radial-gradient(circle at center, rgba(255,255,255,.48) 0%, rgba(255,255,255,.16) 38%, rgba(0,0,0,.04) 100%),
+          linear-gradient(180deg, rgba(243,255,243,.76), rgba(231,245,234,.90));
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        padding: 16px 20px 10px;
+      }
+      .boss-arena::after {
+        content:'';
+        position:absolute;
+        inset:auto 10% 14px 10%;
+        height:64px;
+        border-radius:50%;
+        background: radial-gradient(circle, rgba(0,0,0,.18) 0%, rgba(0,0,0,.08) 45%, rgba(0,0,0,0) 75%);
+        filter: blur(6px);
+      }
+      .boss-portrait-wrap {
+        position: relative;
+        z-index: 1;
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+        justify-content:center;
+        text-align:center;
+        width:100%;
+        height:100%;
+      }
+      .boss-portrait-wrap img {
+        width: min(100%, 430px);
+        max-height: min(54vh, 500px);
+        object-fit: contain;
+        filter: drop-shadow(0 18px 28px rgba(0,0,0,.22));
+      }
+      .boss-name-badge {
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        gap:8px;
+        margin-top:10px;
+        padding:10px 18px;
+        border-radius:999px;
+        font-weight:900;
+        font-size: 18px;
+        background:#f7ead0;
+        color:#8a6117;
+        border:1px solid #e2c98d;
+      }
       .boss-fx-box {
-        margin-top: 12px; min-height: 52px; display:flex; align-items:center; justify-content:center;
-        text-align:center; padding:10px 12px; border-radius:14px; background:#f6fff6; border:1px dashed #bfd9c3;
-        color:#25452d; font-weight:800;
+        margin-top: 12px;
+        min-height: 54px;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        text-align:center;
+        padding:10px 16px;
+        border-radius:16px;
+        background:rgba(255,255,255,.78);
+        border:1px dashed #bfd9c3;
+        color:#25452d;
+        font-weight:800;
+        max-width: 580px;
       }
-      .boss-status-stack { display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:10px; margin-top:10px; }
-      .boss-mini-card { background:#f6fff6; border:1px solid #d4ead6; border-radius:14px; padding:10px 12px; }
-      .boss-mini-card b { display:block; margin-bottom:4px; color:#22452b; }
-      .boss-action-buttons button.secondary {
-        background: linear-gradient(180deg, #8eb7ff, #5f89ec);
+      .boss-stage-bottom {
+        padding: 0 10px 10px;
+        display:grid;
+        grid-template-columns: minmax(0, 1.65fr) minmax(320px, .95fr);
+        gap: 12px;
+        align-items: stretch;
       }
-      .boss-action-buttons button.utility {
-        background: linear-gradient(180deg, #9acb9f, #69ad73);
+      .boss-card-box,
+      .boss-action-box {
+        background: rgba(255,255,255,.88);
+        border-radius: 18px;
+        border: 1px solid rgba(180,210,184,.86);
+        padding: 12px;
+        box-shadow: 0 6px 18px rgba(0,0,0,.06);
       }
-      .boss-card.is-used {
-        opacity:.6;
-        filter:grayscale(.15);
+      .boss-section-title { font-size: 17px; font-weight: 800; color: #1c4a28; margin-bottom: 8px; }
+      .boss-cards { display:grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+      .boss-card {
+        display:grid;
+        grid-template-columns: 42px 1fr;
+        gap: 8px;
+        align-items:center;
+        background:#f7fff7;
+        border:1px solid #d5ead7;
+        border-radius:16px;
+        padding:8px;
       }
+      .boss-card img { width:42px; height:42px; object-fit:contain; border-radius:12px; background:#fff; }
+      .boss-card.is-used { opacity:.6; filter:grayscale(.15); }
+      .boss-card-title { font-weight:900; color:#21472a; font-size:14px; }
+      .boss-card-desc { font-size:12px; line-height:1.4; color:#45604a; min-height:34px; }
       .boss-card-tag {
         display:inline-block; margin-top:6px; padding:4px 8px; border-radius:999px;
         background:#eef8ef; color:#31593b; font-size:12px; font-weight:800;
       }
+      .boss-card button, .boss-action-buttons button {
+        border:none; border-radius:12px; padding:10px 10px; font-weight:800; cursor:pointer;
+        background: linear-gradient(180deg, #6dc87b, #4aae5d); color:#fff; box-shadow:0 4px 10px rgba(0,0,0,.12);
+        font-size: 14px;
+      }
+      .boss-card button { width:100%; margin-top:8px; }
+      .boss-card button[disabled], .boss-action-buttons button[disabled] { opacity:.45; cursor:not-allowed; }
+      .boss-action-buttons {
+        display:grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-top: 6px;
+      }
+      .boss-action-buttons .danger { background: linear-gradient(180deg, #ef8b6f, #dd5a47); }
+      .boss-action-buttons button.secondary { background: linear-gradient(180deg, #8eb7ff, #5f89ec); }
+      .boss-action-buttons button.utility { background: linear-gradient(180deg, #9acb9f, #69ad73); }
+      .boss-footer-tip { margin-top:8px; font-size:13px; color:#3d5b45; line-height:1.5; }
+      .boss-inline-log {
+        margin-top: 10px;
+        display:flex;
+        flex-wrap:wrap;
+        gap:8px;
+      }
+      .boss-log-pill {
+        background:#f6fff6;
+        border:1px solid #d4ead6;
+        border-radius:999px;
+        padding:6px 10px;
+        font-size:12px;
+        font-weight:800;
+        color:#25452d;
+      }
+      .boss-log-entry { margin: 0 0 6px; }
+      .boss-empty-tip { color:#4d6c54; }
+      @media (max-width: 1100px) {
+        .boss-stage {
+          width: min(100%, calc(100vw - 16px));
+          aspect-ratio: auto;
+          min-height: auto;
+          max-height: none;
+        }
+        .boss-stage-top {
+          grid-template-columns: 1fr;
+        }
+        .boss-stage-main {
+          grid-template-columns: 1fr;
+        }
+        .boss-cards {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
       @media (max-width: 860px) {
         .stage-world-hero { grid-template-columns: 1fr; }
         .stage-world-hero-boss { justify-content:flex-start; }
-        .boss-stage-main { grid-template-columns: 1fr; }
+        .boss-arena { min-height: 320px; }
+        .boss-portrait-wrap img { max-height: 240px; }
+        .boss-action-buttons,
+        .boss-cards {
+          grid-template-columns: 1fr;
+        }
       }
     `;
     document.head.appendChild(style);
@@ -627,8 +824,8 @@ window.GamePage = (()=>{
       playerHp: 30,
       playerShield: 0,
       playerPower: 0,
-      bossMaxHp: 36,
-      bossHp: 36,
+      bossMaxHp: 24,
+      bossHp: 24,
       turn: 1,
       bossFreezeTurns: 0,
       bossPatternIndex: 0,
@@ -659,58 +856,57 @@ window.GamePage = (()=>{
     return [
       {type:'attack', label:'利爪攻擊', damage:5, icon:'🩸', hint:'普通攻擊。'},
       {type:'attack', label:'利爪攻擊', damage:5, icon:'🩸', hint:'普通攻擊。'},
-      {type:'skill', label:'狂暴撕咬', damage:8, icon:'⚠️', hint:'第一階段大招，建議先防禦。'},
+      {type:'skill', label:'撲擊咆哮', damage:7, icon:'🐺', hint:'比普通攻擊更痛，建議先防禦。'},
     ];
   }
 
   function bossPatternAction(index, phase){
-    const pattern = getBossPattern(phase || getBossPhase());
+    const pattern = getBossPattern(phase);
     return pattern[index % pattern.length];
   }
 
-  function getBossIntentPreview(){
-    const phase = getBossPhase();
-    return bossPatternAction(bossState.bossPatternIndex, phase);
+  function syncBossPhase(){
+    if (!bossState) return;
+    bossState.phase = getBossPhase();
   }
 
-  function syncBossPhase(){
-    const nextPhase = getBossPhase();
-    if (nextPhase !== bossState.phase) {
-      bossState.phase = nextPhase;
-      pushBossLog(`<strong>狼王變化：</strong>森林狼王進入第 ${nextPhase} 階段，攻擊變得更兇猛了！`);
-      bossState.fxText = `🔥 狼王進入第 ${nextPhase} 階段！`;
+  function getBossIntentPreview(){
+    if (!bossState) {
+      return { icon:'❔', label:'未知', hint:'準備載入中…' };
     }
+    return bossPatternAction(bossState.bossPatternIndex, getBossPhase());
   }
 
   function bossCardsHtml(){
+    if (!bossState || !Array.isArray(bossState.cards)) return '';
     return bossState.cards.map(card => `
       <div class="boss-card ${card.used ? 'is-used' : ''}">
         <img src="${card.img}" alt="${card.title}">
         <div>
-          <div><b>${card.title}</b></div>
-          <div style="font-size:13px; color:#41624a; margin:4px 0 8px;">${card.desc}</div>
-          <button type="button" data-card="${card.key}" ${card.used || bossState.finished ? 'disabled' : ''}>${card.used ? '已使用' : '使用卡牌'}</button>
-          <div class="boss-card-tag">${card.used ? '本場已消耗' : '限用 1 次'}</div>
+          <div class="boss-card-title">${card.title}</div>
+          <div class="boss-card-desc">${card.desc}</div>
+          <div class="boss-card-tag">${card.used ? '已使用' : '可使用 1 次'}</div>
+          <button type="button" data-card="${card.key}" ${card.used || bossState.finished ? 'disabled' : ''}>使用卡牌</button>
         </div>
       </div>
     `).join('');
   }
 
   function bossLogHtml(){
-    if (!bossState.log.length) return `<div class="boss-empty-tip">戰鬥紀錄會顯示在這裡。</div>`;
-    return bossState.log.map(line => `<div class="boss-log-entry">${line}</div>`).join('');
+    if (!bossState || !Array.isArray(bossState.log) || bossState.log.length === 0) {
+      return '<div class="boss-empty-tip">目前還沒有戰鬥紀錄。</div>';
+    }
+    return bossState.log.map(item => `<div class="boss-log-entry">${item}</div>`).join('');
   }
 
   function updateBossButtons(){
+    const disabled = !bossState || bossState.finished;
     ['bossBasicAttack','bossDefend','bossFocus','bossEndTurn'].forEach(id => {
-      const btn = document.getElementById(id);
-      if (btn) btn.disabled = bossState.finished;
+      const el = document.getElementById(id);
+      if (el) el.disabled = disabled;
     });
-
     document.querySelectorAll('#bossCards [data-card]').forEach(btn => {
-      const card = bossState.cards.find(c => c.key === btn.dataset.card);
-      if (!card) return;
-      btn.disabled = bossState.finished || !!card.used;
+      if (disabled) btn.disabled = true;
     });
   }
 
@@ -721,68 +917,77 @@ window.GamePage = (()=>{
     const playerPct = Math.max(0, bossState.playerHp) / bossState.playerMaxHp * 100;
     const bossPct = Math.max(0, bossState.bossHp) / bossState.bossMaxHp * 100;
     const intent = getBossIntentPreview();
+    const recentLogs = (bossState.log || []).slice(0, 4);
 
     bossEl.innerHTML = `
       <div class="boss-stage-top">
-        <h3>${UI.world1.bossStageTitle}</h3>
-        <p>${UI.world1.bossStageIntro}</p>
-        <p><b>這版 Boss 戰加入「下一招預告、階段變化、強化攻擊、明顯防禦選擇」，比較像真正的關主戰。</b></p>
-      </div>
-      <div class="boss-stage-main">
-        <div class="boss-art-panel">
-          <img src="${ASSETS.boss}" alt="${UI.world1.bossTitle}">
-          <div class="boss-phase-badge">第 ${bossState.phase} 階段 ${bossState.phase === 1 ? '🌿 森林試探' : '🔥 狂暴模式'}</div>
-          <div class="hp-bar-wrap">
-            <div class="hp-label"><span>森林狼王</span><span>${bossState.bossHp} / ${bossState.bossMaxHp}</span></div>
-            <div class="hp-bar"><div class="hp-fill-boss" style="width:${bossPct}%"></div></div>
+        <div class="boss-top-panel compact">
+          <div class="boss-top-name">玩家狀態</div>
+          <div class="boss-hp-head">
+            <strong>勇者 HP</strong>
+            <span class="boss-hp-num">${bossState.playerHp} / ${bossState.playerMaxHp}</span>
           </div>
-          <div class="hp-bar-wrap">
-            <div class="hp-label"><span>玩家生命值</span><span>${bossState.playerHp} / ${bossState.playerMaxHp}</span></div>
-            <div class="hp-bar"><div class="hp-fill-player" style="width:${playerPct}%"></div></div>
+          <div class="hp-bar"><div class="hp-fill-player" style="width:${playerPct}%"></div></div>
+          <div class="boss-bar-sub">
+            <span>護盾：${bossState.playerShield}</span>
+            <span>蓄力：${bossState.playerPower}</span>
           </div>
-          <div class="boss-intent-box">
-            <div class="boss-intent-title">下一招預告</div>
-            <div class="boss-intent-main">${intent.icon} ${intent.label}</div>
-            <div class="boss-intent-sub">${intent.hint}</div>
-          </div>
-          <div class="boss-fx-box">${bossState.fxText || '準備行動中…'}</div>
         </div>
-        <div class="boss-panel-grid">
-          <div class="boss-status-box">
-            <div class="boss-section-title">戰鬥狀態</div>
-            <div class="boss-status-row">
-              <span class="boss-pill">第 ${bossState.turn} 回合</span>
-              <span class="boss-pill">護盾：${bossState.playerShield}</span>
-              <span class="boss-pill">蓄力：${bossState.playerPower}</span>
-              <span class="boss-pill">冰凍：${bossState.bossFreezeTurns}</span>
-            </div>
-            <div class="boss-status-stack">
-              <div class="boss-mini-card"><b>玩家上一動</b>${bossState.lastPlayerAction}</div>
-              <div class="boss-mini-card"><b>狼王上一動</b>${bossState.lastBossAction}</div>
-            </div>
-            <div class="boss-footer-tip">教學重點：讓孩子先看預告，再思考「我要攻擊、補血，還是先防禦？」</div>
+
+        <div class="boss-intent-box">
+          <div class="boss-intent-title">第 ${bossState.turn} 回合｜狼王下一招</div>
+          <div class="boss-intent-main">${intent.icon} ${intent.label}</div>
+          <div class="boss-intent-sub">${intent.hint}</div>
+        </div>
+
+        <div class="boss-top-panel compact">
+          <div class="boss-top-name">Boss 狀態</div>
+          <div class="boss-hp-head">
+            <strong>森林狼王</strong>
+            <span class="boss-hp-num">${bossState.bossHp} / ${bossState.bossMaxHp}</span>
           </div>
-          <div class="boss-action-box">
-            <div class="boss-section-title">玩家行動</div>
-            <div class="boss-action-buttons">
-              <button type="button" id="bossBasicAttack">普通攻擊（4＋蓄力）</button>
-              <button type="button" class="secondary" id="bossDefend">防禦姿態（+6 護盾）</button>
-              <button type="button" class="utility" id="bossFocus">專注蓄力（下次 +2）</button>
-              <button type="button" class="danger" id="bossEndTurn">略過回合</button>
-            </div>
-            <div class="boss-footer-tip">普通攻擊會吃到蓄力加成；蓄力用掉後就會歸零。</div>
+          <div class="hp-bar"><div class="hp-fill-boss" style="width:${bossPct}%"></div></div>
+          <div class="boss-bar-sub">
+            <span>階段：${bossState.phase === 1 ? '森林試探' : '狂暴模式'}</span>
+            <span>冰凍：${bossState.bossFreezeTurns}</span>
           </div>
-          <div class="boss-card-box">
-            <div class="boss-section-title">可用卡牌</div>
-            <div class="boss-cards" id="bossCards">${bossCardsHtml()}</div>
+        </div>
+      </div>
+
+      <div class="boss-stage-main">
+        <div class="boss-arena">
+          <div class="boss-portrait-wrap">
+            <img src="${ASSETS.boss}" alt="${UI.world1.bossTitle}">
+            <div class="boss-name-badge">${bossState.phase === 1 ? '🌿 森林試探' : '🔥 狂暴模式'}</div>
+            <div class="boss-fx-box">${bossState.fxText || '準備行動中…'}</div>
           </div>
-          <div class="boss-log-box">
-            <div class="boss-section-title">戰鬥紀錄</div>
-            <div class="boss-log" id="bossLog">${bossLogHtml()}</div>
+        </div>
+      </div>
+
+      <div class="boss-stage-bottom">
+        <div class="boss-card-box">
+          <div class="boss-section-title">卡牌區</div>
+          <div class="boss-cards" id="bossCards">${bossCardsHtml()}</div>
+        </div>
+
+        <div class="boss-action-box">
+          <div class="boss-section-title">本回合行動</div>
+          <div class="boss-action-buttons">
+            <button type="button" id="bossBasicAttack">普通攻擊（4＋蓄力）</button>
+            <button type="button" class="secondary" id="bossDefend">防禦姿態（+6 護盾）</button>
+            <button type="button" class="utility" id="bossFocus">專注蓄力（下次 +2）</button>
+            <button type="button" class="danger" id="bossEndTurn">略過回合</button>
+          </div>
+          <div class="boss-footer-tip">先看上方血量與預告，再選卡牌或動作。</div>
+          <div class="boss-inline-log">
+            ${recentLogs.length ? recentLogs.map(item => `<span class="boss-log-pill">${item.replace(/<[^>]*>/g, '')}</span>`).join('') : '<span class="boss-log-pill">戰鬥開始！</span>'}
           </div>
         </div>
       </div>
     `;
+
+    const phaseBadge = bossEl.querySelector('.boss-name-badge');
+    if (phaseBadge) phaseBadge.textContent = bossState.phase === 1 ? '🌿 森林試探' : '🔥 狂暴模式';
 
     const basicBtn = document.getElementById('bossBasicAttack');
     const defendBtn = document.getElementById('bossDefend');
@@ -946,6 +1151,71 @@ window.GamePage = (()=>{
     renderBossStage();
   }
 
+  function toggleBossOnlyLayout(enabled){
+    const rememberDisplay = (el) => {
+      if (!el) return;
+      if (!el.dataset.bossPrevDisplay) el.dataset.bossPrevDisplay = el.style.display || '';
+    };
+
+    const setHidden = (el, hidden) => {
+      if (!el) return;
+      if (hidden) {
+        rememberDisplay(el);
+        el.style.display = 'none';
+      } else {
+        el.style.display = el.dataset.bossPrevDisplay || '';
+      }
+    };
+
+    const ids = ['stageWorldHero', 'stageCopyCard', 'stageRewardCard', 'title', 'subtitle', 'result', 'blocklyDiv', 'grid'];
+    ids.forEach(id => setHidden(document.getElementById(id), enabled));
+
+    const hideClosestPanel = (el) => {
+      if (!el) return;
+      const panel = el.closest('.card, .panel, .box, .section, .game-panel, .layout-card, .layout-panel') || el.parentElement;
+      setHidden(panel || el, enabled);
+    };
+
+    hideClosestPanel(document.getElementById('blocklyDiv'));
+    hideClosestPanel(document.getElementById('grid'));
+
+    document.querySelectorAll('*').forEach(el => {
+      const text = (el.textContent || '').trim();
+      const id = el.id || '';
+      const cls = el.className || '';
+      const style = window.getComputedStyle(el);
+      const isFloating = style.position === 'fixed' || style.position === 'sticky';
+      const looksTeacher = /教師模式|最佳解法|teacher/i.test(text + ' ' + id + ' ' + cls);
+      const looksBlocklyArea = /積木程式區|blockly/i.test(text + ' ' + id + ' ' + cls);
+      const looksMazeHud = /步數|撞牆|鑰匙|時間/.test(text);
+      const smallFloating = isFloating && (el.offsetWidth <= 220 || looksTeacher);
+
+      if (enabled) {
+        if (looksTeacher || looksBlocklyArea || looksMazeHud || smallFloating) {
+          rememberDisplay(el);
+          el.classList.add('boss-hidden-by-mode');
+          el.style.display = 'none';
+        }
+      } else if (el.classList.contains('boss-hidden-by-mode')) {
+        el.style.display = el.dataset.bossPrevDisplay || '';
+        el.classList.remove('boss-hidden-by-mode');
+      }
+    });
+
+    const stage = document.getElementById('bossStage');
+    if (stage && enabled) {
+      stage.style.marginTop = '8px';
+      stage.scrollIntoView({ block: 'start' });
+    }
+  }
+
+  function bossCompactLogHtml(){
+    if (!bossState || !Array.isArray(bossState.log) || bossState.log.length === 0) {
+      return '<div class="boss-empty-tip">目前還沒有戰鬥紀錄。</div>';
+    }
+    return bossState.log.slice(0, 6).map(item => `<div class="boss-log-entry">${item}</div>`).join('');
+  }
+
   function setupBossBattleUI(){
     const blocklyDiv = document.getElementById('blocklyDiv');
     const gridEl = document.getElementById('grid');
@@ -959,13 +1229,10 @@ window.GamePage = (()=>{
     if (btnReset) btnReset.textContent = '重新挑戰 Boss';
 
     bossState = createBossState();
+    toggleBossOnlyLayout(true);
     renderBossStage();
-    showResult(buildResultCard(
-      'warn',
-      'Boss 戰說明',
-      '這版 Boss 戰加入了「下一招預告」與「第二階段」。建議教學生先讀懂敵人的預告，再做選擇，這樣比較像真正的策略遊戲。'
-    ));
-    toast('Boss 戰開始！輪到你行動。');
+    showResult('');
+    toast('Boss 戰開始！先看上方血量與中間預告，再選卡牌或動作。');
   }
 
   function teardownBossBattleUI(){
@@ -981,6 +1248,7 @@ window.GamePage = (()=>{
     if (btnPause) btnPause.style.display = '';
     if (btnReset) btnReset.textContent = UI.buttons.reset;
     if (bossEl) bossEl.remove();
+    toggleBossOnlyLayout(false);
     bossState = null;
   }
 
@@ -1334,7 +1602,7 @@ window.GamePage = (()=>{
         if (isFinalTrialOfWorld1) {
           toast('最後試煉完成！即將進入 Boss 戰！');
           setTimeout(() => {
-            location.href = `game.html?world=${world.worldId}&level=boss`;
+            location.href = `boss.html?world=${world.worldId}`;
           }, 900);
           return;
         }
@@ -1386,6 +1654,10 @@ window.GamePage = (()=>{
   function init(){
     const worldId = qs("world");
     const levelId = qs("level");
+    if (/^boss$/i.test(String(levelId || ''))) {
+      location.replace(`boss.html?world=${encodeURIComponent(worldId || 'world1')}`);
+      return;
+    }
     const pack = findLevel(worldId, levelId);
     if(!pack){
       alert(UI.common.noLevel);

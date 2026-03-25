@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <title>Boss 戰｜森林狼王</title>
+  <style>
+    :root{
+      --bg:#dfe8dc;
+      --panel:#f7faf5;
+      --line:#c8d5c5;
+      --text:#1f3526;
+      --muted:#5e7664;
+      --green1:#69b76d;
+      --green2:#4ea95c;
+      --red1:#f18773;
+      --red2:#dc5844;
+      --blue1:#92b8ff;
+      --blue2:#668dee;
+      --orange1:#f7d9a6;
+      --orange2:#ebc881;
+      --shadow:0 12px 24px rgba(31,53,38,.08);
+      --radius:22px;
+    }
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    html,body{margin:0;padding:0;background:linear-gradient(rgba(223,232,220,.84),rgba(213,223,211,.90)), url('img/world1.png') center/cover no-repeat fixed;color:var(--text);font-family:"Noto Sans TC",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    body{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:10px}
+    .page{
+      width:min(calc((100vh - 20px) * 16 / 9), calc(100vw - 20px));
+      aspect-ratio:16 / 9;
+      margin:0 auto;
+      padding:12px;
+      display:grid;
+      grid-template-rows:auto minmax(0,1fr) auto;
+      gap:10px;
+    }
+    .top-actions{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:nowrap;min-height:0}
+    .title-wrap{min-width:0}
+    .title-wrap h1{margin:0;font-size:clamp(22px,2vw,28px);line-height:1.12}
+    .title-wrap p{margin:4px 0 0;color:var(--muted);font-weight:700;font-size:clamp(12px,1vw,14px)}
+    .toolbar{display:flex;gap:8px;flex-wrap:nowrap;flex-shrink:0}
+    .toolbar button{border:none;border-radius:14px;padding:10px 15px;font-size:clamp(13px,.95vw,16px);font-weight:900;cursor:pointer;box-shadow:var(--shadow)}
+    .toolbar .ghost{background:#fff;color:#36533f;border:1px solid var(--line)}
+    .toolbar .warn{background:#fff4f1;color:#9f4336;border:1px solid #efc2ba}
+    .stage{
+      min-height:0;
+      display:grid;
+      background:linear-gradient(rgba(247,250,245,.62), rgba(247,250,245,.72));
+      border:1px solid rgba(200,213,197,.92);
+      border-radius:var(--radius);
+      padding:10px;
+      grid-template-rows:auto minmax(0,1fr) auto;
+      gap:10px;
+    }
+    .stage-top{display:grid;grid-template-columns:1fr 1.15fr 1fr;gap:10px;min-height:0}
+    .panel,.intent-box,.arena,.card-box,.action-box,.result-card{background:rgba(247,250,245,.96);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+    .panel,.intent-box{padding:12px 14px}
+    .panel-title{font-size:clamp(12px,.9vw,14px);font-weight:900;color:#57705d;margin-bottom:8px}
+    .hp-head{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+    .hp-head strong{font-size:clamp(15px,1.05vw,18px)}
+    .hp-num{font-size:clamp(16px,1.1vw,18px);font-weight:900}
+    .hp-bar{margin-top:8px;height:12px;border-radius:999px;background:#e5ece3;overflow:hidden}
+    .fill-player,.fill-boss{height:100%;border-radius:999px;transition:width .25s ease}
+    .fill-player{background:linear-gradient(90deg,var(--green1),var(--green2))}
+    .fill-boss{background:linear-gradient(90deg,var(--red1),var(--red2))}
+    .panel-sub{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:8px;color:var(--muted);font-weight:800;font-size:clamp(12px,.88vw,14px)}
+    .intent-box{text-align:center;background:linear-gradient(180deg,#fff7ea,#f5ead6);border-color:#e5cf9d;display:flex;flex-direction:column;justify-content:center}
+    .intent-title{font-size:clamp(12px,.92vw,14px);font-weight:900;color:#7c5d22}
+    .intent-main{margin-top:4px;font-size:clamp(24px,2vw,34px);font-weight:900;color:#633d18;line-height:1.15}
+    .intent-sub{margin-top:6px;font-size:clamp(12px,.92vw,14px);line-height:1.45;color:#7a6340}
+    .arena{
+      min-height:0;
+      padding:10px 14px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      position:relative;
+      overflow:hidden;
+      background:
+        linear-gradient(rgba(248,252,246,.20), rgba(241,248,239,.26)),
+        url('img/world1.png') center 56% / cover no-repeat;
+    }
+    .arena::after{
+      content:"";
+      position:absolute;
+      left:10%;
+      right:10%;
+      bottom:8px;
+      height:54px;
+      background:radial-gradient(circle,rgba(40,66,47,.28),rgba(40,66,47,0));
+      filter:blur(7px);
+    }
+    .portrait{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:8px;width:min(100%,480px);height:100%;justify-content:center}
+    .portrait img{
+      display:block;
+      width:min(100%,520px);
+      max-height:min(52vh, 48vw);
+      object-fit:contain;
+      filter:drop-shadow(0 16px 32px rgba(0,0,0,.22));
+    }
+    .phase-badge{padding:8px 16px;border-radius:999px;background:linear-gradient(180deg,#fee8bf,#f7d58c);font-weight:900;font-size:clamp(14px,1vw,18px);color:#7a5b17;border:1px solid #e5c67f;box-shadow:0 8px 18px rgba(120,91,23,.12)}
+    .fx-box{width:min(100%,460px);padding:12px 16px;text-align:center;background:rgba(255,255,255,.84);border:1px solid #d9e4d6;border-radius:18px;font-size:clamp(16px,1.1vw,20px);font-weight:900;color:#22452c}
+    .stage-bottom{display:grid;grid-template-columns:1.55fr .95fr;gap:10px;min-height:0}
+    .card-box,.action-box{padding:12px;min-height:0}
+    .section-title{font-size:clamp(16px,1.1vw,18px);font-weight:900;margin-bottom:8px}
+    .cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;align-items:stretch}
+    .boss-card{
+      display:grid;
+      grid-template-rows:minmax(132px, 1fr) auto auto auto;
+      gap:6px;
+      padding:10px;
+      border-radius:20px;
+      background:linear-gradient(180deg,#fffefd 0%,#f2f8ef 100%);
+      border:1px solid #d8e3d6;
+      min-height:0;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.7);
+    }
+    .boss-card.is-used{opacity:.58;filter:grayscale(.15)}
+    .boss-card-art{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      border-radius:16px;
+      background:radial-gradient(circle at top, #ffffff 0%, #f0f4ee 78%);
+      border:1px solid #e4ebe2;
+      padding:10px;
+      min-height:132px;
+    }
+    .boss-card img{
+      width:112px;
+      height:112px;
+      object-fit:contain;
+      display:block;
+      filter:drop-shadow(0 8px 14px rgba(0,0,0,.12));
+    }
+    .boss-card-title{font-size:clamp(14px,.96vw,16px);font-weight:900;line-height:1.2;text-align:center}
+    .boss-card-desc{font-size:clamp(11px,.76vw,12.5px);line-height:1.35;color:#506856;min-height:32px;text-align:center}
+    .boss-card-tag{display:inline-flex;justify-content:center;align-items:center;align-self:center;font-size:11px;font-weight:900;color:#487055;background:#e3f1e1;border-radius:999px;padding:5px 9px}
+    .boss-card button,.action-buttons button{width:100%;margin-top:0;border:none;border-radius:14px;padding:10px 10px;font-size:clamp(12px,.86vw,14px);font-weight:900;color:#fff;cursor:pointer;box-shadow:0 8px 18px rgba(57,100,70,.12)}
+    .boss-card button,.action-buttons .primary{background:linear-gradient(180deg,var(--green1),var(--green2))}
+    .action-buttons{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+    .action-buttons .secondary{background:linear-gradient(180deg,var(--blue1),var(--blue2))}
+    .action-buttons .utility{background:linear-gradient(180deg,#9bcca0,#6fad75)}
+    .action-buttons .danger{background:linear-gradient(180deg,var(--red1),var(--red2))}
+    button[disabled]{opacity:.45;cursor:not-allowed}
+    .footer-tip{margin-top:8px;color:#49614f;font-weight:700;line-height:1.45;font-size:clamp(12px,.82vw,13px)}
+    .inline-log{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+    .boss-log-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:#edf4eb;color:#35513d;font-size:clamp(11px,.78vw,13px);font-weight:800;border:1px solid #d7e3d5}
+    .result-card{padding:14px 16px}
+    .result-card h3{margin:0 0 6px;font-size:clamp(19px,1.5vw,24px)}
+    .result-card p{margin:0;color:#38523f;line-height:1.55;font-weight:700;font-size:clamp(13px,.92vw,15px)}
+    .result-card.good{border-color:#b9d8bb;background:#f1fbf1}
+    .result-card.bad{border-color:#efc2ba;background:#fff4f1}
+    .result-badges{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+    .result-badges span{padding:7px 11px;border-radius:999px;background:#fff;border:1px solid #d9e4d6;font-weight:900;font-size:clamp(12px,.84vw,14px)}
+    @media (max-width: 1100px){
+      body{padding:8px}
+      .page{width:min(100vw - 16px, 1500px);aspect-ratio:auto;min-height:calc(100vh - 16px)}
+      .stage-top,.stage-bottom{grid-template-columns:1fr}
+      .cards{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .arena{min-height:260px}
+      .portrait img{max-height:260px}
+    }
+    @media (max-width: 640px){
+      body{display:block;padding:0}
+      .page{width:100%;aspect-ratio:auto;min-height:100vh;padding:14px 12px 22px}
+      .top-actions{flex-wrap:wrap}
+      .toolbar{width:100%;flex-wrap:wrap}
+      .toolbar button{flex:1}
+      .cards,.action-buttons{grid-template-columns:1fr}
+      .panel,.intent-box,.card-box,.action-box,.result-card{border-radius:20px}
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="top-actions">
+      <div class="title-wrap">
+        <h1>Boss 戰：森林狼王</h1>
+        <p>完全獨立頁模式。這頁不載入迷宮、積木區、教師浮動工具。</p>
+      </div>
+      <div class="toolbar">
+        <button class="ghost" id="btnBackGame">回上一關</button>
+        <button class="ghost" id="btnRetry">重新挑戰</button>
+        <button class="warn" id="btnExit">離開關卡</button>
+      </div>
+    </div>
+
+    <section class="stage">
+      <div class="stage-top">
+        <div class="panel">
+          <div class="panel-title">玩家狀態</div>
+          <div class="hp-head"><strong>勇者 HP</strong><span class="hp-num" id="playerHpText">30 / 30</span></div>
+          <div class="hp-bar"><div class="fill-player" id="playerHpBar" style="width:100%"></div></div>
+          <div class="panel-sub"><span>護盾：<b id="playerShield">0</b></span><span>蓄力：<b id="playerPower">0</b></span></div>
+        </div>
+
+        <div class="intent-box">
+          <div class="intent-title" id="turnText">第 1 回合｜狼王下一招</div>
+          <div class="intent-main" id="intentMain">🩸 利爪攻擊</div>
+          <div class="intent-sub" id="intentSub">普通攻擊。</div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">Boss 狀態</div>
+          <div class="hp-head"><strong>森林狼王</strong><span class="hp-num" id="bossHpText">26 / 26</span></div>
+          <div class="hp-bar"><div class="fill-boss" id="bossHpBar" style="width:100%"></div></div>
+          <div class="panel-sub"><span>階段：<b id="bossPhase">森林試探</b></span><span>冰凍：<b id="bossFreeze">0</b></span></div>
+        </div>
+      </div>
+
+      <div class="arena">
+        <div class="portrait">
+          <img id="bossImg" alt="森林狼王">
+          <div class="fx-box" id="fxText">⚔️ Boss 戰開始！</div>
+        </div>
+      </div>
+
+      <div class="stage-bottom">
+        <div class="card-box">
+          <div class="section-title">卡牌區</div>
+          <div class="cards" id="bossCards"></div>
+        </div>
+
+        <div class="action-box">
+          <div class="section-title">本回合行動</div>
+          <div class="action-buttons">
+            <button type="button" class="primary" id="bossBasicAttack">普通攻擊（3＋蓄力）</button>
+            <button type="button" class="secondary" id="bossDefend">防禦姿態（+8 護盾）</button>
+            <button type="button" class="utility" id="bossFocus">專注蓄力（下次 +3）</button>
+            <button type="button" class="danger" id="bossEndTurn">略過回合</button>
+          </div>
+          <div class="footer-tip">先看上方預告，再決定要不要防禦或先出牌。這樣小朋友比較容易理解「預判 → 決策 → 結果」。</div>
+          <div class="inline-log" id="battleLog"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="result-card" id="resultCard" hidden></section>
+  </div>
+
+  <script src="storage.js"></script>
+  <script src="boss.js"></script>
+</body>
+</html>

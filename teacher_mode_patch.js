@@ -127,7 +127,7 @@
 
   function openBoss(){
     const world = detectWorldLevel().world || 'world1';
-    location.href = `game.html?world=${encodeURIComponent(world)}&level=boss`;
+    location.href = `boss.html?world=${encodeURIComponent(world)}`;
   }
 
   function injectPanel(){
