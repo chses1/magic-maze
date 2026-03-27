@@ -87,14 +87,55 @@
 <script>
   const HOME_WORLD_NAME = {
     W1: '世界1｜魔法學院（序列）',
-    W2: '世界2｜符文森林（迴圈）'
+    W2: '世界2｜符文森林（迴圈）',
+    W3: '世界3｜時光圖書館（條件式）',
+    W4: '世界4｜機械城堡（函式）'
   };
 
   const HOME_BOSS_LABEL = {
-    W1: '🐺 第5關：Boss 戰',
-    W2: '🌲 第5關：Boss 戰',
-    W3: '📚 第5關：Boss 戰',
-    W4: '⚙️ 第5關：Boss 戰'
+    W1: '🧙‍🏫 第5關：教授 Boss 戰',
+    W2: '🐺 第5關：狼王 Boss 戰',
+    W3: '📚 第5關：館長 Boss 戰',
+    W4: '🤖 第5關：機械主宰 Boss 戰'
+  };
+
+  const WORLD_THEME = {
+    W1: {
+      cardBg: 'linear-gradient(180deg,#f3f4f6 0%,#e5e7eb 100%)',
+      border: '1px solid rgba(148,163,184,.45)',
+      shadow: '0 10px 24px rgba(100,116,139,.16)',
+      title: '#1f2937',
+      text: '#374151',
+      badgeBg: 'rgba(255,255,255,.7)',
+      badgeBd: 'rgba(148,163,184,.45)'
+    },
+    W2: {
+      cardBg: 'linear-gradient(180deg,#e8f7ea 0%,#d8f0dc 100%)',
+      border: '1px solid rgba(34,197,94,.28)',
+      shadow: '0 10px 24px rgba(34,197,94,.12)',
+      title: '#14532d',
+      text: '#166534',
+      badgeBg: 'rgba(255,255,255,.72)',
+      badgeBd: 'rgba(34,197,94,.30)'
+    },
+    W3: {
+      cardBg: 'linear-gradient(180deg,#fff7dd 0%,#ffefbf 100%)',
+      border: '1px solid rgba(245,158,11,.28)',
+      shadow: '0 10px 24px rgba(245,158,11,.14)',
+      title: '#78350f',
+      text: '#92400e',
+      badgeBg: 'rgba(255,255,255,.76)',
+      badgeBd: 'rgba(245,158,11,.30)'
+    },
+    W4: {
+      cardBg: 'linear-gradient(180deg,#e8f3ff 0%,#d8e9ff 100%)',
+      border: '1px solid rgba(59,130,246,.28)',
+      shadow: '0 10px 24px rgba(59,130,246,.14)',
+      title: '#1e3a8a',
+      text: '#1d4ed8',
+      badgeBg: 'rgba(255,255,255,.76)',
+      badgeBd: 'rgba(59,130,246,.30)'
+    }
   };
 
   const toast = (msg)=> document.getElementById('toast').textContent = msg;
@@ -199,17 +240,23 @@
       const normalLevels = getHomeNormalLevels(world);
       const bossUnlocked = isTeacher ? true : (worldUnlocked && userId && isBossUnlocked(progress, userId, world));
 
+      const worldId = normalizeWorldId(world.worldId);
+      const theme = WORLD_THEME[worldId] || WORLD_THEME.W1;
+
       const wCard = document.createElement('div');
       wCard.className = 'card';
       wCard.style.marginBottom = '10px';
       wCard.style.padding = '12px';
+      wCard.style.background = theme.cardBg;
+      wCard.style.border = theme.border;
+      wCard.style.boxShadow = theme.shadow;
 
       const title = document.createElement('div');
       title.style.display = 'flex';
       title.style.justifyContent = 'space-between';
       title.style.alignItems = 'center';
-      title.innerHTML = `<div><b>${getDisplayWorldName(world)}</b></div>
-                         <div class="badge">${isTeacher ? '教師可進入' : (worldUnlocked ? '已解鎖' : '未解鎖')}</div>`;
+      title.innerHTML = `<div style="color:${theme.title};"><b>${getDisplayWorldName(world)}</b></div>
+                         <div class="badge" style="background:${theme.badgeBg};border:${theme.badgeBd};color:${theme.title};">${isTeacher ? '教師可進入' : (worldUnlocked ? '已解鎖' : '未解鎖')}</div>`;
       wCard.appendChild(title);
 
       const list = document.createElement('div');
@@ -252,7 +299,16 @@
         bossBtn.classList.add('level-btn', 'boss-btn');
         bossBtn.textContent = buildBossButtonLabel(world);
         bossBtn.onclick = ()=>{
-          toast('Boss 關按鈕版型已預留，之後再接上真正的 Boss 戰頁面。');
+          const targetWorldId = normalizeWorldId(world.worldId);
+          if(targetWorldId === 'W2'){
+            location.href = `boss.html?world=${encodeURIComponent(world.worldId)}&level=boss`;
+            return;
+          }
+          if(targetWorldId === 'W1'){
+            toast('第一世界的教授 Boss 圖示已更新，教授戰頁面之後再接上。');
+            return;
+          }
+          toast('這個世界的 Boss 關頁面已預留，之後會再接上真正戰鬥。');
         };
         list.appendChild(bossBtn);
       }
@@ -262,6 +318,7 @@
       const hint = document.createElement('div');
       hint.className = 'small';
       hint.style.marginTop = '8px';
+      hint.style.color = theme.text;
       hint.textContent = isTeacher
         ? '教師模式：可直接進入前四個一般關，並可看到第5關 Boss 預留按鈕。'
         : (!userId

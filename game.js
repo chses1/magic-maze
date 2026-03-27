@@ -143,7 +143,12 @@ window.GamePage = (()=>{
   let running = false;
   let paused = false;
   let abortRun = false;
+  let stepMode = false;
+  let stepCredits = 0;
+  let stepWaiterResolve = null;
   let bossState = null;
+
+  const PROGRAM_STORE_KEY = "maze_saved_programs_v1";
 
   const toast = (msg)=> {
     const el = document.getElementById("toast");
@@ -183,6 +188,123 @@ window.GamePage = (()=>{
 
   function getLevelCopy(worldId, levelId){
     return LEVEL_COPY[levelKeyRaw(worldId, levelId)] || DEFAULT_COPY;
+  }
+
+
+  function draftRecordKey(userId, worldId, levelId){
+    return `${String(userId || '').trim()}::${normalizeWorldId(worldId)}-${normalizeLevelId(levelId)}`;
+  }
+
+  function getProgramStore(){
+    try{
+      const raw = localStorage.getItem(PROGRAM_STORE_KEY);
+      const parsed = raw ? JSON.parse(raw) : {};
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    }catch(err){
+      console.warn('讀取積木草稿失敗', err);
+      return {};
+    }
+  }
+
+  function saveProgramStore(store){
+    try{
+      if (!store || typeof store !== 'object' || Object.keys(store).length === 0) {
+        localStorage.removeItem(PROGRAM_STORE_KEY);
+        return true;
+      }
+      localStorage.setItem(PROGRAM_STORE_KEY, JSON.stringify(store));
+      return true;
+    }catch(err){
+      console.warn('儲存積木草稿失敗', err);
+      return false;
+    }
+  }
+
+  function workspaceToDraftText(ws){
+    if (!ws || !window.Blockly) return '';
+    try{
+      if (Blockly.serialization?.workspaces?.save) {
+        return JSON.stringify(Blockly.serialization.workspaces.save(ws));
+      }
+      if (Blockly.Xml?.workspaceToDom && Blockly.Xml?.domToText) {
+        return Blockly.Xml.domToText(Blockly.Xml.workspaceToDom(ws));
+      }
+    }catch(err){
+      console.warn('轉換積木草稿失敗', err);
+    }
+    return '';
+  }
+
+  function loadDraftTextToWorkspace(textValue, ws){
+    if (!textValue || !ws || !window.Blockly) return false;
+    try{
+      ws.clear();
+      if (String(textValue).trim().startsWith('{') && Blockly.serialization?.workspaces?.load) {
+        Blockly.serialization.workspaces.load(JSON.parse(textValue), ws);
+        return true;
+      }
+      if (Blockly.Xml?.textToDom && Blockly.Xml?.domToWorkspace) {
+        Blockly.Xml.domToWorkspace(Blockly.Xml.textToDom(textValue), ws);
+        return true;
+      }
+    }catch(err){
+      console.warn('載入積木草稿失敗', err);
+    }
+    return false;
+  }
+
+  function saveProgramDraft(){
+    try{
+      const session = StorageAPI.getSession?.();
+      if (!session?.userId || !workspace || !world || !level || isBossLevel()) return false;
+
+      const blocklyText = workspaceToDraftText(workspace);
+      if (!blocklyText) return false;
+
+      const store = getProgramStore();
+      store[draftRecordKey(session.userId, world.worldId, level.levelId)] = {
+        userId: String(session.userId),
+        worldId: normalizeWorldId(world.worldId),
+        levelId: normalizeLevelId(level.levelId),
+        savedAt: Date.now(),
+        blockly: blocklyText
+      };
+      return saveProgramStore(store);
+    }catch(err){
+      console.warn('saveProgramDraft failed', err);
+      return false;
+    }
+  }
+
+  function loadProgramDraft(){
+    try{
+      const session = StorageAPI.getSession?.();
+      if (!session?.userId || !workspace || !world || !level || isBossLevel()) return false;
+
+      const store = getProgramStore();
+      const payload = store[draftRecordKey(session.userId, world.worldId, level.levelId)];
+      if (!payload?.blockly) return false;
+      return loadDraftTextToWorkspace(payload.blockly, workspace);
+    }catch(err){
+      console.warn('loadProgramDraft failed', err);
+      return false;
+    }
+  }
+
+  function clearProgramDraft(worldId = world?.worldId, levelId = level?.levelId){
+    try{
+      const session = StorageAPI.getSession?.();
+      if (!session?.userId || !worldId || !levelId) return false;
+
+      const store = getProgramStore();
+      const key = draftRecordKey(session.userId, worldId, levelId);
+      if (!(key in store)) return false;
+      delete store[key];
+      return saveProgramStore(store);
+    }catch(err){
+      console.warn('clearProgramDraft failed', err);
+      return false;
+    }
   }
   
   function getWorldDisplayName(worldId){
@@ -318,6 +440,7 @@ window.GamePage = (()=>{
       }
       body.world1-skin #btnRun,
       body.world1-skin #btnPause,
+      body.world1-skin #btnStep,
       body.world1-skin #btnReset,
       body.world1-skin #btnExit {
         color: #ffffff !important;
@@ -326,6 +449,7 @@ window.GamePage = (()=>{
         opacity: 1 !important;
       }
       body.world1-skin #btnPause,
+      body.world1-skin #btnStep,
       body.world1-skin #btnReset {
         color: #1d2f22 !important;
         background: #edf4ea !important;
@@ -697,6 +821,7 @@ window.GamePage = (()=>{
     const btnPause = document.getElementById('btnPause');
     const btnReset = document.getElementById('btnReset');
     const btnExit = document.getElementById('btnExit');
+    const btnStep = document.getElementById('btnStep');
     const ids = ['steps','bumps','hasKey','time'];
 
     if (titleEl) {
@@ -722,7 +847,7 @@ window.GamePage = (()=>{
       }
     });
 
-    [btnRun, btnPause, btnReset, btnExit].forEach(btn => {
+    [btnRun, btnPause, btnReset, btnExit, btnStep].forEach(btn => {
       if (!btn) return;
       btn.style.opacity = '1';
       btn.style.fontWeight = '900';
@@ -737,6 +862,11 @@ window.GamePage = (()=>{
       btnPause.style.background = '#edf4ea';
       btnPause.style.color = '#1c2e21';
       btnPause.style.border = '2px solid #adbeaa';
+    }
+    if (btnStep) {
+      btnStep.style.background = '#edf4ea';
+      btnStep.style.color = '#1c2e21';
+      btnStep.style.border = '2px solid #adbeaa';
     }
     if (btnReset) {
       btnReset.style.background = '#edf4ea';
@@ -808,8 +938,10 @@ window.GamePage = (()=>{
     const btnPause = document.getElementById("btnPause");
     const btnReset = document.getElementById("btnReset");
     const btnExit = document.getElementById("btnExit");
+    const btnStep = document.getElementById("btnStep");
     if (btnRun) btnRun.textContent = UI.buttons.run;
     if (btnPause) btnPause.textContent = UI.buttons.pause;
+    if (btnStep) btnStep.textContent = '步進';
     if (btnReset) btnReset.textContent = UI.buttons.reset;
     if (btnExit) btnExit.textContent = UI.buttons.exit;
   }
@@ -1402,12 +1534,14 @@ window.GamePage = (()=>{
   function showResult(text){
     const el = document.getElementById("result");
     const hr = document.querySelector('.stage .hr');
+    const gridWrap = document.querySelector('.gridWrap');
     const hasContent = !!String(text || '').trim();
     if (el) {
       el.innerHTML = text;
       el.style.display = hasContent ? '' : 'none';
     }
     if (hr) hr.style.display = hasContent ? '' : 'none';
+    if (gridWrap) gridWrap.style.display = hasContent ? 'none' : '';
   }
 
   function stopTimers(){
@@ -1415,10 +1549,34 @@ window.GamePage = (()=>{
     tickTimer = null;
   }
 
+  function resolvePendingStep(){
+    if (typeof stepWaiterResolve === "function") {
+      const resolve = stepWaiterResolve;
+      stepWaiterResolve = null;
+      resolve();
+    }
+  }
+
+  async function waitForNextStep(){
+    while (!abortRun) {
+      if (stepCredits > 0) {
+        stepCredits--;
+        return;
+      }
+      await new Promise(resolve => {
+        stepWaiterResolve = resolve;
+      });
+    }
+    throw new Error("aborted");
+  }
+
   function resetRunState(){
     running = false;
     paused = false;
     abortRun = false;
+    stepMode = false;
+    stepCredits = 0;
+    resolvePendingStep();
     stopTimers();
   }
 
@@ -1474,6 +1632,10 @@ window.GamePage = (()=>{
         }
       }catch(e){
         // ignore highlight errors so Blockly visual effects never break gameplay
+      }
+      if (stepMode) {
+        toast('步進模式：按一次「步進」就執行目前反白的這一塊。');
+        await waitForNextStep();
       }
       await sleep(0);
     }
@@ -1549,16 +1711,50 @@ window.GamePage = (()=>{
     };
   }
 
-  async function runProgram(){
+
+  async function executeSingleStep(){
+    if (isBossLevel()) return;
+    if (!workspace) return;
+
+    showResult('');
+
+    if (running) {
+      if (!stepMode) {
+        toast('目前正在完整執行中，請先按「重設關卡」後再使用步進。');
+        return;
+      }
+      stepCredits += 1;
+      resolvePendingStep();
+      toast('已執行下一塊積木。');
+      return;
+    }
+
+    const topBlocks = typeof workspace.getTopBlocks === 'function' ? workspace.getTopBlocks(false) : [];
+    if (!topBlocks || topBlocks.length === 0) {
+      toast('目前沒有可執行的積木。');
+      return;
+    }
+
+    stepMode = true;
+    stepCredits = 1;
+    toast('步進模式已開始。再按一次「步進」會執行下一塊積木。');
+    await runProgram({ stepMode: true });
+  }
+
+  async function runProgram(options = {}){
     if (isBossLevel()) return;
     if(running) return;
+
+    const requestedStepMode = !!options.stepMode;
 
     running = true;
     paused = false;
     abortRun = false;
+    stepMode = requestedStepMode;
+    if (!requestedStepMode) stepCredits = 0;
     showResult("");
-    toast(UI.common.running);
-    startClock();
+    toast(requestedStepMode ? "步進模式進行中…" : UI.common.running);
+    if (!startAt) startClock();
 
     const api = makeAPI();
     const code = BlocklySetup.workspaceToAsyncCode(workspace);
@@ -1586,6 +1782,11 @@ window.GamePage = (()=>{
       if(err?.message === "WIN"){
         stopTimers();
         running = false;
+        paused = false;
+        abortRun = false;
+        stepMode = false;
+        stepCredits = 0;
+        resolvePendingStep();
 
         const {score, stars, timeMs} = scoreAndStars();
         const record = { score, stars, steps, timeMs, bumps, at: Date.now() };
@@ -1596,6 +1797,7 @@ window.GamePage = (()=>{
         const copy = getLevelCopy(world.worldId, level.levelId);
 
         const isFinalTrialOfWorld1 = normalizeWorldId(world.worldId) === "W1" && normalizeLevelId(level.levelId) === "L5";
+        clearProgramDraft(world.worldId, level.levelId);
 
         showResult(buildResultCard(
           "good",
@@ -1635,6 +1837,8 @@ window.GamePage = (()=>{
   function bindUI(){
     document.getElementById("btnRun").onclick = ()=> runProgram();
 
+    document.getElementById("btnStep").onclick = ()=> executeSingleStep();
+
     document.getElementById("btnPause").onclick = ()=>{
       if (isBossLevel()) {
         toast('Boss 戰不需要暫停鍵。');
@@ -1644,18 +1848,28 @@ window.GamePage = (()=>{
         toast(UI.common.notStarted);
         return;
       }
+      if(stepMode){
+        toast('步進模式不需要暫停，直接按「步進」即可。');
+        return;
+      }
       paused = !paused;
       toast(paused ? UI.common.paused : UI.common.resumed);
     };
 
     document.getElementById("btnReset").onclick = ()=>{
       abortRun = true;
+      resolvePendingStep();
       resetLevel();
     };
 
     document.getElementById("btnExit").onclick = ()=>{
-      if(!confirm(UI.common.exitConfirm)) return;
+      if(!confirm("確定要離開這一關嗎？系統會先保存你目前的積木進度。")) return;
+      const saved = saveProgramDraft();
       abortRun = true;
+      resolvePendingStep();
+      if (!isBossLevel()) {
+        toast(saved ? '已保存目前積木進度，返回首頁中…' : '這一關目前沒有可保存的積木，直接返回首頁。');
+      }
       location.href = "index.html";
     };
   }
@@ -1676,9 +1890,10 @@ window.GamePage = (()=>{
 
     applyStaticUIText();
     ensureInfoPanels();
-    workspace = BlocklySetup.createWorkspace("blocklyDiv");
+    workspace = BlocklySetup.createWorkspace("blocklyDiv", normalizeWorldId(worldId || pack.w?.worldId || "W1"));
     bindUI();
     resetLevel();
+    loadProgramDraft();
     applyMainContrast();
   }
 
