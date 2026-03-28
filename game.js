@@ -372,11 +372,11 @@ window.GamePage = (()=>{
     style.id = "world1-ui-style";
     style.textContent = `
       body.world1-skin {
-        background: linear-gradient(180deg, #d7e0d2 0%, #c8d2c4 100%);
-        color: #15281a;
+        background: linear-gradient(180deg, #e7e9e5 0%, #d9ddd7 100%);
+        color: #1f2937;
       }
       body.world1-skin #title {
-        color: #1d2f22 !important;
+        color: #1f2937 !important;
         font-size: clamp(28px, 4vw, 42px);
         font-weight: 900;
         letter-spacing: .5px;
@@ -426,7 +426,7 @@ window.GamePage = (()=>{
         gap: 8px;
       }
       body.world1-skin #subtitle {
-        color: #39503b !important;
+        color: #4b5563 !important;
         font-size: clamp(15px, 1.6vw, 20px);
         font-weight: 800;
         text-shadow: none !important;
@@ -451,7 +451,7 @@ window.GamePage = (()=>{
       body.world1-skin #btnPause,
       body.world1-skin #btnStep,
       body.world1-skin #btnReset {
-        color: #1d2f22 !important;
+        color: #1f2937 !important;
         background: #edf4ea !important;
         border: 2px solid #a5b9a3 !important;
       }
@@ -462,8 +462,8 @@ window.GamePage = (()=>{
       }
       body.world1-skin #toast {
         color: #ffffff !important;
-        background: #2e4131 !important;
-        border: 2px solid #8ab28f !important;
+        background: #374151 !important;
+        border: 2px solid #9ca3af !important;
         font-weight: 800 !important;
         text-shadow: none !important;
       }
@@ -810,7 +810,87 @@ window.GamePage = (()=>{
     el.style.color = opts.color || '#18301e';
   }
 
+  function getWorldUiTheme(worldId){
+    const key = normalizeWorldId(worldId || world?.worldId || 'W1');
+    const themes = {
+      W1: {
+        bodyBg: 'linear-gradient(180deg, #e7e9e5 0%, #d9ddd7 100%)',
+        text: '#1f2937',
+        title: '#1f2937',
+        subtitle: '#4b5563',
+        badgeBg: '#f3f4f6',
+        badgeBd: '#cbd5e1',
+        panelBg: '#f3f4f6',
+        panelBd: '#cbd5e1',
+        gridWrapBg: 'rgba(148, 163, 184, .12)',
+        gridWrapBd: '#cbd5e1',
+        toastBg: '#374151',
+        toastBd: '#9ca3af',
+        softBtnBg: '#f8fafc',
+        softBtnBd: '#cbd5e1',
+        stageBg: '#f8fafc',
+        workspaceBg: '#ffffff'
+      },
+      W2: {
+        bodyBg: 'linear-gradient(180deg, #d6ead8 0%, #bfd7c4 100%)',
+        text: '#103324',
+        title: '#14532d',
+        subtitle: '#1f6b43',
+        badgeBg: '#edf8f0',
+        badgeBd: '#9ac7a6',
+        panelBg: '#edf8f0',
+        panelBd: '#9ac7a6',
+        gridWrapBg: 'rgba(80, 140, 96, .12)',
+        gridWrapBd: '#9ac7a6',
+        toastBg: '#1f5131',
+        toastBd: '#7ec28d',
+        softBtnBg: '#f4fbf5',
+        softBtnBd: '#9ac7a6',
+        stageBg: '#eef8f0',
+        workspaceBg: '#f8fdf8'
+      },
+      W3: {
+        bodyBg: 'linear-gradient(180deg, #efe4c7 0%, #e4d3ab 100%)',
+        text: '#3a2a12',
+        title: '#6f4b0f',
+        subtitle: '#8a6521',
+        badgeBg: '#fbf4dd',
+        badgeBd: '#d6be82',
+        panelBg: '#fbf4dd',
+        panelBd: '#d6be82',
+        gridWrapBg: 'rgba(193, 158, 78, .12)',
+        gridWrapBd: '#d6be82',
+        toastBg: '#6e5421',
+        toastBd: '#d8bc74',
+        softBtnBg: '#fff8e8',
+        softBtnBd: '#d8bc74',
+        stageBg: '#fcf5df',
+        workspaceBg: '#fff9eb'
+      },
+      W4: {
+        bodyBg: 'linear-gradient(180deg, #d9e4f1 0%, #c6d4e3 100%)',
+        text: '#17304b',
+        title: '#1e3a5f',
+        subtitle: '#33597d',
+        badgeBg: '#edf4fb',
+        badgeBd: '#9eb8d3',
+        panelBg: '#edf4fb',
+        panelBd: '#9eb8d3',
+        gridWrapBg: 'rgba(90, 130, 180, .12)',
+        gridWrapBd: '#9eb8d3',
+        toastBg: '#2f4d67',
+        toastBd: '#89abc9',
+        softBtnBg: '#f3f8fd',
+        softBtnBd: '#9eb8d3',
+        stageBg: '#eef4fb',
+        workspaceBg: '#f8fbff'
+      }
+    };
+    return themes[key] || themes.W1;
+  }
+
   function applyMainContrast(){
+    const theme = getWorldUiTheme(world?.worldId);
     const titleEl = document.getElementById('title');
     const subtitleEl = document.getElementById('subtitle');
     const toastEl = document.getElementById('toast');
@@ -823,27 +903,48 @@ window.GamePage = (()=>{
     const btnExit = document.getElementById('btnExit');
     const btnStep = document.getElementById('btnStep');
     const ids = ['steps','bumps','hasKey','time'];
+    const containerEl = document.querySelector('.container');
+    const stageEl = document.querySelector('.stage');
+    const gameLayoutEl = document.querySelector('.gameLayout');
+
+    document.body.style.setProperty('background', theme.bodyBg, 'important');
+    document.body.style.setProperty('color', theme.text, 'important');
+    document.body.setAttribute('data-world-theme', normalizeWorldId(world?.worldId || 'W1'));
+
+    if (containerEl) {
+      containerEl.style.background = 'transparent';
+    }
+    if (gameLayoutEl) {
+      gameLayoutEl.style.background = 'transparent';
+    }
+    if (stageEl) {
+      stageEl.style.background = theme.stageBg;
+      stageEl.style.border = `1px solid ${theme.panelBd}`;
+      stageEl.style.borderRadius = '24px';
+      stageEl.style.boxShadow = '0 12px 28px rgba(0,0,0,.10)';
+      stageEl.style.padding = '14px';
+    }
 
     if (titleEl) {
-      titleEl.style.color = '#1d2f22';
+      titleEl.style.color = theme.title;
       titleEl.style.fontWeight = '900';
     }
     if (subtitleEl) {
-      subtitleEl.style.color = '#3a503d';
+      subtitleEl.style.color = theme.subtitle;
       subtitleEl.style.fontWeight = '800';
     }
     ids.forEach(id => {
       const el = document.getElementById(id);
       if (!el) return;
-      el.style.color = '#18301e';
+      el.style.color = theme.text;
       el.style.fontWeight = '900';
       if (el.parentElement) {
-        el.parentElement.style.color = '#18301e';
+        el.parentElement.style.color = theme.text;
         el.parentElement.style.fontWeight = '800';
-        el.parentElement.style.background = '#eef3eb';
+        el.parentElement.style.background = theme.badgeBg;
         el.parentElement.style.borderRadius = '999px';
         el.parentElement.style.padding = '6px 12px';
-        el.parentElement.style.border = '1px solid #c0cdbd';
+        el.parentElement.style.border = `1px solid ${theme.badgeBd}`;
       }
     });
 
@@ -859,19 +960,19 @@ window.GamePage = (()=>{
       btnRun.style.border = 'none';
     }
     if (btnPause) {
-      btnPause.style.background = '#edf4ea';
-      btnPause.style.color = '#1c2e21';
-      btnPause.style.border = '2px solid #adbeaa';
+      btnPause.style.background = theme.softBtnBg;
+      btnPause.style.color = theme.text;
+      btnPause.style.border = `2px solid ${theme.softBtnBd}`;
     }
     if (btnStep) {
-      btnStep.style.background = '#edf4ea';
-      btnStep.style.color = '#1c2e21';
-      btnStep.style.border = '2px solid #adbeaa';
+      btnStep.style.background = theme.softBtnBg;
+      btnStep.style.color = theme.text;
+      btnStep.style.border = `2px solid ${theme.softBtnBd}`;
     }
     if (btnReset) {
-      btnReset.style.background = '#edf4ea';
-      btnReset.style.color = '#1c2e21';
-      btnReset.style.border = '2px solid #adbeaa';
+      btnReset.style.background = theme.softBtnBg;
+      btnReset.style.color = theme.text;
+      btnReset.style.border = `2px solid ${theme.softBtnBd}`;
     }
     if (btnExit) {
       btnExit.style.background = '#fff5f5';
@@ -879,32 +980,37 @@ window.GamePage = (()=>{
       btnExit.style.border = '2px solid #e4aaaa';
     }
     if (toastEl) {
-      toastEl.style.background = '#2e4131';
+      toastEl.style.background = theme.toastBg;
       toastEl.style.color = '#fff';
       toastEl.style.fontWeight = '800';
       toastEl.style.borderRadius = '18px';
       toastEl.style.padding = '14px 16px';
-      toastEl.style.border = '2px solid #8ab28f';
+      toastEl.style.border = `2px solid ${theme.toastBd}`;
     }
     if (resultEl) {
-      resultEl.style.color = '#18231b';
+      resultEl.style.color = theme.text;
     }
 
     if (gridEl) {
       const wrap = gridEl.parentElement;
       const panel = wrap && wrap.parentElement ? wrap.parentElement : wrap;
-      setPanelTheme(wrap, {background:'#aeb8aa22', border:'1px solid #b8c8b7'});
-      setPanelTheme(panel, {background:'#eef3eb', border:'1px solid #c0cdbd'});
-      if (wrap) wrap.style.color = '#18301e';
+      setPanelTheme(wrap, {background:theme.gridWrapBg, border:`1px solid ${theme.gridWrapBd}`, color:theme.text});
+      setPanelTheme(panel, {background:theme.panelBg, border:`1px solid ${theme.panelBd}`, color:theme.text});
+      if (wrap) wrap.style.color = theme.text;
     }
 
     if (blocklyEl) {
       const wrap = blocklyEl.parentElement;
       const panel = wrap && wrap.parentElement ? wrap.parentElement : wrap;
-      setPanelTheme(panel, {background:'#eef3eb', border:'1px solid #c0cdbd'});
-      if (panel) panel.style.color = '#18301e';
+      if (wrap) {
+        wrap.style.background = theme.workspaceBg;
+        wrap.style.border = `1px solid ${theme.panelBd}`;
+        wrap.style.borderRadius = '18px';
+      }
+      setPanelTheme(panel, {background:theme.panelBg, border:`1px solid ${theme.panelBd}`, color:theme.text});
+      if (panel) panel.style.color = theme.text;
       if (wrap && wrap.previousElementSibling) {
-        wrap.previousElementSibling.style.color = '#18301e';
+        wrap.previousElementSibling.style.color = theme.text;
         wrap.previousElementSibling.style.fontWeight = '900';
         wrap.previousElementSibling.style.textShadow = 'none';
       }
@@ -914,7 +1020,6 @@ window.GamePage = (()=>{
   function ensureInfoPanels(){
     ensureStyles();
     document.body.classList.add("world1-skin");
-    applyMainContrast();
     const badgeEl = document.getElementById("sessionBadge");
     if (badgeEl) badgeEl.style.display = 'none';
     const copyCard = document.getElementById("stageCopyCard");
@@ -1591,6 +1696,7 @@ window.GamePage = (()=>{
     level = pack.lv;
     const copy = getLevelCopy(world.worldId, level.levelId);
 
+    applyMainContrast();
     document.getElementById("title").textContent = `${getWorldDisplayName(world.worldId)} ➜ ${getCleanLevelTitle()}`;
     document.getElementById("subtitle").textContent = isBossLevel() ? `卡牌回合戰（擊敗森林狼王）` : `目標步數：${level.targetSteps}｜三星可獲得：${copy.reward}`;
 

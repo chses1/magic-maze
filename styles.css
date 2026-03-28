@@ -341,26 +341,45 @@ button.danger{
 /* ===== 關卡狀態顏色 ===== */
 .level-btn {
   transition: transform .08s ease, filter .12s ease, opacity .12s ease;
+  min-height: 56px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  font-weight: 900;
+  line-height: 1.35;
+  text-align: center;
+  text-shadow: none;
+  background: rgba(255,255,255,.92);
+  color: #1f2937 !important;
+  border: 1px solid rgba(148,163,184,.32);
+  box-shadow: 0 4px 12px rgba(15,23,42,.06);
+  opacity: 1 !important;
 }
 
-.level-btn:hover { transform: translateY(-1px); filter: brightness(1.05); }
+.level-btn:hover { transform: translateY(-1px); filter: brightness(1.03); }
+
+.level-btn:disabled {
+  opacity: 1 !important;
+  filter: none !important;
+}
 
 .level-btn.locked {
-  background: #6b7280 !important; /* 灰 */
-  opacity: 0.55;
+  background: #9ca3af !important;
+  color: #ffffff !important;
+  opacity: .92 !important;
   cursor: not-allowed !important;
-  border-color: rgba(255,255,255,0.12) !important;
+  border-color: rgba(107,114,128,.55) !important;
+  box-shadow: none !important;
 }
 
 .level-btn.completed {
-  background: #22c55e !important; /* 綠 */
+  background: #22c55e !important;
   color: #0b1b10 !important;
-  border-color: rgba(255,255,255,0.12) !important;
+  border-color: rgba(22,101,52,.18) !important;
 }
 
 .level-btn.gold {
-  background: #fbbf24 !important; /* 金 */
+  background: #fbbf24 !important;
   color: #2b1b00 !important;
-  border-color: rgba(0,0,0,0.08) !important;
-  box-shadow: 0 0 0 1px rgba(255,255,255,0.15) inset, 0 6px 18px rgba(251,191,36,0.18);
+  border-color: rgba(146,64,14,.12) !important;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.18) inset, 0 6px 18px rgba(251,191,36,0.18);
 }
