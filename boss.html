@@ -23,7 +23,7 @@
       --radius:22px;
     }
     *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-    html,body{margin:0;padding:0;background:linear-gradient(rgba(223,232,220,.84),rgba(213,223,211,.90)), url('img/world1.png') center/cover no-repeat fixed;color:var(--text);font-family:"Noto Sans TC",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    html,body{margin:0;padding:0;background:linear-gradient(rgba(223,232,220,.84),rgba(213,223,211,.90)), url('img/world1_bg_boss_magic_hall.png') center/cover no-repeat fixed;color:var(--text);font-family:"Noto Sans TC",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
     body{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:10px}
     .page{
       width:min(calc((100vh - 20px) * 16 / 9), calc(100vw - 20px));
@@ -49,12 +49,12 @@
       border:1px solid rgba(200,213,197,.92);
       border-radius:var(--radius);
       padding:10px;
-      grid-template-rows:auto minmax(0,1fr) auto;
+      grid-template-rows:auto minmax(260px,1fr) auto;
       gap:10px;
     }
     .stage-top{display:grid;grid-template-columns:1fr 1.15fr 1fr;gap:10px;min-height:0}
     .panel,.intent-box,.arena,.card-box,.action-box,.result-card{background:rgba(247,250,245,.96);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
-    .panel,.intent-box{padding:12px 14px}
+    .panel,.intent-box{padding:10px 12px}
     .panel-title{font-size:clamp(12px,.9vw,14px);font-weight:900;color:#57705d;margin-bottom:8px}
     .hp-head{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
     .hp-head strong{font-size:clamp(15px,1.05vw,18px)}
@@ -70,15 +70,15 @@
     .intent-sub{margin-top:6px;font-size:clamp(12px,.92vw,14px);line-height:1.45;color:#7a6340}
     .arena{
       min-height:0;
-      padding:10px 14px;
+      padding:6px 14px 0;
       display:flex;
-      align-items:center;
+      align-items:stretch;
       justify-content:center;
       position:relative;
       overflow:hidden;
       background:
         linear-gradient(rgba(248,252,246,.20), rgba(241,248,239,.26)),
-        url('img/world1.png') center 56% / cover no-repeat;
+        url('img/world1_bg_boss_magic_hall.png') center 56% / cover no-repeat;
     }
     .arena::after{
       content:"";
@@ -90,25 +90,38 @@
       background:radial-gradient(circle,rgba(40,66,47,.28),rgba(40,66,47,0));
       filter:blur(7px);
     }
-    .portrait{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:8px;width:min(100%,480px);height:100%;justify-content:center}
+    .portrait{
+      position:relative;
+      z-index:1;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:flex-end;
+      width:100%;
+      height:100%;
+      padding:4px 0 76px;
+    }
     .portrait img{
       display:block;
-      width:min(100%,520px);
-      max-height:min(52vh, 48vw);
+      width:auto;
+      height:100%;
+      max-width:min(100%,640px);
+      max-height:100%;
       object-fit:contain;
+      object-position:center bottom;
       filter:drop-shadow(0 16px 32px rgba(0,0,0,.22));
     }
     .phase-badge{padding:8px 16px;border-radius:999px;background:linear-gradient(180deg,#fee8bf,#f7d58c);font-weight:900;font-size:clamp(14px,1vw,18px);color:#7a5b17;border:1px solid #e5c67f;box-shadow:0 8px 18px rgba(120,91,23,.12)}
-    .fx-box{width:min(100%,460px);padding:12px 16px;text-align:center;background:rgba(255,255,255,.84);border:1px solid #d9e4d6;border-radius:18px;font-size:clamp(16px,1.1vw,20px);font-weight:900;color:#22452c}
+    .fx-box{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);width:min(100%,460px);padding:12px 16px;text-align:center;background:rgba(255,255,255,.84);border:1px solid #d9e4d6;border-radius:18px;font-size:clamp(16px,1.1vw,20px);font-weight:900;color:#22452c}
     .stage-bottom{display:grid;grid-template-columns:1.55fr .95fr;gap:10px;min-height:0}
     .card-box,.action-box{padding:12px;min-height:0}
     .section-title{font-size:clamp(16px,1.1vw,18px);font-weight:900;margin-bottom:8px}
     .cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;align-items:stretch}
     .boss-card{
       display:grid;
-      grid-template-rows:minmax(132px, 1fr) auto auto auto;
-      gap:6px;
-      padding:10px;
+      grid-template-rows:minmax(108px, 1fr) auto auto auto;
+      gap:5px;
+      padding:9px;
       border-radius:20px;
       background:linear-gradient(180deg,#fffefd 0%,#f2f8ef 100%);
       border:1px solid #d8e3d6;
@@ -123,18 +136,18 @@
       border-radius:16px;
       background:radial-gradient(circle at top, #ffffff 0%, #f0f4ee 78%);
       border:1px solid #e4ebe2;
-      padding:10px;
-      min-height:132px;
+      padding:8px;
+      min-height:108px;
     }
     .boss-card img{
-      width:112px;
-      height:112px;
+      width:88px;
+      height:88px;
       object-fit:contain;
       display:block;
       filter:drop-shadow(0 8px 14px rgba(0,0,0,.12));
     }
     .boss-card-title{font-size:clamp(14px,.96vw,16px);font-weight:900;line-height:1.2;text-align:center}
-    .boss-card-desc{font-size:clamp(11px,.76vw,12.5px);line-height:1.35;color:#506856;min-height:32px;text-align:center}
+    .boss-card-desc{font-size:clamp(10px,.72vw,12px);line-height:1.3;color:#506856;min-height:28px;text-align:center}
     .boss-card-tag{display:inline-flex;justify-content:center;align-items:center;align-self:center;font-size:11px;font-weight:900;color:#487055;background:#e3f1e1;border-radius:999px;padding:5px 9px}
     .boss-card button,.action-buttons button{width:100%;margin-top:0;border:none;border-radius:14px;padding:10px 10px;font-size:clamp(12px,.86vw,14px);font-weight:900;color:#fff;cursor:pointer;box-shadow:0 8px 18px rgba(57,100,70,.12)}
     .boss-card button,.action-buttons .primary{background:linear-gradient(180deg,var(--green1),var(--green2))}
@@ -197,8 +210,9 @@
       .page{width:min(100vw - 16px, 1500px);aspect-ratio:auto;min-height:calc(100vh - 16px)}
       .stage-top,.stage-bottom{grid-template-columns:1fr}
       .cards{grid-template-columns:repeat(2,minmax(0,1fr))}
-      .arena{min-height:260px}
-      .portrait img{max-height:260px}
+      .arena{min-height:300px}
+      .portrait{padding-bottom:72px}
+      .portrait img{max-height:100%}
     }
     @media (max-width: 640px){
       body{display:block;padding:0}
@@ -216,8 +230,8 @@
   <div class="page">
     <div class="top-actions">
       <div class="title-wrap">
-        <h1>Boss 戰：森林狼王</h1>
-        <p>完全獨立頁模式。若挑戰失敗會回到首頁，請先補齊未達三星關卡的神秘道具再回來挑戰。</p>
+        <h1 id="pageTitle">Boss 戰：森林狼王</h1>
+        <p id="pageIntro">完全獨立頁模式。若挑戰失敗會回到首頁，請先補齊未達三星關卡的神秘道具再回來挑戰。</p>
       </div>
       <div class="toolbar">
         <button class="ghost" id="btnBackGame">回首頁</button>
@@ -243,7 +257,7 @@
 
         <div class="panel">
           <div class="panel-title">Boss 狀態</div>
-          <div class="hp-head"><strong>森林狼王</strong><span class="hp-num" id="bossHpText">26 / 26</span></div>
+          <div class="hp-head"><strong id="bossName">森林狼王</strong><span class="hp-num" id="bossHpText">26 / 26</span></div>
           <div class="hp-bar"><div class="fill-boss" id="bossHpBar" style="width:100%"></div></div>
           <div class="panel-sub"><span>階段：<b id="bossPhase">森林試探</b></span><span>冰凍：<b id="bossFreeze">0</b></span></div>
         </div>

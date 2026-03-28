@@ -9,16 +9,222 @@ window.GamePage = (()=>{
     {dx:-1, dy:0, emoji:"←"},
   ];
 
-  const ASSETS = {
-    worldBg: "img/world1.png",
-    boss: "img/boss1.png",
-    cards: {
-      potion: "img/item1.png",
-      dagger: "img/item2.png",
-      shield: "img/item3.png",
-      freeze: "img/item4.png",
+  const WORLD_ASSETS = {
+    W1: {
+      worldBg: "img/world1_bg_magic_academy.png",
+      boss: "img/world1_boss_professor.png",
+      cards: {
+        potion: "img/world1_item_01_mana_crystal.png",
+        dagger: "img/world1_item_02_novice_wand.png",
+        shield: "img/world1_item_03_academy_robe.png",
+        freeze: "img/world1_item_04_seal_scroll.png",
+      }
+    },
+    W2: {
+      worldBg: "img/world2_bg_runic_forest.png",
+      boss: "img/world2_boss_wolf_king.png",
+      cards: {
+        potion: "img/world2_item_01_healing_potion.png",
+        dagger: "img/world2_item_02_dagger_attack.png",
+        shield: "img/world2_item_03_wooden_shield.png",
+        freeze: "img/world2_item_04_frozen_vine.png",
+      }
+    },
+    W3: {
+      worldBg: "img/world3_bg_time_library.png",
+      boss: "img/world3_boss_librarian.png",
+      cards: {
+        potion: "img/world3_item_01_time_hourglass.png",
+        dagger: "img/world3_item_02_magic_quill.png",
+        shield: "img/world3_item_03_prophecy_page.png",
+        freeze: "img/world3_item_04_time_key.png",
+      }
+    },
+    W4: {
+      worldBg: "img/world4_bg_mech_castle.png",
+      boss: "img/world4_boss_mech_overlord.png",
+      cards: {
+        potion: "img/world4_item_01_gear_core.png",
+        dagger: "img/world4_item_02_steam_gauntlet.png",
+        shield: "img/world4_item_03_spell_chip.png",
+        freeze: "img/world4_item_04_clockwork_key.png",
+      }
     }
   };
+
+  const WORLD_COPY = {
+    W1: {
+      introTitle: "第一世界：魔法學院",
+      introBody: "你將在魔法學院中學會最基礎的程式控制，透過前進與轉向走出迷宮，並蒐集四個魔法道具。",
+      bossHint: "完成所有一般關後，你將挑戰第一位關主──教授！",
+      cardsTitle: "本世界可獲得道具",
+      cardsRule: "下方顯示的是本世界四關會依序獲得的不同道具；每個道具之後都可作為 Boss 戰卡牌使用一次。",
+      bossTitle: "教授",
+      bossBody: "魔法學院的最終考驗已經開始。帶著你在各關蒐集到的道具，挑戰學院教授。",
+      bossStageTitle: "Boss 戰：教授",
+      bossStageIntro: "你已通過魔法學院的所有試煉，現在要用前面收集到的道具，挑戰教授。",
+      rewards: [
+        { key: "potion", title: "魔力水晶", desc: "恢復魔力並強化下一次攻擊。" },
+        { key: "dagger", title: "新生魔杖", desc: "發射基礎魔法，直接造成傷害。" },
+        { key: "shield", title: "學院法袍", desc: "提供防護，減少受到的傷害。" },
+        { key: "freeze", title: "封印卷軸", desc: "暫時封住敵人的下一次行動。" },
+      ],
+      levelRewards: ["魔力水晶","新生魔杖","學院法袍","封印卷軸"],
+      rewardDescs: [
+        "恢復魔力並強化下一次攻擊。",
+        "發射基礎魔法，直接造成傷害。",
+        "提供防護，減少受到的傷害。",
+        "暫時封住敵人的下一次行動。"
+      ],
+      bossReward: "通往第二世界",
+      bossRewardDesc: "擊敗教授後即可開啟第二世界。"
+    },
+    W2: {
+      introTitle: "第二世界：符文森林",
+      introBody: "在符文森林中，你將開始運用迴圈與規律路線，並蒐集適合野外戰鬥的四個生存道具。",
+      bossHint: "完成所有一般關後，你將挑戰第二位關主──狼王！",
+      cardsTitle: "本世界可獲得道具",
+      cardsRule: "每個道具都能在狼王戰中使用一次，請觀察狼王的出招節奏再決定時機。",
+      bossTitle: "狼王",
+      bossBody: "森林最深處的守護者正在等待你。用你在迷宮中得到的道具突破牠的攻勢。",
+      bossStageTitle: "Boss 戰：狼王",
+      bossStageIntro: "你已通過符文森林的所有試煉，現在要用前面收集到的道具，挑戰狼王。",
+      rewards: [
+        { key: "potion", title: "補血小藥水", desc: "立刻補滿生命值。" },
+        { key: "dagger", title: "小刀攻擊", desc: "快速出手，造成高傷害。" },
+        { key: "shield", title: "木盾防禦", desc: "立刻獲得大量護盾。" },
+        { key: "freeze", title: "冰凍藤蔓", desc: "讓 Boss 暫時無法行動。" },
+      ],
+      levelRewards: ["補血小藥水","小刀攻擊","木盾防禦","冰凍藤蔓"],
+      rewardDescs: [
+        "立刻補滿生命值。",
+        "快速出手，造成高傷害。",
+        "立刻獲得大量護盾。",
+        "讓 Boss 暫時無法行動。"
+      ],
+      bossReward: "通往第三世界",
+      bossRewardDesc: "擊敗狼王後即可開啟第三世界。"
+    },
+    W3: {
+      introTitle: "第三世界：時光圖書館",
+      introBody: "在時光圖書館中，你將學習條件判斷，觀察前方是否有路，並收集四個與時間和知識有關的道具。",
+      bossHint: "完成所有一般關後，你將挑戰第三位關主──館長！",
+      cardsTitle: "本世界可獲得道具",
+      cardsRule: "這些道具擅長干擾與預判，很適合在館長戰中掌握節奏。",
+      bossTitle: "館長",
+      bossBody: "圖書館深處的守護館長已經甦醒。善用時間系道具，破解他的攻擊節奏。",
+      bossStageTitle: "Boss 戰：館長",
+      bossStageIntro: "你已通過時光圖書館的所有試煉，現在要用前面收集到的道具，挑戰館長。",
+      rewards: [
+        { key: "potion", title: "時光沙漏", desc: "回復生命並延緩敵人行動。" },
+        { key: "dagger", title: "館藏羽毛筆", desc: "寫下反擊咒文，造成傷害。" },
+        { key: "shield", title: "預言書頁", desc: "預見危機，獲得護盾。" },
+        { key: "freeze", title: "時空鑰匙", desc: "鎖住時間，限制敵人下一步。" },
+      ],
+      levelRewards: ["時光沙漏","館藏羽毛筆","預言書頁","時空鑰匙"],
+      rewardDescs: [
+        "回復生命並延緩敵人行動。",
+        "寫下反擊咒文，造成傷害。",
+        "預見危機，獲得護盾。",
+        "鎖住時間，限制敵人下一步。"
+      ],
+      bossReward: "通往第四世界",
+      bossRewardDesc: "擊敗館長後即可開啟第四世界。"
+    },
+    W4: {
+      introTitle: "第四世界：機械城堡",
+      introBody: "在機械城堡中，你將學習函式與重複走法，把複雜路線整理成可重用的咒語流程。",
+      bossHint: "完成所有一般關後，你將挑戰最終關主──機械主宰！",
+      cardsTitle: "本世界可獲得道具",
+      cardsRule: "這些道具偏向蓄力、爆發與停機控制，適合最終 Boss 戰。",
+      bossTitle: "機械主宰",
+      bossBody: "城堡深處的核心控制者已經啟動。帶上所有機械道具，挑戰最後的主宰。",
+      bossStageTitle: "Boss 戰：機械主宰",
+      bossStageIntro: "你已通過機械城堡的所有試煉，現在要用前面收集到的道具，挑戰機械主宰。",
+      rewards: [
+        { key: "potion", title: "齒輪核心", desc: "恢復生命並強化下次攻擊。" },
+        { key: "dagger", title: "蒸汽手套", desc: "重擊造成大量傷害。" },
+        { key: "shield", title: "機械咒語晶片", desc: "展開護罩，獲得護盾。" },
+        { key: "freeze", title: "傳動發條鑰匙", desc: "卡住齒輪，短暫停機敵人。" },
+      ],
+      levelRewards: ["齒輪核心","蒸汽手套","機械咒語晶片","傳動發條鑰匙"],
+      rewardDescs: [
+        "恢復生命並強化下次攻擊。",
+        "重擊造成大量傷害。",
+        "展開護罩，獲得護盾。",
+        "卡住齒輪，短暫停機敵人。"
+      ],
+      bossReward: "最終通關證明",
+      bossRewardDesc: "擊敗機械主宰後，你就完成了整個冒險。"
+    }
+  };
+
+  function getWorldAssets(worldId = world?.worldId){
+    return WORLD_ASSETS[normalizeWorldId(worldId)] || WORLD_ASSETS.W1;
+  }
+
+  function getWorldCopy(worldId = world?.worldId){
+    return WORLD_COPY[normalizeWorldId(worldId)] || WORLD_COPY.W1;
+  }
+
+  function getCardData(worldId = world?.worldId){
+    const assets = getWorldAssets(worldId);
+    const copy = getWorldCopy(worldId);
+    const rewards = copy.rewards || [];
+    return {
+      potion: { key: rewards[0]?.key || "potion", title: rewards[0]?.title || "道具1", desc: rewards[0]?.desc || "", img: assets.cards.potion },
+      dagger: { key: rewards[1]?.key || "dagger", title: rewards[1]?.title || "道具2", desc: rewards[1]?.desc || "", img: assets.cards.dagger },
+      shield: { key: rewards[2]?.key || "shield", title: rewards[2]?.title || "道具3", desc: rewards[2]?.desc || "", img: assets.cards.shield },
+      freeze: { key: rewards[3]?.key || "freeze", title: rewards[3]?.title || "道具4", desc: rewards[3]?.desc || "", img: assets.cards.freeze },
+    };
+  }
+
+  function buildLevelCopyMap(){
+    const map = {};
+    Object.keys(WORLD_COPY).forEach(worldKey => {
+      const copy = WORLD_COPY[worldKey];
+      const worldSlug = `world${String(worldKey).replace(/^W/i, '')}`;
+      const cards = getCardData(worldKey);
+      const cardList = [cards.potion, cards.dagger, cards.shield, cards.freeze];
+      for (let i = 0; i < 4; i++) {
+        map[`${worldSlug}-level${i+1}`] = {
+          title: `第${i+1}關`,
+          intro: "請用程式積木控制角色穿越迷宮，順利抵達出口。",
+          hint: "請先觀察路線，再用積木排出正確順序。",
+          reward: cardList[i].title,
+          rewardDesc: cardList[i].desc,
+          rewardImg: cardList[i].img,
+          success: "你成功走出迷宮了！",
+          fail: "這次還沒成功，再試一次吧！"
+        };
+      }
+      map[`${worldSlug}-boss`] = {
+        title: copy.bossStageTitle,
+        intro: copy.bossStageIntro,
+        hint: "提示：看準 Boss 的攻擊節奏，再決定要攻擊、防禦或使用道具。",
+        reward: copy.bossReward,
+        rewardDesc: copy.bossRewardDesc,
+        rewardImg: getWorldAssets(worldKey).boss,
+        success: `你擊敗了${copy.bossTitle}！`,
+        fail: `${copy.bossTitle}仍然站在你面前，再準備一下後重來吧！`
+      };
+    });
+    return map;
+  }
+
+  const LEVEL_COPY = buildLevelCopyMap();
+
+  const DEFAULT_COPY = {
+    title: "迷宮試煉",
+    intro: "請用程式積木控制角色穿越迷宮，順利抵達出口。",
+    hint: "請先觀察路線，再用積木排出正確順序。",
+    reward: "神秘獎勵",
+    rewardDesc: "完成本關後可解鎖新的冒險內容。",
+    rewardImg: WORLD_ASSETS.W1.cards.potion,
+    success: "你成功完成試煉了！",
+    fail: "這次還沒成功，再試一次吧！"
+  };
+
 
   const UI = {
     buttons: {
@@ -38,98 +244,15 @@ window.GamePage = (()=>{
       doorLocked: "門鎖住了！先拿鑰匙 🗝️",
       doorOpen: "門打開了！🔓",
       gotKey: "你拿到鑰匙了！",
-      gotCard: "你獲得了一張新卡牌！",
+      gotCard: "你獲得了一個新道具！",
       trap: "小心！你踩到陷阱了！本關步數懲罰 +3",
       needFix: "再調整積木，試著走到出口 🚪",
       winToast: "恭喜通關！你可以回首頁挑戰下一關。",
       codeError: "程式錯誤：請檢查積木或重來一次。",
       exitConfirm: "確定要離開這一關嗎？目前進度將不會保留。",
       noLevel: "找不到關卡資料！"
-    },
-    world1: {
-      introTitle: "第一世界：森林試煉",
-      introBody: "你將使用程式積木控制角色穿越迷宮，學會轉向、拿鑰匙、避開陷阱，並在每一關拿到新的戰鬥卡牌。",
-      bossHint: "完成所有試煉後，你將挑戰第一位關主──森林狼王！",
-      cardsTitle: "本世界可獲得卡牌",
-      cardsRule: "下方顯示的是本世界四關會依序獲得的不同卡牌；不是每一關都拿到同一套。每張卡牌在 Boss 戰可使用 1 次。",
-      bossTitle: "森林狼王",
-      bossBody: "森林的守護者正在深處等待你。完成前面所有試煉後，就能帶著卡牌挑戰牠。",
-      bossStageTitle: "Boss 戰：森林狼王",
-      bossStageIntro: "你已通過森林中的所有試煉，現在要用前面收集到的卡牌，挑戰第一位關主。",
     }
   };
-
-  const CARD_DATA = {
-    potion: { key: "potion", title: "補血小藥水", desc: "恢復 6 點生命值。", img: ASSETS.cards.potion },
-    dagger: { key: "dagger", title: "小刀攻擊", desc: "快速出手，造成 7 點傷害。", img: ASSETS.cards.dagger },
-    shield: { key: "shield", title: "木盾防禦", desc: "本回合獲得 5 點護盾。", img: ASSETS.cards.shield },
-    freeze: { key: "freeze", title: "冰凍藤蔓", desc: "讓 Boss 下一回合無法行動。", img: ASSETS.cards.freeze },
-  };
-
-  const LEVEL_COPY = {
-    "world1-level1": {
-      title: "第1關：學院大門",
-      intro: "請用程式積木控制角色穿越迷宮，順利抵達出口。",
-      hint: "請先觀察路線，再用積木排出正確順序。",
-      reward: CARD_DATA.potion.title,
-      rewardDesc: CARD_DATA.potion.desc,
-      rewardImg: CARD_DATA.potion.img,
-      success: "你成功走出迷宮了！",
-      fail: "這次還沒成功，再試一次吧！"
-    },
-    "world1-level2": {
-      title: "第2關：分岔路口",
-      intro: "請用程式積木控制角色穿越迷宮，順利抵達出口。",
-      hint: "請先觀察路線，再用積木排出正確順序。",
-      reward: CARD_DATA.dagger.title,
-      rewardDesc: CARD_DATA.dagger.desc,
-      rewardImg: CARD_DATA.dagger.img,
-      success: "你成功走出迷宮了！",
-      fail: "這次還沒成功，再試一次吧！"
-    },
-    "world1-level3": {
-      title: "第3關：岔路不通",
-      intro: "請用程式積木控制角色穿越迷宮，順利抵達出口。",
-      hint: "請先觀察路線，再用積木排出正確順序。",
-      reward: CARD_DATA.shield.title,
-      rewardDesc: CARD_DATA.shield.desc,
-      rewardImg: CARD_DATA.shield.img,
-      success: "你成功走出迷宮了！",
-      fail: "這次還沒成功，再試一次吧！"
-    },
-    "world1-level4": {
-      title: "第4關：小心陷阱",
-      intro: "請用程式積木控制角色穿越迷宮，順利抵達出口。",
-      hint: "請先觀察路線，再用積木排出正確順序。",
-      reward: CARD_DATA.freeze.title,
-      rewardDesc: CARD_DATA.freeze.desc,
-      rewardImg: CARD_DATA.freeze.img,
-      success: "你成功走出迷宮了！",
-      fail: "這次還沒成功，再試一次吧！"
-    },
-    "world1-boss": {
-      title: "1-BOSS 森林狼王",
-      intro: "你已完成森林中的所有試煉。現在，帶著收集到的卡牌與經驗，迎戰森林狼王！",
-      hint: "提示：看準狼王的攻擊節奏，再決定要攻擊、防禦或使用卡牌。",
-      reward: "通往第二世界",
-      rewardDesc: "擊敗森林狼王後即可開啟下一個世界。",
-      rewardImg: ASSETS.boss,
-      success: "你擊敗了森林狼王！",
-      fail: "森林狼王仍然站在你面前，再準備一下後重來吧！"
-    }
-  };
-
-  const DEFAULT_COPY = {
-    title: "森林試煉",
-    intro: "請用程式積木控制角色穿越迷宮，順利抵達出口。",
-    hint: "請先觀察路線，再用積木排出正確順序。",
-    reward: "神秘獎勵",
-    rewardDesc: "完成本關後可解鎖新的冒險內容。",
-    rewardImg: ASSETS.cards.potion,
-    success: "你成功完成試煉了！",
-    fail: "這次還沒成功，再試一次吧！"
-  };
-
   let workspace = null;
   let level = null;
   let world = null;
@@ -532,7 +655,7 @@ window.GamePage = (()=>{
         overflow: hidden;
         border: 2px solid #bed7c3;
         box-shadow: 0 12px 32px rgba(0,0,0,.14);
-        background: linear-gradient(rgba(248,255,248,.82), rgba(241,251,241,.90)), url('${ASSETS.worldBg}') center/cover no-repeat;
+        background: linear-gradient(rgba(248,255,248,.82), rgba(241,251,241,.90)), url('${getWorldAssets().worldBg}') center/cover no-repeat;
         display: grid;
         grid-template-rows: auto minmax(0, 1fr) auto;
       }
@@ -1052,7 +1175,8 @@ window.GamePage = (()=>{
   }
 
   function worldCardsHtml(){
-    return [CARD_DATA.potion, CARD_DATA.dagger, CARD_DATA.shield, CARD_DATA.freeze].map(card => `
+    const cardData = getCardData();
+    return [cardData.potion, cardData.dagger, cardData.shield, cardData.freeze].map(card => `
       <div class="stage-reward-item">
         <img src="${card.img}" alt="${card.title}">
         <div><b>${card.title}</b><br>${card.desc}</div>
@@ -1066,7 +1190,8 @@ window.GamePage = (()=>{
 
   
   function getCardsForBoss(){
-    return [CARD_DATA.potion, CARD_DATA.dagger, CARD_DATA.shield, CARD_DATA.freeze].map(card => ({...card, used:false}));
+    const cardData = getCardData();
+    return [cardData.potion, cardData.dagger, cardData.shield, cardData.freeze].map(card => ({...card, used:false}));
   }
 
   function createBossState(){
@@ -1208,7 +1333,7 @@ window.GamePage = (()=>{
       <div class="boss-stage-main">
         <div class="boss-arena">
           <div class="boss-portrait-wrap">
-            <img src="${ASSETS.boss}" alt="${UI.world1.bossTitle}">
+            <img src="${getWorldAssets().boss}" alt="${getWorldCopy().bossTitle}">
             <div class="boss-name-badge">${bossState.phase === 1 ? '🌿 森林試探' : '🔥 狂暴模式'}</div>
             <div class="boss-fx-box">${bossState.fxText || '準備行動中…'}</div>
           </div>

@@ -299,16 +299,7 @@
         bossBtn.classList.add('level-btn', 'boss-btn');
         bossBtn.textContent = buildBossButtonLabel(world);
         bossBtn.onclick = ()=>{
-          const targetWorldId = normalizeWorldId(world.worldId);
-          if(targetWorldId === 'W2'){
-            location.href = `boss.html?world=${encodeURIComponent(world.worldId)}&level=boss`;
-            return;
-          }
-          if(targetWorldId === 'W1'){
-            toast('第一世界的教授 Boss 圖示已更新，教授戰頁面之後再接上。');
-            return;
-          }
-          toast('這個世界的 Boss 關頁面已預留，之後會再接上真正戰鬥。');
+          location.href = `boss.html?world=${encodeURIComponent(world.worldId)}&level=boss`;
         };
         list.appendChild(bossBtn);
       }
