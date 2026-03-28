@@ -24,8 +24,8 @@
       winText: '你成功擊敗魔法教授，第一世界正式通關！',
       nextText: '進入第二世界第 1 關',
       nextWorld: 'world2',
-      bodyBg: "linear-gradient(rgba(238,242,247,.84),rgba(226,232,240,.90)), url('img/world1_bg_boss_magic_hall.png') center/cover no-repeat fixed",
-      arenaBg: "linear-gradient(rgba(248,252,255,.22), rgba(241,247,253,.26)), url('img/world1_bg_boss_magic_hall.png') center 56% / cover no-repeat",
+      bodyBg: "linear-gradient(rgba(238,242,247,.84),rgba(226,232,240,.90)), url('img/world1_bg_magic_academy.png') center/cover no-repeat fixed",
+      arenaBg: "linear-gradient(rgba(248,252,255,.22), rgba(241,247,253,.26)), url('img/world1_bg_magic_academy.png') center 56% / cover no-repeat",
       bossImg: 'img/world1_boss_professor.png',
       stats: { playerMaxHp: 30, bossMaxHp: 28, basicDamage: 4, defendShield: 7, focusGain: 3 },
       cards: {
@@ -57,8 +57,8 @@
       winText: '你成功擊敗森林狼王，第二世界正式通關！',
       nextText: '進入第三世界第 1 關',
       nextWorld: 'world3',
-      bodyBg: "linear-gradient(rgba(223,232,220,.84),rgba(213,223,211,.90)), url('img/world2_bg_boss_forest_arena.png') center/cover no-repeat fixed",
-      arenaBg: "linear-gradient(rgba(248,252,246,.20), rgba(241,248,239,.26)), url('img/world2_bg_boss_forest_arena.png') center 56% / cover no-repeat",
+      bodyBg: "linear-gradient(rgba(223,232,220,.84),rgba(213,223,211,.90)), url('img/world2_bg_runic_forest.png') center/cover no-repeat fixed",
+      arenaBg: "linear-gradient(rgba(248,252,246,.20), rgba(241,248,239,.26)), url('img/world2_bg_runic_forest.png') center 56% / cover no-repeat",
       bossImg: 'img/world2_boss_wolf_king.png',
       stats: { playerMaxHp: 30, bossMaxHp: 26, basicDamage: 3, defendShield: 8, focusGain: 3 },
       cards: {
@@ -90,8 +90,8 @@
       winText: '你成功擊敗時光館長，第三世界正式通關！',
       nextText: '進入第四世界第 1 關',
       nextWorld: 'world4',
-      bodyBg: "linear-gradient(rgba(246,237,206,.84),rgba(234,222,184,.90)), url('img/world3_bg_boss_time_library_hall.png') center/cover no-repeat fixed",
-      arenaBg: "linear-gradient(rgba(255,250,234,.20), rgba(250,243,219,.26)), url('img/world3_bg_boss_time_library_hall.png') center 56% / cover no-repeat",
+      bodyBg: "linear-gradient(rgba(246,237,206,.84),rgba(234,222,184,.90)), url('img/world3_bg_time_library.png') center/cover no-repeat fixed",
+      arenaBg: "linear-gradient(rgba(255,250,234,.20), rgba(250,243,219,.26)), url('img/world3_bg_time_library.png') center 56% / cover no-repeat",
       bossImg: 'img/world3_boss_librarian.png',
       stats: { playerMaxHp: 32, bossMaxHp: 30, basicDamage: 4, defendShield: 7, focusGain: 2 },
       cards: {
@@ -123,8 +123,8 @@
       winText: '你成功擊敗機械主宰，第四世界正式通關！',
       nextText: '返回首頁',
       nextWorld: null,
-      bodyBg: "linear-gradient(rgba(224,234,245,.84),rgba(208,220,235,.90)), url('img/world4_bg_boss_mech_throne.png') center/cover no-repeat fixed",
-      arenaBg: "linear-gradient(rgba(244,249,255,.20), rgba(236,244,252,.26)), url('img/world4_bg_boss_mech_throne.png') center 56% / cover no-repeat",
+      bodyBg: "linear-gradient(rgba(224,234,245,.84),rgba(208,220,235,.90)), url('img/world4_bg_mech_castle.png') center/cover no-repeat fixed",
+      arenaBg: "linear-gradient(rgba(244,249,255,.20), rgba(236,244,252,.26)), url('img/world4_bg_mech_castle.png') center 56% / cover no-repeat",
       bossImg: 'img/world4_boss_mech_overlord.png',
       stats: { playerMaxHp: 34, bossMaxHp: 34, basicDamage: 5, defendShield: 8, focusGain: 2 },
       cards: {
@@ -158,15 +158,23 @@
     if (!path) return '';
 
     const cleaned = path.replace(/^\.?\/?/, '');
-    const candidates = [
-      path,
-      `./${cleaned}`,
-      `../${cleaned}`,
-      `../../${cleaned}`,
-      `/${cleaned}`,
-    ];
+    const parts = cleaned.match(/^(.*?)(\.[a-z0-9]+)?$/i);
+    const stem = parts ? parts[1] : cleaned;
+    const ext = parts && parts[2] ? parts[2] : '';
+    const extCandidates = ext ? [ext, '.png', '.jpg', '.jpeg', '.webp'].filter((v, i, arr) => arr.indexOf(v) === i) : ['.png', '.jpg', '.jpeg', '.webp'];
 
-    for (const candidate of [...new Set(candidates)]) {
+    const pathCandidates = new Set([path, cleaned, `./${cleaned}`, `../${cleaned}`, `../../${cleaned}`, `/${cleaned}`]);
+
+    extCandidates.forEach(oneExt => {
+      const file = `${stem}${oneExt}`;
+      pathCandidates.add(file);
+      pathCandidates.add(`./${file}`);
+      pathCandidates.add(`../${file}`);
+      pathCandidates.add(`../../${file}`);
+      pathCandidates.add(`/${file}`);
+    });
+
+    for (const candidate of pathCandidates) {
       try {
         const testUrl = new URL(candidate, location.href).toString();
         const loaded = await new Promise((resolve) => {
@@ -575,10 +583,11 @@
     document.getElementById('playerPower').textContent = bossState.playerPower;
     document.getElementById('bossPhase').textContent = bossState.phase === 1 ? config.phaseNames[0] : config.phaseNames[1];
     document.getElementById('bossFreeze').textContent = bossState.bossFreezeTurns;
+    const topBossBadge = document.getElementById('topBossBadge');
+    if (topBossBadge) topBossBadge.textContent = config.bossName;
     document.getElementById('turnText').textContent = `第 ${bossState.turn} 回合｜${config.bossShortName}下一招`;
     document.getElementById('intentMain').textContent = `${intent.icon} ${intent.label}`;
     document.getElementById('intentSub').textContent = intent.hint;
-    document.getElementById('fxText').textContent = bossState.fxText || '準備行動中…';
     document.getElementById('playerHpBar').style.width = `${playerPct}%`;
     document.getElementById('bossHpBar').style.width = `${bossPct}%`;
     document.getElementById('bossCards').innerHTML = bossCardsHtml();
