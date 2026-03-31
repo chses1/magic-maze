@@ -273,6 +273,151 @@ window.GamePage = (()=>{
 
   const PROGRAM_STORE_KEY = "maze_saved_programs_v1";
 
+
+  const PLAYER_BUILD_KEY = "mw_player_build_v1";
+  const EQUIPMENT_EFFECTS = {
+    "頭盔": { defBonus: 1 },
+    "盔甲": { defBonus: 2 },
+    "盾牌": { defBonus: 2 },
+    "劍": { atkBonus: 2 }
+  };
+
+  let startX = 0, startY = 0;
+  let openedItemChest = false;
+  let openedEquipmentChest = false;
+  let collectedItemName = "";
+  let collectedEquipmentName = "";
+  let portalPositions = [];
+
+  function getSessionSafe(){
+    try{
+      return StorageAPI?.getSession?.() || null;
+    }catch(_err){
+      return null;
+    }
+  }
+
+  function ensureUserMeta(progress, userId){
+    progress[userId] ??= { best: {}, meta: {} };
+    progress[userId].meta ??= {};
+    const meta = progress[userId].meta;
+    meta.itemsByWorld ??= {};
+    meta.equipmentsByWorld ??= {};
+    meta.itemLevels ??= {};
+    meta.equipmentLevels ??= {};
+    meta.threeStarLevels ??= {};
+    meta.hpBonus ??= 0;
+    meta.atkBonus ??= 0;
+    meta.defBonus ??= 0;
+    return meta;
+  }
+
+  function loadPlayerBuild(userId){
+    if (!userId) {
+      return { itemsByWorld:{}, equipmentsByWorld:{}, itemLevels:{}, equipmentLevels:{}, threeStarLevels:{}, hpBonus:0, atkBonus:0, defBonus:0 };
+    }
+    try{
+      const progress = StorageAPI?.getProgress?.() || {};
+      const meta = ensureUserMeta(progress, userId);
+      return JSON.parse(JSON.stringify(meta));
+    }catch(_err){
+      return { itemsByWorld:{}, equipmentsByWorld:{}, itemLevels:{}, equipmentLevels:{}, threeStarLevels:{}, hpBonus:0, atkBonus:0, defBonus:0 };
+    }
+  }
+
+  function savePlayerBuild(userId, updater){
+    if (!userId || typeof updater !== 'function') return null;
+    try{
+      const progress = StorageAPI?.getProgress?.() || {};
+      const meta = ensureUserMeta(progress, userId);
+      updater(meta, progress);
+      StorageAPI?.saveProgress?.(progress);
+      try{
+        localStorage.setItem(PLAYER_BUILD_KEY, JSON.stringify({
+          userId: String(userId),
+          savedAt: Date.now(),
+          build: meta
+        }));
+      }catch(_err){}
+      return meta;
+    }catch(err){
+      console.warn('savePlayerBuild failed', err);
+      return null;
+    }
+  }
+
+  function addUnique(list, value){
+    if (!value) return false;
+    if (!Array.isArray(list)) return false;
+    if (list.includes(value)) return false;
+    list.push(value);
+    return true;
+  }
+
+  function getEquipmentEffect(name){
+    return EQUIPMENT_EFFECTS[String(name || '').trim()] || {};
+  }
+
+  function getPlayerBuildSummary(userId = getSessionSafe()?.userId){
+    const meta = loadPlayerBuild(userId);
+    return {
+      hpBonus: Number(meta.hpBonus || 0),
+      atkBonus: Number(meta.atkBonus || 0),
+      defBonus: Number(meta.defBonus || 0),
+      itemsByWorld: meta.itemsByWorld || {},
+      equipmentsByWorld: meta.equipmentsByWorld || {}
+    };
+  }
+
+  function persistLevelRewards(stars){
+    const session = getSessionSafe();
+    if (!session?.userId || !world || !level) return null;
+    const key = levelKey();
+    return savePlayerBuild(session.userId, (meta)=>{
+      const worldId = String(world.worldId || '');
+      meta.itemsByWorld[worldId] ??= [];
+      meta.equipmentsByWorld[worldId] ??= [];
+
+      if (openedItemChest && collectedItemName) {
+        meta.itemLevels[key] = collectedItemName;
+        addUnique(meta.itemsByWorld[worldId], collectedItemName);
+      }
+      if (openedEquipmentChest && collectedEquipmentName) {
+        const wasNew = !meta.equipmentLevels[key];
+        meta.equipmentLevels[key] = collectedEquipmentName;
+        addUnique(meta.equipmentsByWorld[worldId], collectedEquipmentName);
+        if (wasNew) {
+          const effect = getEquipmentEffect(collectedEquipmentName);
+          meta.atkBonus = Number(meta.atkBonus || 0) + Number(effect.atkBonus || 0);
+          meta.defBonus = Number(meta.defBonus || 0) + Number(effect.defBonus || 0);
+        }
+      }
+      if (stars >= 3 && !meta.threeStarLevels[key]) {
+        meta.threeStarLevels[key] = true;
+        meta.hpBonus = Number(meta.hpBonus || 0) + 4;
+      }
+    });
+  }
+
+  function getTeleportDestination(x, y){
+    if (!Array.isArray(portalPositions) || portalPositions.length < 2) return null;
+    const idx = portalPositions.findIndex(p => p.x === x && p.y === y);
+    if (idx === -1) return null;
+    return portalPositions[(idx + 1) % portalPositions.length];
+  }
+
+  function formatWorldInventory(worldId, build){
+    const items = build?.itemsByWorld?.[worldId] || [];
+    const equips = build?.equipmentsByWorld?.[worldId] || [];
+    return `
+      <div class="stage-stars-reward">
+        目前本世界已取得道具：${items.length ? items.join('、') : '尚未取得'}<br>
+        目前本世界已取得裝備：${equips.length ? equips.join('、') : '尚未取得'}<br>
+        玩家加成：生命 +${Number(build?.hpBonus || 0)}、攻擊 +${Number(build?.atkBonus || 0)}、防禦 +${Number(build?.defBonus || 0)}
+      </div>
+    `;
+  }
+
   const toast = (msg)=> {
     const el = document.getElementById("toast");
     if (el) el.textContent = msg;
@@ -531,7 +676,7 @@ window.GamePage = (()=>{
         flex: 1 1 auto;
         min-height: 0;
         display: grid;
-        grid-template-columns: minmax(520px, 1.06fr) minmax(420px, .94fr);
+        grid-template-columns: minmax(520px, 1.08fr) minmax(440px, .92fr);
         gap: 12px;
         align-items: stretch;
       }
@@ -543,6 +688,20 @@ window.GamePage = (()=>{
         display: grid;
         grid-template-rows: auto minmax(0, 1fr) auto;
         gap: 10px;
+      }
+      body.world1-skin .editorCard {
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr) auto;
+        gap: 10px;
+      }
+      body.world1-skin .blocklyWrap {
+        min-height: 0;
+        height: 100%;
+      }
+      body.world1-skin .stageFooter {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 8px;
       }
       body.world1-skin .stageTop {
         flex-wrap: wrap;
@@ -601,8 +760,20 @@ window.GamePage = (()=>{
         display: none !important;
       }
       body.world1-skin .stage .hr,
-      body.world1-skin #result:empty {
+      body.world1-skin #result:empty,
+      body.world1-skin #info:empty {
         display: none;
+      }
+      body.world1-skin .stageFooter #toast,
+      body.world1-skin .stageFooter #info,
+      body.world1-skin .stageFooter #result {
+        margin-top: 0;
+      }
+      body.world1-skin #result:not(:empty) {
+        padding: 10px 12px;
+        border-radius: 14px;
+        background: rgba(255,255,255,.72);
+        border: 1px solid #c7d4c5;
       }
       .stage-world-hero h3 { margin: 0 0 8px; font-size: 28px; color: #1b4e27; }
       .stage-world-hero p { margin: 6px 0; line-height: 1.65; color: #17351f; }
@@ -895,13 +1066,18 @@ window.GamePage = (()=>{
         body.world1-skin .gameLayout {
           grid-template-columns: 1fr;
         }
+        body.world1-skin .editorCard {
+          min-height: 520px;
+        }
         body.world1-skin #blocklyDiv {
-          height: 420px !important;
+          height: 100% !important;
+          min-height: 420px;
         }
       }
       @media (min-width: 981px) {
         body.world1-skin #blocklyDiv {
-          height: clamp(300px, 42vh, 460px) !important;
+          height: 100% !important;
+          min-height: 0;
         }
         body.world1-skin .gridWrap {
           min-height: 0;
@@ -1632,10 +1808,18 @@ window.GamePage = (()=>{
     H = mapLines.length;
     W = mapLines[0].length;
     grid = mapLines.map(line => line.split(""));
+    portalPositions = [];
     for(let y=0;y<H;y++){
       for(let x=0;x<W;x++){
-        if(grid[y][x] === "S"){
-          px=x; py=y;
+        const ch = grid[y][x];
+        if(ch === "S"){
+          px = x;
+          py = y;
+          startX = x;
+          startY = y;
+        }
+        if(ch === "P"){
+          portalPositions.push({ x, y });
         }
       }
     }
@@ -1648,6 +1832,9 @@ window.GamePage = (()=>{
     if(ch==="K") return "key";
     if(ch==="D") return "door";
     if(ch==="T") return "trap";
+    if(ch==="P") return "portal";
+    if(ch==="C") return "item";
+    if(ch==="G") return "block";
     if(ch==="I") return "item";
     return "";
   }
@@ -1672,6 +1859,9 @@ window.GamePage = (()=>{
           else if(ch==="K") div.textContent = "🗝️";
           else if(ch==="D") div.textContent = "🔒";
           else if(ch==="T") div.textContent = "🕳️";
+          else if(ch==="P") div.textContent = "🌀";
+          else if(ch==="C") div.textContent = "🎁";
+          else if(ch==="G") div.textContent = "🛡️";
           else if(ch==="I") div.textContent = "✨";
           else div.textContent = "";
         }
@@ -1706,13 +1896,45 @@ window.GamePage = (()=>{
       hasKey = true;
       grid[py][px] = ".";
       toast(UI.common.gotKey);
+      return;
+    }
+    if(ch==="C"){
+      openedItemChest = true;
+      collectedItemName = String(level?.itemReward || getLevelCopy(world?.worldId, level?.levelId).reward || '神秘道具');
+      grid[py][px] = ".";
+      toast(`你打開道具寶箱，獲得「${collectedItemName}」！`);
+      return;
+    }
+    if(ch==="G"){
+      openedEquipmentChest = true;
+      collectedEquipmentName = String(level?.equipmentReward || '神秘裝備');
+      grid[py][px] = ".";
+      toast(`你打開裝備寶箱，獲得「${collectedEquipmentName}」！`);
+      return;
     }
     if(ch==="I"){
+      openedItemChest = true;
+      collectedItemName = String(level?.itemReward || getLevelCopy(world?.worldId, level?.levelId).reward || '神秘道具');
       grid[py][px] = ".";
       toast(UI.common.gotCard);
+      return;
     }
     if(ch==="T"){
-      toast(UI.common.trap);
+      px = startX;
+      py = startY;
+      steps += 3;
+      toast('踩到回起點陷阱！回到起點，步數 +3');
+      return;
+    }
+    if(ch==="P"){
+      const destination = getTeleportDestination(px, py);
+      if (destination) {
+        px = destination.x;
+        py = destination.y;
+        toast('踩到傳送陷阱！你被移動到另一個位置。');
+      } else {
+        toast('這個傳送陷阱還沒有配對位置。');
+      }
     }
   }
 
@@ -1747,14 +1969,18 @@ window.GamePage = (()=>{
 
   function scoreAndStars(){
     const timeMs = Math.max(0, Date.now()-startAt);
-    const base = 1000;
-    const score = Math.max(0, base - steps*5 - bumps*30 - Math.floor(timeMs/1000)*2);
+    const collectedAnyReward = !!(openedItemChest || openedEquipmentChest);
+    const bestSteps = Number(level?.targetSteps || 0);
 
     let stars = 1;
-    if(steps <= level.targetSteps + 5) stars = 2;
-    if(steps <= level.targetSteps + 1 && bumps === 0) stars = 3;
+    if (collectedAnyReward) stars = 2;
+    if (collectedAnyReward && steps === bestSteps) stars = 3;
 
-    return {score, stars, timeMs};
+    const base = 1200;
+    const rewardBonus = (openedItemChest ? 120 : 0) + (openedEquipmentChest ? 120 : 0) + (stars >= 3 ? 200 : 0);
+    const score = Math.max(100, base + rewardBonus - steps*6 - bumps*30 - Math.floor(timeMs/1000)*2);
+
+    return {score, stars, timeMs, collectedAnyReward};
   }
 
   function levelKey(){
@@ -1823,7 +2049,9 @@ window.GamePage = (()=>{
 
     applyMainContrast();
     document.getElementById("title").textContent = `${getWorldDisplayName(world.worldId)} ➜ ${getCleanLevelTitle()}`;
-    document.getElementById("subtitle").textContent = isBossLevel() ? `卡牌回合戰（擊敗森林狼王）` : `目標步數：${level.targetSteps}｜三星可獲得：${copy.reward}`;
+    document.getElementById("subtitle").textContent = isBossLevel()
+      ? `卡牌回合戰（擊敗森林狼王）`
+      : `最佳步數：${level.targetSteps}｜一星=過關、二星=拿寶箱、三星=最佳步數過關`;
 
     fillInfoPanels();
 
@@ -1841,6 +2069,10 @@ window.GamePage = (()=>{
     steps = 0;
     bumps = 0;
     startAt = 0;
+    openedItemChest = false;
+    openedEquipmentChest = false;
+    collectedItemName = "";
+    collectedEquipmentName = "";
     resetRunState();
     showResult("");
     toast(UI.common.startTip);
@@ -2019,21 +2251,34 @@ window.GamePage = (()=>{
         stepCredits = 0;
         resolvePendingStep();
 
-        const {score, stars, timeMs} = scoreAndStars();
+        const {score, stars, timeMs, collectedAnyReward} = scoreAndStars();
         const record = { score, stars, steps, timeMs, bumps, at: Date.now() };
 
         const session = StorageAPI.getSession();
         const improved = StorageAPI.upsertBest(session.userId, levelKey(), record);
         StorageAPI.updateLeaderboard(session, levelKey(), record);
+        const updatedBuild = persistLevelRewards(stars) || getPlayerBuildSummary(session?.userId);
         const copy = getLevelCopy(world.worldId, level.levelId);
 
-        const isFinalTrialOfWorld1 = normalizeWorldId(world.worldId) === "W1" && normalizeLevelId(level.levelId) === "L5";
+        const starDesc = stars === 3
+          ? '三星通關！你拿到寶箱，而且剛好用最佳步數完成，本關會提升玩家生命上限。'
+          : stars === 2
+            ? '二星通關！你有拿到寶箱，因此道具／裝備會帶進 Boss 戰。'
+            : '一星通關！你只有成功走到門，這次不會獲得裝備與道具。';
+
+        const itemRow = openedItemChest
+          ? `<div>🎁 道具寶箱：<b>${collectedItemName}</b></div>`
+          : `<div>🎁 道具寶箱：未取得</div>`;
+        const equipRow = openedEquipmentChest
+          ? `<div>🛡️ 裝備寶箱：<b>${collectedEquipmentName}</b></div>`
+          : `<div>🛡️ 裝備寶箱：未取得</div>`;
+
         clearProgramDraft(world.worldId, level.levelId);
 
         showResult(buildResultCard(
           "good",
           "通關成功！",
-          `${copy.success}<br>${isFinalTrialOfWorld1 ? '你已完成第一世界所有關卡！請回首頁從第五關後方的 Boss 按鈕再次挑戰森林狼王。' : `獲得三星神秘道具：<b>${copy.reward}</b>`}`,
+          `${copy.success}<br>${starDesc}`,
           `<div class="result-stats">
             <span class="result-badge">分數：${score}</span>
             <span class="result-badge">星等：★${stars}</span>
@@ -2041,15 +2286,16 @@ window.GamePage = (()=>{
             <span class="result-badge">撞牆：${bumps}</span>
             <span class="result-badge">時間：${Math.round(timeMs/1000)} 秒</span>
           </div>
-          <div class="stage-current-reward" style="margin-top:12px;">
-            <img src="${copy.rewardImg}" alt="${copy.reward}">
-            <div><b>${isFinalTrialOfWorld1 ? 'Boss 挑戰資格已開啟' : '三星神秘道具'}：${copy.reward}</b><br>${copy.rewardDesc}</div>
+          <div class="stage-current-reward" style="margin-top:12px;display:block;">
+            ${itemRow}
+            ${equipRow}
+            <div style="margin-top:8px;color:#34523b;">最佳步數目標：${level.targetSteps}｜本次是否拿寶箱：${collectedAnyReward ? '有' : '沒有'}</div>
           </div>
-          ${isFinalTrialOfWorld1 ? `<div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap;"><button type="button" onclick="location.href='index.html'" style="border:none;border-radius:14px;padding:10px 16px;font-weight:900;background:linear-gradient(180deg,#6dc87b,#4aae5d);color:#fff;cursor:pointer;">回首頁挑戰 Boss</button></div>` : ''}
+          ${formatWorldInventory(world.worldId, updatedBuild)}
           <div style="margin-top:8px;">${improved ? "🎉 這是你的最佳紀錄，已存檔！" : "已完成本關，紀錄已更新。"}</div>`
         ));
 
-        toast(isFinalTrialOfWorld1 ? '第一世界全數完成！請回首頁挑戰 Boss。' : UI.common.winToast);
+        toast(UI.common.winToast);
       }else if(err?.message === "aborted"){
         resetRunState();
         toast(UI.common.stopped);

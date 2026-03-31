@@ -151,6 +151,119 @@
 
   const config = WORLD_CONFIG[worldId] || WORLD_CONFIG.world1;
 
+  function getSessionSafe(){
+    try { return StorageAPI?.getSession?.() || null; } catch(_err){ return null; }
+  }
+
+  function getPlayerBuild(){
+    const session = getSessionSafe();
+    if (!session?.userId) return { itemsByWorld:{}, equipmentsByWorld:{}, hpBonus:0, atkBonus:0, defBonus:0 };
+    try{
+      const progress = StorageAPI?.getProgress?.() || {};
+      const meta = progress?.[session.userId]?.meta || {};
+      return {
+        itemsByWorld: meta.itemsByWorld || {},
+        equipmentsByWorld: meta.equipmentsByWorld || {},
+        hpBonus: Number(meta.hpBonus || 0),
+        atkBonus: Number(meta.atkBonus || 0),
+        defBonus: Number(meta.defBonus || 0)
+      };
+    }catch(_err){
+      return { itemsByWorld:{}, equipmentsByWorld:{}, hpBonus:0, atkBonus:0, defBonus:0 };
+    }
+  }
+
+  function getWorldInventory(worldKey){
+    const build = getPlayerBuild();
+    return {
+      items: build.itemsByWorld?.[String(worldKey).toUpperCase()] || [],
+      equipments: build.equipmentsByWorld?.[String(worldKey).toUpperCase()] || [],
+      hpBonus: build.hpBonus || 0,
+      atkBonus: build.atkBonus || 0,
+      defBonus: build.defBonus || 0
+    };
+  }
+
+  function worldKeyToConfigKey(key){
+    const raw = String(key || '').trim().toUpperCase();
+    const m = raw.match(/^W(\d+)$/);
+    return m ? `world${m[1]}` : String(key || 'world1').toLowerCase();
+  }
+
+
+
+  const WORLD_UNLOCK_GUIDE = {
+    world1: {
+      title: '🎉 解鎖新指令：迴圈',
+      intro: '恭喜你通過第一世界！從現在開始，你可以使用「迴圈」積木，把重複的動作合併起來。',
+      exampleTitle: '迴圈怎麼用？',
+      bullets: [
+        '當你需要一直重複同樣動作時，就可以用「重複幾次」。',
+        '例如要連續前進 3 格，不用放 3 個「向前走」，可以改成：重複 3 次 → 向前走。',
+        '這樣程式會更短、更整齊，也更像真正的程式設計。'
+      ],
+      example: '重複 3 次 → 向前走 1 格',
+      nextHint: '接下來前往第二世界第 1 關，試著用迴圈讓積木變少。'
+    },
+    world2: {
+      title: '🎉 解鎖新指令：條件式',
+      intro: '恭喜你通過第二世界！接下來你可以使用「如果…就…」判斷前方情況。',
+      exampleTitle: '條件式怎麼用？',
+      bullets: [
+        '當路線不一定一樣時，可以先判斷，再決定要不要前進或轉彎。',
+        '例如：如果前方有路，就向前走；否則就右轉。',
+        '這能讓角色更聰明，不用每次都寫死固定路線。'
+      ],
+      example: '如果 前方有路 → 向前走；否則 → 右轉',
+      nextHint: '接下來前往第三世界第 1 關，開始學會觀察再行動。'
+    },
+    world3: {
+      title: '🎉 解鎖新指令：函式（咒語）',
+      intro: '恭喜你通過第三世界！接下來你可以把常用走法整理成「咒語」重複呼叫。',
+      exampleTitle: '函式怎麼用？',
+      bullets: [
+        '當一段走法會重複出現時，可以先定義成一個咒語。',
+        '之後只要使用「施放咒語A」或「施放咒語B」，就能再次執行那段動作。',
+        '這樣程式更簡潔，也更容易修改。'
+      ],
+      example: '定義咒語A：向前走 → 向前走 → 右轉\n施放咒語A',
+      nextHint: '接下來前往第四世界第 1 關，練習把重複路線整理成函式。'
+    },
+    world4: {
+      title: '🏆 全部世界完成！',
+      intro: '你已經完成所有世界，學會了序列、迴圈、條件式與函式。',
+      exampleTitle: '你已經會了',
+      bullets: [
+        '序列：一步一步排出指令。',
+        '迴圈：重複相同動作。',
+        '條件式：依情況做不同決定。',
+        '函式：把常用動作整理成可重用的咒語。'
+      ],
+      example: '你已完成整套迷宮程式冒險。',
+      nextHint: '可以回首頁重新挑戰，或繼續擴充更多關卡。'
+    }
+  };
+
+  function getUnlockGuide(){
+    return WORLD_UNLOCK_GUIDE[worldId] || WORLD_UNLOCK_GUIDE.world1;
+  }
+
+  function renderUnlockGuideHtml(){
+    const guide = getUnlockGuide();
+    const bullets = (guide.bullets || []).map(item => `<li>${item}</li>`).join('');
+    return `
+      <div style="margin-top:16px;padding:16px 18px;border-radius:22px;background:linear-gradient(180deg,#fff9ec 0%,#f6edd6 100%);border:1px solid #e7d09a;text-align:left;box-shadow:inset 0 1px 0 rgba(255,255,255,.7);">
+        <div style="font-size:24px;font-weight:900;color:#6b4a12;line-height:1.25;">${guide.title}</div>
+        <div style="margin-top:8px;color:#4f3a18;line-height:1.75;font-weight:700;">${guide.intro}</div>
+        <div style="margin-top:12px;font-size:18px;font-weight:900;color:#6b4a12;">${guide.exampleTitle}</div>
+        <ul style="margin:8px 0 0 20px;padding:0;color:#4f3a18;line-height:1.8;font-weight:700;">
+          ${bullets}
+        </ul>
+        <div style="margin-top:12px;padding:12px 14px;border-radius:16px;background:#fffdf7;border:1px dashed #d9be7a;color:#5a4216;font-weight:900;white-space:pre-line;">🧩 例子：${guide.example}</div>
+        <div style="margin-top:12px;padding:12px 14px;border-radius:16px;background:#eef8ee;border:1px solid #b9d9bc;color:#214728;font-weight:900;">➡️ ${guide.nextHint}</div>
+      </div>
+    `;
+  }
 
 
   async function findWorkingImagePath(rawPath){
@@ -231,15 +344,25 @@
   }
 
   function getCardsForBoss(){
-    return Object.values(config.cards).map(card => ({ ...card, used:false }));
+    const inventory = getWorldInventory(worldId.replace(/^world/i, 'W'));
+    const ownedItems = inventory.items || [];
+    return Object.values(config.cards).map(card => ({
+      ...card,
+      used: false,
+      locked: !ownedItems.includes(card.title)
+    }));
   }
 
   function createBossState(){
+    const inventory = getWorldInventory(worldId.replace(/^world/i, 'W'));
     return {
-      playerMaxHp: config.stats.playerMaxHp,
-      playerHp: config.stats.playerMaxHp,
+      playerMaxHp: config.stats.playerMaxHp + Number(inventory.hpBonus || 0),
+      playerHp: config.stats.playerMaxHp + Number(inventory.hpBonus || 0),
       playerShield: 0,
       playerPower: 0,
+      playerAtkBonus: Number(inventory.atkBonus || 0),
+      playerDefBonus: Number(inventory.defBonus || 0),
+      playerEquipments: inventory.equipments || [],
       bossMaxHp: config.stats.bossMaxHp,
       bossHp: config.stats.bossMaxHp,
       turn: 1,
@@ -247,7 +370,7 @@
       bossPatternIndex: 0,
       phase: 1,
       cards: getCardsForBoss(),
-      log: [`戰鬥開始！先觀察${config.bossShortName}的下一招，再決定是否防禦或進攻。`],
+      log: [`戰鬥開始！先觀察${config.bossShortName}的下一招，再決定是否防禦或進攻。`, `本世界裝備：${(inventory.equipments || []).length ? inventory.equipments.join('、') : '尚未取得'}。玩家加成：生命 +${Number(inventory.hpBonus || 0)}、攻擊 +${Number(inventory.atkBonus || 0)}、防禦 +${Number(inventory.defBonus || 0)}。`],
       finished: false,
       startedAt: Date.now(),
       fxText: '⚔️ Boss 戰開始！',
@@ -296,7 +419,10 @@
   }
 
   function applyDamageToPlayer(rawDamage, sourceLabel){
-    let damage = rawDamage;
+    let damage = Math.max(0, rawDamage - Number(bossState.playerDefBonus || 0));
+    if (Number(bossState.playerDefBonus || 0) > 0) {
+      pushBossLog(`<strong>裝備防禦：</strong>裝備減少了 ${Number(bossState.playerDefBonus || 0)} 點傷害。`);
+    }
     if (bossState.playerShield > 0) {
       const blocked = Math.min(bossState.playerShield, damage);
       bossState.playerShield -= blocked;
@@ -386,15 +512,16 @@
     if (win) {
       resultEl.className = 'result-card good';
       resultEl.innerHTML = `
-        <div class="result-inner">
+        <div class="result-inner" style="max-height:min(88vh,900px);overflow:auto;">
           <h3>Boss 戰勝利！</h3>
-          <p>${config.winText}<br>${config.nextWorld ? '現在可以前往下一個世界的第一關，或留在這裡重新挑戰一次。' : '你已完成目前所有世界，現在可以回首頁繼續整理內容。'}</p>
+          <p>${config.winText}<br>${config.nextWorld ? '你不只通關了，還學會了新的程式能力。先看完下面的新指令說明，再前往下一個世界第 1 關。' : '你已完成目前所有世界，現在可以回首頁繼續整理內容。'}</p>
           <div class="result-badges">
             <span>回合數：${turnsUsed}</span>
             <span>剩餘生命：${bossState.playerHp}</span>
             <span>Boss 分數：${score}</span>
           </div>
-          <div class="result-actions">
+          ${renderUnlockGuideHtml()}
+          <div class="result-actions" style="margin-top:18px;">
             <button type="button" class="next" id="resultNextWorld">${config.nextText}</button>
             <button type="button" class="retry" id="resultRetryWin">重新挑戰</button>
           </div>
@@ -435,15 +562,16 @@
 
     if (actionKey === 'basic') {
       const extra = bossState.playerPower;
-      const total = config.stats.basicDamage + extra;
-      applyDamageToBoss(total, `普通攻擊${extra > 0 ? `（含蓄力 +${extra}）` : ''}`);
+      const total = config.stats.basicDamage + Number(bossState.playerAtkBonus || 0) + extra;
+      applyDamageToBoss(total, `普通攻擊${Number(bossState.playerAtkBonus || 0) > 0 ? `（裝備 +${Number(bossState.playerAtkBonus || 0)}）` : ''}${extra > 0 ? `（含蓄力 +${extra}）` : ''}`);
       bossState.lastPlayerAction = `普通攻擊 ${total}`;
       bossState.playerPower = 0;
     } else if (actionKey === 'defend') {
-      bossState.playerShield += config.stats.defendShield;
+      const shieldGain = config.stats.defendShield + Number(bossState.playerDefBonus || 0) * 2;
+      bossState.playerShield += shieldGain;
       bossState.lastPlayerAction = '防禦姿態';
-      bossState.fxText = `🛡️ 你架起防禦姿態，護盾 +${config.stats.defendShield}！`;
-      pushBossLog(`<strong>玩家：</strong>進入防禦姿態，護盾增加 ${config.stats.defendShield}。`);
+      bossState.fxText = `🛡️ 你架起防禦姿態，護盾 +${shieldGain}！`;
+      pushBossLog(`<strong>玩家：</strong>進入防禦姿態，護盾增加 ${shieldGain}。`);
     } else if (actionKey === 'focus') {
       bossState.playerPower += config.stats.focusGain;
       bossState.lastPlayerAction = '專注蓄力';
@@ -455,7 +583,7 @@
       pushBossLog(`<strong>玩家：</strong>先觀察${config.bossShortName}的動作。`);
     } else {
       const card = bossState.cards.find(c => c.key === actionKey);
-      if (!card || card.used) return;
+      if (!card || card.used || card.locked) return;
       card.used = true;
       bossState.lastPlayerAction = `使用卡牌：${card.title}`;
       const result = typeof card.effect === 'function' ? card.effect(bossState) : null;
@@ -491,12 +619,12 @@
         ? `<img src="${cardImg}" alt="${card.title}" onerror="this.style.display='none'; this.parentElement.textContent='🧩';">`
         : '🧩';
       return `
-        <div class="boss-card ${card.used ? 'is-used' : ''}">
+        <div class="boss-card ${card.used || card.locked ? 'is-used' : ''}">
           <div class="boss-card-art">${cardImgHtml}</div>
           <div class="boss-card-title">${card.title}</div>
-          <div class="boss-card-desc">${card.desc}</div>
-          <div class="boss-card-tag">${card.used ? '已使用' : '可使用 1 次'}</div>
-          <button type="button" data-card="${card.key}" ${card.used || bossState.finished ? 'disabled' : ''}>使用</button>
+          <div class="boss-card-desc">${card.locked ? '這張卡還沒在一般關取得。' : card.desc}</div>
+          <div class="boss-card-tag">${card.locked ? '未取得' : (card.used ? '已使用' : '可使用 1 次')}</div>
+          <button type="button" data-card="${card.key}" ${card.used || card.locked || bossState.finished ? 'disabled' : ''}>使用</button>
         </div>
       `;
     }).join('');
@@ -578,6 +706,8 @@
     const bossPct = Math.max(0, bossState.bossHp) / bossState.bossMaxHp * 100;
 
     document.getElementById('playerHpText').textContent = `${bossState.playerHp} / ${bossState.playerMaxHp}`;
+    const playerHintEl = document.getElementById('playerHintText');
+    if (playerHintEl) playerHintEl.textContent = `裝備：${bossState.playerEquipments?.length ? bossState.playerEquipments.join('、') : '尚未取得'}｜攻擊 +${bossState.playerAtkBonus}｜防禦 +${bossState.playerDefBonus}`;
     document.getElementById('bossHpText').textContent = `${bossState.bossHp} / ${bossState.bossMaxHp}`;
     document.getElementById('playerShield').textContent = bossState.playerShield;
     document.getElementById('playerPower').textContent = bossState.playerPower;

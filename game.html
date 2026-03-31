@@ -49,18 +49,20 @@
         <div class="gridWrap">
           <div id="grid" class="grid"></div>
         </div>
-        <div class="toast" id="toast"></div>
-<div class="toast infoPanel" id="info"></div>
 
-
-        <div class="hr"></div>
-        <div id="result" class="small"></div>
+        <div class="stageFooter">
+          <div class="toast" id="toast"></div>
+          <div class="toast infoPanel" id="info"></div>
+          <div id="result" class="small"></div>
+        </div>
       </div>
 
-      <div class="card">
-        <h2 style="margin:0 0 10px 0;">積木程式區</h2>
-        <div id="blocklyDiv" style="height:100%; min-height:300px; width:100%; border-radius:14px; overflow:hidden;"></div>
-        <div class="small" style="margin-top:10px;">
+      <div class="card editorCard">
+        <h2 class="editorTitle">積木程式區</h2>
+        <div class="blocklyWrap">
+          <div id="blocklyDiv"></div>
+        </div>
+        <div class="small editorHint">
           小提醒：先用「向前走」與「左/右轉」，進階再用「重複」減少積木數量。
         </div>
       </div>

@@ -36,9 +36,9 @@ body{
 a{ color:inherit; text-decoration:none; }
 
 .container{
-  max-width:1100px;
+  width:min(1500px, calc(100vw - 24px));
   margin:0 auto;
-  padding:20px;
+  padding:12px;
 }
 
 .header{
@@ -172,12 +172,23 @@ button.danger{
 /* game layout */
 .gameLayout{
   display:grid;
-  grid-template-columns: 1.1fr .9fr;
+  grid-template-columns: minmax(0, 1.35fr) minmax(420px, .85fr);
   gap:14px;
-  align-items:start;
+  align-items:stretch;
+  min-height:min(74vh, 820px);
 }
 
-.stage{ padding:14px; }
+.gameLayout > .card{
+  min-height:0;
+}
+
+.stage{
+  padding:14px;
+  display:grid;
+  grid-template-rows:auto minmax(0, 1fr) auto;
+  gap:10px;
+  min-height:0;
+}
 
 .stageTop{
   display:flex;
@@ -185,7 +196,7 @@ button.danger{
   justify-content:space-between;
   gap:10px;
   flex-wrap:wrap;
-  margin-bottom:10px;
+  margin-bottom:0;
 }
 
 .kpi{
@@ -199,13 +210,61 @@ button.danger{
   border:1px solid rgba(255,255,255,.08);
   border-radius:16px;
   padding:12px;
-  overflow:auto;
+  overflow:hidden;
+  width:100%;
+  min-height:0;
+  height:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.stageFooter{
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  gap:8px;
+}
+
+.stageFooter .toast,
+.stageFooter #result{
+  margin-top:0;
+}
+
+.editorCard{
+  display:grid;
+  grid-template-rows:auto minmax(0,1fr) auto;
+  gap:10px;
+}
+
+.editorTitle{
+  margin:0;
+}
+
+.blocklyWrap{
+  min-height:0;
+  height:100%;
+  border-radius:14px;
+  overflow:hidden;
+}
+
+#blocklyDiv{
+  height:100%;
+  min-height:0;
+  width:100%;
+  border-radius:14px;
+  overflow:hidden;
+}
+
+.editorHint{
+  margin-top:0;
 }
 
 .grid{
   display:grid;
   gap:6px;
-  justify-content:start;
+  justify-content:center;
+  align-content:center;
+  margin:auto;
 }
 
 /* cells */
@@ -334,8 +393,14 @@ button.danger{
 /* responsive */
 @media (max-width: 980px){
   .row{ grid-template-columns: 1fr; }
-  .gameLayout{ grid-template-columns: 1fr; }
-  .gridWrap{ padding:10px; }
+  .gameLayout{ grid-template-columns: 1fr; min-height:auto; }
+  .gridWrap{
+    padding:10px;
+    min-height:420px;
+  }
+  .editorCard{
+    min-height:520px;
+  }
 }
 
 /* ===== 關卡狀態顏色 ===== */
@@ -382,4 +447,29 @@ button.danger{
   color: #2b1b00 !important;
   border-color: rgba(146,64,14,.12) !important;
   box-shadow: 0 0 0 1px rgba(255,255,255,.18) inset, 0 6px 18px rgba(251,191,36,0.18);
+}
+
+/* ===== 16:9 關卡畫面優化 ===== */
+@media (min-width: 981px){
+  body:has(.gameLayout) .container{
+    width:min(calc((100vh - 24px) * 16 / 9), calc(100vw - 24px));
+    min-height:calc(100vh - 24px);
+    display:flex;
+    flex-direction:column;
+    justify-content:flex-start;
+  }
+
+  body:has(.gameLayout) .gameLayout{
+    flex:1 1 auto;
+    min-height:0;
+  }
+
+  body:has(.gameLayout) .gameLayout > .card{
+    min-height:0;
+  }
+
+  body:has(.gameLayout) #blocklyDiv{
+    min-height:420px !important;
+    height:100% !important;
+  }
 }
