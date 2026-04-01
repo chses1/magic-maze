@@ -219,6 +219,81 @@ button.danger{
   justify-content:center;
 }
 
+
+.stageMiddle{
+  position:relative;
+  min-height:0;
+  height:100%;
+}
+
+.stageMiddle > .gridWrap,
+.stageMiddle > .mazeResultWrap{
+  position:absolute;
+  inset:0;
+}
+
+.mazeResultWrap{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:18px;
+  background: rgba(0,0,0,.18);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:16px;
+  overflow:auto;
+}
+
+.mazeResultWrap[hidden]{
+  display:none !important;
+}
+
+.mazeResultWrap .result-card{
+  width:min(760px, 100%);
+  max-width:100%;
+  margin:0 auto;
+  padding:18px 20px;
+  border-radius:18px;
+  box-shadow:0 16px 36px rgba(0,0,0,.18);
+}
+
+.mazeResultWrap .result-card h3{
+  margin:0 0 10px 0;
+  font-size:28px;
+  line-height:1.2;
+}
+
+.mazeResultWrap .result-card .result-stats{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  margin:12px 0;
+}
+
+.mazeResultWrap .result-card .result-badge{
+  background:rgba(0,0,0,.06);
+  border-radius:999px;
+  padding:6px 12px;
+  font-weight:800;
+}
+
+.mazeResultWrap .result-good{
+  background:#f4fff6;
+  border:2px solid #bfe3c5;
+  color:#1a251c;
+}
+
+.mazeResultWrap .result-warn{
+  background:#fffaf0;
+  border:2px solid #ffe3ae;
+  color:#4a3412;
+}
+
+.mazeResultWrap .result-bad{
+  background:#fff6f6;
+  border:2px solid #ffd3d3;
+  color:#3f1f1f;
+}
+
 .stageFooter{
   display:grid;
   grid-template-columns:minmax(0,1fr);

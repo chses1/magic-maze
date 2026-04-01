@@ -2069,16 +2069,29 @@ window.GamePage = (()=>{
   }
 
   function showResult(text){
-    const el = document.getElementById("result");
+    const footerResult = document.getElementById("result");
+    const resultWrap = document.getElementById("mazeResultWrap");
+    const gridWrap = document.getElementById("gridWrap") || document.querySelector('.gridWrap');
     const hr = document.querySelector('.stage .hr');
-    const gridWrap = document.querySelector('.gridWrap');
     const hasContent = !!String(text || '').trim();
-    if (el) {
-      el.innerHTML = text;
-      el.style.display = hasContent ? '' : 'none';
+
+    if (footerResult) {
+      footerResult.textContent = hasContent ? '已顯示結果畫面' : '';
+      footerResult.style.display = hasContent ? '' : 'none';
     }
-    if (hr) hr.style.display = hasContent ? '' : 'none';
-    if (gridWrap) gridWrap.style.display = hasContent ? 'none' : '';
+
+    if (resultWrap) {
+      resultWrap.innerHTML = hasContent ? text : '';
+      resultWrap.hidden = !hasContent;
+    }
+
+    if (gridWrap) {
+      gridWrap.style.display = hasContent ? 'none' : 'flex';
+    }
+
+    if (hr) {
+      hr.style.display = 'none';
+    }
   }
 
   function stopTimers(){
