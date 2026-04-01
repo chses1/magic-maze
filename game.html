@@ -23,7 +23,7 @@
         <div class="logo"></div>
         <div>
           <h1 id="title">遊戲中...</h1>
-          <p id="subtitle">用積木控制角色前進、轉向，走到出口 E</p>
+          <p id="subtitle">用積木控制角色前進、轉向，先拿鑰匙，再走到出口門</p>
         </div>
       </div>
       <div class="badge" id="sessionBadge"></div>
@@ -50,10 +50,20 @@
           <div id="grid" class="grid"></div>
         </div>
 
-        <div class="stageFooter">
-          <div class="toast" id="toast"></div>
-          <div class="toast infoPanel" id="info"></div>
-          <div id="result" class="small"></div>
+        <div class="stageFooter mergedFooter">
+          <div class="footerBox">
+            <div class="footerMain">
+              <div class="footerToast" id="toast"></div>
+              <div class="footerInfo infoPanel legendTicker" id="info" aria-live="polite"></div>
+              <div class="footerResult small" id="result"></div>
+            </div>
+            <div class="footerZoomBar" aria-label="迷宮大小調整">
+              <span class="footerZoomLabel">迷宮大小</span>
+              <button id="btnZoomOut" title="縮小迷宮" aria-label="縮小迷宮">－</button>
+              <button id="btnZoomReset" title="恢復預設大小" aria-label="恢復迷宮大小">◎</button>
+              <button id="btnZoomIn" title="放大迷宮" aria-label="放大迷宮">＋</button>
+            </div>
+          </div>
         </div>
       </div>
 

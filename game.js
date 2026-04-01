@@ -189,7 +189,7 @@ window.GamePage = (()=>{
       for (let i = 0; i < 4; i++) {
         map[`${worldSlug}-level${i+1}`] = {
           title: `第${i+1}關`,
-          intro: "請用程式積木控制角色穿越迷宮，順利抵達出口。",
+          intro: "請用程式積木控制角色穿越迷宮，先拿鑰匙，再走到出口門。",
           hint: "請先觀察路線，再用積木排出正確順序。",
           reward: cardList[i].title,
           rewardDesc: cardList[i].desc,
@@ -216,7 +216,7 @@ window.GamePage = (()=>{
 
   const DEFAULT_COPY = {
     title: "迷宮試煉",
-    intro: "請用程式積木控制角色穿越迷宮，順利抵達出口。",
+    intro: "請用程式積木控制角色穿越迷宮，先拿鑰匙，再走到出口門。",
     hint: "請先觀察路線，再用積木排出正確順序。",
     reward: "神秘獎勵",
     rewardDesc: "完成本關後可解鎖新的冒險內容。",
@@ -246,7 +246,7 @@ window.GamePage = (()=>{
       gotKey: "你拿到鑰匙了！",
       gotCard: "你獲得了一個新道具！",
       trap: "小心！你踩到陷阱了！本關步數懲罰 +3",
-      needFix: "再調整積木，試著走到出口 🚪",
+      needFix: "再調整積木，試著拿到鑰匙後走到出口門 🚪",
       winToast: "恭喜通關！你可以回首頁挑戰下一關。",
       codeError: "程式錯誤：請檢查積木或重來一次。",
       exitConfirm: "確定要離開這一關嗎？目前進度將不會保留。",
@@ -288,6 +288,17 @@ window.GamePage = (()=>{
   let collectedItemName = "";
   let collectedEquipmentName = "";
   let portalPositions = [];
+  let legendTimer = null;
+  let legendIndex = 0;
+  let mazeScale = 1;
+
+  const LEGEND_CARDS = [
+    { icon: '🗝️', title: '鑰匙', desc: '先拿到鑰匙，鎖住的出口門才會打開。' },
+    { icon: '🚪🔒', title: '鎖住的出口門', desc: '門就是出口；沒有鑰匙時不能通過。' },
+    { icon: '🎁', title: '道具寶箱', desc: '拿到本關道具，Boss 戰時就能使用一次。' },
+    { icon: '🛡️', title: '裝備寶箱', desc: '拿到裝備後，Boss 戰會提升攻擊或防禦。' },
+    { icon: '🕳️', title: '陷阱', desc: '踩到陷阱會被懲罰，可能回起點或被傳送。' }
+  ];
 
   function getSessionSafe(){
     try{
@@ -416,6 +427,67 @@ window.GamePage = (()=>{
         玩家加成：生命 +${Number(build?.hpBonus || 0)}、攻擊 +${Number(build?.atkBonus || 0)}、防禦 +${Number(build?.defBonus || 0)}
       </div>
     `;
+  }
+
+  function getMazeBaseScale(){
+    const size = Number(level?.mapSize || Math.max(W, H) || 9);
+    if (size >= 15) return 0.9;
+    if (size >= 13) return 1;
+    if (size >= 11) return 1.08;
+    return 1.16;
+  }
+
+  function applyMazeScale(){
+    const gridEl = document.getElementById('grid');
+    if (!gridEl) return;
+    const cellSize = Math.round(34 * mazeScale);
+    const gap = Math.max(4, Math.round(6 * mazeScale));
+    gridEl.style.setProperty('--maze-cell-size', `${cellSize}px`);
+    gridEl.style.setProperty('--maze-gap', `${gap}px`);
+  }
+
+  function setMazeScale(nextScale){
+    const clamped = Math.max(0.7, Math.min(1.9, Number(nextScale || 1)));
+    mazeScale = Math.round(clamped * 100) / 100;
+    applyMazeScale();
+  }
+
+  function zoomMaze(delta){
+    setMazeScale(mazeScale + delta);
+  }
+
+  function resetMazeScale(){
+    setMazeScale(getMazeBaseScale());
+  }
+
+  function renderLegendCard(){
+    const infoEl = document.getElementById('info');
+    if (!infoEl) return;
+    const item = LEGEND_CARDS[legendIndex % LEGEND_CARDS.length];
+    const dots = LEGEND_CARDS.map((_, idx) => `<span class="legendDot ${idx === (legendIndex % LEGEND_CARDS.length) ? 'active' : ''}"></span>`).join('');
+    infoEl.innerHTML = `
+      <div class="legendIcon">${item.icon}</div>
+      <div class="legendText">
+        <div class="legendTitle">圖示說明｜${item.title}</div>
+        <div class="legendDesc">${item.desc}</div>
+      </div>
+      <div class="legendDots" aria-hidden="true">${dots}</div>
+    `;
+  }
+
+  function startLegendTicker(){
+    stopLegendTicker();
+    legendIndex = 0;
+    renderLegendCard();
+    legendTimer = setInterval(()=>{
+      legendIndex = (legendIndex + 1) % LEGEND_CARDS.length;
+      renderLegendCard();
+    }, 2200);
+  }
+
+  function stopLegendTicker(){
+    if (legendTimer) clearInterval(legendTimer);
+    legendTimer = null;
   }
 
   const toast = (msg)=> {
@@ -1811,7 +1883,11 @@ window.GamePage = (()=>{
     portalPositions = [];
     for(let y=0;y<H;y++){
       for(let x=0;x<W;x++){
-        const ch = grid[y][x];
+        let ch = grid[y][x];
+        if(ch === "E"){
+          grid[y][x] = ".";
+          ch = ".";
+        }
         if(ch === "S"){
           px = x;
           py = y;
@@ -1828,9 +1904,8 @@ window.GamePage = (()=>{
   function cellClass(ch){
     if(ch==="#") return "wall";
     if(ch==="S") return "start";
-    if(ch==="E") return "exit";
     if(ch==="K") return "key";
-    if(ch==="D") return "door";
+    if(ch==="D") return "door exit";
     if(ch==="T") return "trap";
     if(ch==="P") return "portal";
     if(ch==="C") return "item";
@@ -1842,7 +1917,8 @@ window.GamePage = (()=>{
   function render(){
     const gridEl = document.getElementById("grid");
     if (!gridEl) return;
-    gridEl.style.gridTemplateColumns = `repeat(${W}, 34px)`;
+    gridEl.style.gridTemplateColumns = `repeat(${W}, var(--maze-cell-size, 34px))`;
+    applyMazeScale();
     gridEl.innerHTML = "";
 
     for(let y=0;y<H;y++){
@@ -1855,10 +1931,15 @@ window.GamePage = (()=>{
           div.classList.add("player");
           div.textContent = DIRS[dir].emoji;
         }else{
-          if(ch==="E") div.textContent = "🚪";
-          else if(ch==="K") div.textContent = "🗝️";
-          else if(ch==="D") div.textContent = "🔒";
-          else if(ch==="T") div.textContent = "🕳️";
+          if(ch==="K") {
+            div.textContent = "🗝️";
+          } else if(ch==="D") {
+            const isLockedDoor = !hasKey;
+            div.innerHTML = isLockedDoor
+              ? '<span class="cell-symbol-stack"><span class="door-icon">🚪</span><span class="lock-icon">🔒</span></span>'
+              : '<span class="cell-symbol-stack"><span class="door-icon">🚪</span></span>';
+            div.setAttribute('aria-label', isLockedDoor ? '鎖住的出口門' : '已解鎖的出口門');
+          } else if(ch==="T") div.textContent = "🕳️";
           else if(ch==="P") div.textContent = "🌀";
           else if(ch==="C") div.textContent = "🎁";
           else if(ch==="G") div.textContent = "🛡️";
@@ -1939,7 +2020,7 @@ window.GamePage = (()=>{
   }
 
   function reachedExit(){
-    return grid[py][px] === "E";
+    return grid[py][px] === "D";
   }
 
   function doorBlockedAhead(nx, ny){
@@ -2051,7 +2132,7 @@ window.GamePage = (()=>{
     document.getElementById("title").textContent = `${getWorldDisplayName(world.worldId)} ➜ ${getCleanLevelTitle()}`;
     document.getElementById("subtitle").textContent = isBossLevel()
       ? `卡牌回合戰（擊敗森林狼王）`
-      : `最佳步數：${level.targetSteps}｜一星=過關、二星=拿寶箱、三星=最佳步數過關`;
+      : `最佳步數：${level.targetSteps}｜先拿鑰匙，再走到出口門｜一星=過關、二星=拿寶箱、三星=最佳步數過關`;
 
     fillInfoPanels();
 
@@ -2075,6 +2156,8 @@ window.GamePage = (()=>{
     collectedEquipmentName = "";
     resetRunState();
     showResult("");
+    resetMazeScale();
+    startLegendTicker();
     toast(UI.common.startTip);
     render();
   }
@@ -2143,7 +2226,6 @@ window.GamePage = (()=>{
         }
 
         if(grid[ny][nx] === "D" && hasKey){
-          grid[ny][nx] = ".";
           toast(UI.common.doorOpen);
         }
 
@@ -2233,7 +2315,7 @@ window.GamePage = (()=>{
       showResult(buildResultCard(
         "bad",
         "這次還沒成功",
-        `${copy.fail}<br><br>程式跑完了，但角色還沒走到出口。`,
+        `${copy.fail}<br><br>程式跑完了，但角色還沒走到出口門。`,
         `<div class="result-stats">
           <span class="result-badge">分數：${score}</span>
           <span class="result-badge">星等：★${stars}</span>
@@ -2338,6 +2420,13 @@ window.GamePage = (()=>{
       resolvePendingStep();
       resetLevel();
     };
+
+    const btnZoomIn = document.getElementById("btnZoomIn");
+    const btnZoomOut = document.getElementById("btnZoomOut");
+    const btnZoomReset = document.getElementById("btnZoomReset");
+    if (btnZoomIn) btnZoomIn.onclick = ()=> zoomMaze(0.12);
+    if (btnZoomOut) btnZoomOut.onclick = ()=> zoomMaze(-0.12);
+    if (btnZoomReset) btnZoomReset.onclick = ()=> resetMazeScale();
 
     document.getElementById("btnExit").onclick = ()=>{
       if(!confirm("確定要離開這一關嗎？系統會先保存你目前的積木進度。")) return;
