@@ -4,6 +4,7 @@ window.TeacherPage = (()=>{
   const STORAGE_PREFIX = 'maze_best_solution::';
   const TEACHER_ACTION_KEY = 'maze_teacher_pending_action';
   const LEVEL_STEP_OVERRIDE_KEY = 'mw_published_level_overrides_v1';
+  const LEVEL_EDIT_OVERRIDE_KEY = 'mw_teacher_level_edits_v1';
 
   const WORLD_NAME_MAP = {
     W1: '世界1｜魔法學院（序列）',
@@ -42,6 +43,22 @@ window.TeacherPage = (()=>{
       boss: '第5關：機械主宰 Boss 戰'
     }
   };
+
+
+  const MAP_SYMBOLS = {
+    '#': { label:'牆壁', emoji:'⬛', className:'wall' },
+    '.': { label:'道路', emoji:'·', className:'path' },
+    'S': { label:'起點', emoji:'🚩', className:'start' },
+    'K': { label:'鑰匙', emoji:'🗝️', className:'key' },
+    'D': { label:'出口門', emoji:'🚪', className:'exit' },
+    'T': { label:'陷阱', emoji:'🕳️', className:'trap' },
+    'P': { label:'傳送點', emoji:'🌀', className:'portal' },
+    'C': { label:'道具寶箱', emoji:'🎁', className:'item' },
+    'G': { label:'裝備寶箱', emoji:'🛡️', className:'equipment' }
+  };
+
+  let currentPaintSymbol = '#';
+  let isPainting = false;
 
   const toast = (msg)=> {
     const el = document.getElementById('toast');
@@ -166,7 +183,11 @@ window.TeacherPage = (()=>{
     const ids = [
       'btnClearAll', 'btnRefresh', 'filterClass',
       'teacherWorld', 'teacherLevel',
-      'btnOpenBoss', 'btnSaveBest', 'btnLoadBest', 'btnClearBest', 'btnExportBestCode'
+      'btnOpenBoss', 'btnSaveBest', 'btnLoadBest', 'btnClearBest', 'btnExportBestCode',
+      'btnLoadLevelData', 'btnSaveLevelEdit', 'btnPreviewLevelEdit', 'btnExportLevelJson', 'btnClearLevelEdit',
+      'editLevelName', 'editTargetSteps', 'editMapSize', 'editStartDir', 'editItemReward', 'editEquipmentReward', 'editMapText',
+      'btnLoadLevelEditor', 'btnSaveLevelEditor', 'btnPreviewLevelEditor', 'btnExportEditedLevelJson', 'btnResetLevelEditor',
+      'editLevelName', 'editTargetSteps', 'editMapSize', 'editStartDir', 'editItemReward', 'editEquipmentReward', 'editMapText'
     ];
 
     ids.forEach(id => {
@@ -179,6 +200,9 @@ window.TeacherPage = (()=>{
 
     const teacherToolsCard = document.getElementById('teacherToolsCard');
     if(teacherToolsCard) teacherToolsCard.style.display = isTeacher ? '' : 'none';
+
+    const levelEditorCard = document.getElementById('levelEditorCard');
+    if(levelEditorCard) levelEditorCard.style.display = isTeacher ? '' : 'none';
   }
 
   function setBadge(){
@@ -411,6 +435,7 @@ window.TeacherPage = (()=>{
     if(worldSelect){
       worldSelect.onchange = ()=>{
         renderLevelOptions();
+        loadSelectedLevelIntoEditor();
       };
     }
 
@@ -418,6 +443,7 @@ window.TeacherPage = (()=>{
       levelSelect.onchange = ()=>{
         const value = normalizeLevelId(levelSelect.value, getToolWorld());
         if(value) levelSelect.value = value;
+        loadSelectedLevelIntoEditor();
       };
     }
   }
@@ -544,7 +570,10 @@ window.TeacherPage = (()=>{
   }
 
   function downloadTextFile(filename, content){
-    const blob = new Blob([content], { type: 'application/javascript;charset=utf-8' });
+    const type = String(filename).endsWith('.json')
+      ? 'application/json;charset=utf-8'
+      : 'application/javascript;charset=utf-8';
+    const blob = new Blob([content], { type });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -565,10 +594,16 @@ window.TeacherPage = (()=>{
     }
 
     const overrides = getStoredStepOverrides();
+    const levelEdits = getStoredLevelEdits();
     const exported = worlds.map(world => ({
       ...world,
       levels: (Array.isArray(world.levels) ? world.levels : []).map(level => {
-        const cloned = { ...level };
+        const editPatch = levelEdits[getLevelEditStorageKey(world.worldId, level.levelId)] || {};
+        const cloned = {
+          ...level,
+          ...editPatch,
+          map: Array.isArray(editPatch.map) ? editPatch.map.slice() : (Array.isArray(level.map) ? level.map.slice() : [])
+        };
         if(isBossLevel(cloned.levelId)) return cloned;
 
         const best = findStoredBestSolution(world.worldId, cloned.levelId);
@@ -583,6 +618,8 @@ window.TeacherPage = (()=>{
         }else if(best?.bestSteps > 0){
           cloned.targetSteps = best.bestSteps;
         }
+        delete cloned.updatedAt;
+        delete cloned.source;
         return cloned;
       })
     }));
@@ -603,6 +640,285 @@ window.LEVELS = ${JSON.stringify(exported, null, 2)};
 `;
     downloadTextFile('levels.js', js);
     toast(`✅ 已匯出 levels.js（含 ${solutionCount} 筆最佳解法、${stepCount} 筆最佳步數）`);
+  }
+
+
+  function getStoredLevelEdits(){
+    try{
+      const raw = localStorage.getItem(LEVEL_EDIT_OVERRIDE_KEY);
+      const data = raw ? JSON.parse(raw) : {};
+      return data && typeof data === 'object' ? data : {};
+    }catch(err){
+      console.warn('讀取關卡修改失敗', err);
+      return {};
+    }
+  }
+
+  function saveStoredLevelEdits(data){
+    localStorage.setItem(LEVEL_EDIT_OVERRIDE_KEY, JSON.stringify(data || {}));
+  }
+
+  function getLevelEditStorageKey(worldId, levelId){
+    return `${normalizeWorldId(worldId)}-${normalizeLevelId(levelId, worldId)}`;
+  }
+
+  function findOriginalLevel(worldId, levelId){
+    const world = getLevelsData().find(w => String(w.worldId) === String(normalizeWorldId(worldId)));
+    if(!world || !Array.isArray(world.levels)) return null;
+    return world.levels.find(l => String(l.levelId) === String(normalizeLevelId(levelId, worldId))) || null;
+  }
+
+  function getMergedLevelData(worldId, levelId){
+    const base = findOriginalLevel(worldId, levelId);
+    if(!base) return null;
+    const edits = getStoredLevelEdits();
+    const patch = edits[getLevelEditStorageKey(worldId, levelId)] || {};
+    return {
+      ...base,
+      ...patch,
+      map: Array.isArray(patch.map) ? patch.map.slice() : (Array.isArray(base.map) ? base.map.slice() : [])
+    };
+  }
+
+
+  function getMapTextEl(){
+    return document.getElementById('editMapText');
+  }
+
+  function parseMapText(rawText){
+    const rows = String(rawText || '').replace(/\r/g, '').split('\n').map(row => row.trimEnd()).filter(Boolean);
+    if(!rows.length) return [];
+    const width = rows[0].length;
+    if(!width) return [];
+    if(!rows.every(row => row.length === width)) return [];
+    return rows;
+  }
+
+  function getEditorMapRows(){
+    const text = getMapTextEl()?.value || '';
+    return parseMapText(text);
+  }
+
+  function setEditorMapRows(rows){
+    const el = getMapTextEl();
+    if(!el) return;
+    el.value = Array.isArray(rows) ? rows.join('\n') : '';
+  }
+
+  function updateCurrentPaintLabel(){
+    const el = document.getElementById('currentPaintLabel');
+    const meta = MAP_SYMBOLS[currentPaintSymbol] || MAP_SYMBOLS['#'];
+    if(el) el.textContent = `${meta.label} ${currentPaintSymbol}`;
+  }
+
+  function renderMapPalette(){
+    const wrap = document.getElementById('mapPalette');
+    if(!wrap) return;
+    wrap.innerHTML = Object.entries(MAP_SYMBOLS).map(([symbol, meta])=> `
+      <button type="button" class="mapToolBtn ${symbol === currentPaintSymbol ? 'active' : ''}" data-symbol="${symbol}">
+        <div style="font-size:20px;">${meta.emoji}</div>
+        <div>${meta.label}</div>
+        <small>${symbol}</small>
+      </button>
+    `).join('');
+    wrap.querySelectorAll('[data-symbol]').forEach(btn => {
+      btn.onclick = ()=>{
+        currentPaintSymbol = btn.getAttribute('data-symbol') || '#';
+        renderMapPalette();
+        updateCurrentPaintLabel();
+      };
+    });
+    updateCurrentPaintLabel();
+  }
+
+  function normalizeSingleSymbolRows(rows, symbol, x, y){
+    if(!['S','K','D'].includes(symbol)) return rows;
+    return rows.map((row, rowIndex)=> row.split('').map((cell, colIndex)=> {
+      if(rowIndex === y && colIndex === x) return cell;
+      return cell === symbol ? '.' : cell;
+    }).join(''));
+  }
+
+  function paintCellAt(x, y, symbol = currentPaintSymbol){
+    const rows = getEditorMapRows();
+    if(!rows.length || y < 0 || y >= rows.length || x < 0 || x >= rows[0].length) return;
+    const chars = rows.map(row => row.split(''));
+    chars[y][x] = symbol;
+    let nextRows = chars.map(row => row.join(''));
+    nextRows = normalizeSingleSymbolRows(nextRows, symbol, x, y);
+    setEditorMapRows(nextRows);
+    renderMapEditorGrid();
+  }
+
+  function renderMapEditorGrid(){
+    const grid = document.getElementById('mapEditorGrid');
+    if(!grid) return;
+    const rows = getEditorMapRows();
+    if(!rows.length){
+      grid.style.gridTemplateColumns = 'repeat(1, 34px)';
+      grid.innerHTML = '<div class="small">請先載入關卡資料</div>';
+      return;
+    }
+    const width = rows[0].length;
+    grid.style.gridTemplateColumns = `repeat(${width}, 34px)`;
+    grid.innerHTML = '';
+    rows.forEach((row, y)=>{
+      row.split('').forEach((symbol, x)=>{
+        const meta = MAP_SYMBOLS[symbol] || MAP_SYMBOLS['.'];
+        const cell = document.createElement('button');
+        cell.type = 'button';
+        cell.className = `mapEditorCell ${meta.className}`;
+        cell.textContent = meta.emoji;
+        cell.title = `(${x+1},${y+1}) ${meta.label} ${symbol}`;
+        cell.onmousedown = (e)=>{
+          e.preventDefault();
+          isPainting = true;
+          paintCellAt(x, y);
+        };
+        cell.onmouseenter = ()=>{
+          if(isPainting) paintCellAt(x, y);
+        };
+        grid.appendChild(cell);
+      });
+    });
+  }
+
+  function bindMapEditorTextSync(){
+    const text = getMapTextEl();
+    if(!text) return;
+    text.addEventListener('input', ()=>{
+      renderMapEditorGrid();
+    });
+    window.addEventListener('mouseup', ()=>{ isPainting = false; });
+    window.addEventListener('mouseleave', ()=>{ isPainting = false; });
+  }
+
+  function fillLevelEditor(levelData){
+    if(!levelData) return;
+    const setValue = (id, value)=>{
+      const el = document.getElementById(id);
+      if(el) el.value = value == null ? '' : String(value);
+    };
+    setValue('editLevelName', levelData.name || '');
+    setValue('editTargetSteps', levelData.targetSteps || '');
+    setValue('editMapSize', levelData.mapSize || '');
+    setValue('editStartDir', levelData.startDir ?? 1);
+    setValue('editItemReward', levelData.itemReward || '');
+    setValue('editEquipmentReward', levelData.equipmentReward || '');
+    setValue('editMapText', Array.isArray(levelData.map) ? levelData.map.join('\n') : '');
+    renderMapEditorGrid();
+  }
+
+  function loadSelectedLevelIntoEditor(){
+    const picked = validateToolSelection('載入關卡資料', false);
+    if(!picked) return;
+    const levelData = getMergedLevelData(picked.world, picked.level);
+    if(!levelData){
+      toast('找不到這一關的資料。');
+      return;
+    }
+    fillLevelEditor(levelData);
+    toast(`已載入 ${picked.world} / ${picked.level} 的關卡資料。`);
+  }
+
+  function buildLevelPatchFromEditor(picked){
+    const name = document.getElementById('editLevelName')?.value.trim() || '';
+    const targetSteps = Number(document.getElementById('editTargetSteps')?.value || 0);
+    const mapSize = Number(document.getElementById('editMapSize')?.value || 0);
+    const startDir = Number(document.getElementById('editStartDir')?.value || 0);
+    const itemReward = document.getElementById('editItemReward')?.value.trim() || '';
+    const equipmentReward = document.getElementById('editEquipmentReward')?.value.trim() || '';
+    const mapText = document.getElementById('editMapText')?.value || '';
+
+    const map = mapText.split(/\r?\n/).map(x => x.trimEnd()).filter(Boolean);
+    if(map.length === 0) throw new Error('地圖不可空白。');
+
+    const width = map[0].length;
+    if(width === 0) throw new Error('地圖每一列至少要有 1 個字元。');
+    if(!map.every(row => row.length === width)) throw new Error('地圖每一列長度必須一致。');
+
+    const joined = map.join('');
+    const countChar = (ch)=>(joined.split(ch).length - 1);
+    if(countChar('S') !== 1) throw new Error('地圖必須剛好有 1 個起點 S。');
+    if(countChar('K') !== 1) throw new Error('地圖必須剛好有 1 個鑰匙 K。');
+    if(countChar('D') !== 1) throw new Error('地圖必須剛好有 1 個出口門 D。');
+    if(!/^[#\.SKDTPCG]+$/.test(joined)) throw new Error('地圖只能使用 # . S K D T P C G 這些符號。');
+    if(!(targetSteps > 0)) throw new Error('最佳步數必須大於 0。');
+    const inferredMapSize = map.length;
+    const finalMapSize = mapSize > 0 ? mapSize : inferredMapSize;
+    if(!(finalMapSize > 0)) throw new Error('地圖大小必須大於 0。');
+    if(!(startDir >= 0 && startDir <= 3)) throw new Error('起始方向只能是 0、1、2、3。');
+
+    return {
+      levelId: normalizeLevelId(picked.level, picked.world),
+      name,
+      targetSteps,
+      mapSize: finalMapSize,
+      startDir,
+      itemReward,
+      equipmentReward,
+      map,
+      updatedAt: Date.now(),
+      source: 'teacher_level_editor'
+    };
+  }
+
+  function saveEditedLevel(){
+    const picked = validateToolSelection('儲存關卡修改', false);
+    if(!picked) return;
+    try{
+      const patch = buildLevelPatchFromEditor(picked);
+      const edits = getStoredLevelEdits();
+      edits[getLevelEditStorageKey(picked.world, picked.level)] = patch;
+      saveStoredLevelEdits(edits);
+      toast(`✅ 已儲存 ${picked.world} / ${picked.level} 的關卡修改`);
+    }catch(err){
+      toast(`❌ ${String(err?.message || err)}`);
+    }
+  }
+
+  function clearEditedLevel(){
+    const picked = validateToolSelection('清除此關修改', false);
+    if(!picked) return;
+    const key = getLevelEditStorageKey(picked.world, picked.level);
+    const edits = getStoredLevelEdits();
+    if(!edits[key]){
+      toast('這一關目前沒有已儲存的修改。');
+      return;
+    }
+    const ok = confirm(`確定要清除 ${picked.world} / ${picked.level} 的關卡修改嗎？`);
+    if(!ok) return;
+    delete edits[key];
+    saveStoredLevelEdits(edits);
+    const original = findOriginalLevel(picked.world, picked.level);
+    if(original) fillLevelEditor(original);
+    toast(`✅ 已清除 ${picked.world} / ${picked.level} 的關卡修改`);
+  }
+
+  function exportEditedLevelJson(){
+    const picked = validateToolSelection('匯出此關 JSON', false);
+    if(!picked) return;
+    try{
+      const patch = buildLevelPatchFromEditor(picked);
+      downloadTextFile(`${normalizeWorldId(picked.world)}-${normalizeLevelId(picked.level, picked.world)}.json`, JSON.stringify(patch, null, 2));
+      toast(`✅ 已匯出 ${picked.world} / ${picked.level} 的 JSON`);
+    }catch(err){
+      toast(`❌ ${String(err?.message || err)}`);
+    }
+  }
+
+  async function previewEditedLevel(){
+    const picked = validateToolSelection('前往此關預覽', false);
+    if(!picked) return;
+    try{
+      const patch = buildLevelPatchFromEditor(picked);
+      const edits = getStoredLevelEdits();
+      edits[getLevelEditStorageKey(picked.world, picked.level)] = patch;
+      saveStoredLevelEdits(edits);
+      await openSelectedLevel(picked);
+    }catch(err){
+      toast(`❌ ${String(err?.message || err)}`);
+    }
   }
 
   function bindUI(){
@@ -652,6 +968,11 @@ window.LEVELS = ${JSON.stringify(exported, null, 2)};
     const btnLoadBest = document.getElementById('btnLoadBest');
     const btnClearBest = document.getElementById('btnClearBest');
     const btnExportBestCode = document.getElementById('btnExportBestCode');
+    const btnLoadLevelData = document.getElementById('btnLoadLevelData');
+    const btnSaveLevelEdit = document.getElementById('btnSaveLevelEdit');
+    const btnPreviewLevelEdit = document.getElementById('btnPreviewLevelEdit');
+    const btnExportLevelJson = document.getElementById('btnExportLevelJson');
+    const btnClearLevelEdit = document.getElementById('btnClearLevelEdit');
     if (btnClearBest) btnClearBest.textContent = '同步最佳步數';
 
     if(btnOpenBoss) btnOpenBoss.onclick = ()=> openBoss();
@@ -659,14 +980,23 @@ window.LEVELS = ${JSON.stringify(exported, null, 2)};
     if(btnLoadBest) btnLoadBest.onclick = ()=> loadBestSolution();
     if(btnClearBest) btnClearBest.onclick = syncBestSteps;
     if(btnExportBestCode) btnExportBestCode.onclick = exportBestSolutionsToLevels;
+    if(btnLoadLevelData) btnLoadLevelData.onclick = loadSelectedLevelIntoEditor;
+    if(btnSaveLevelEdit) btnSaveLevelEdit.onclick = saveEditedLevel;
+    if(btnPreviewLevelEdit) btnPreviewLevelEdit.onclick = previewEditedLevel;
+    if(btnExportLevelJson) btnExportLevelJson.onclick = exportEditedLevelJson;
+    if(btnClearLevelEdit) btnClearLevelEdit.onclick = clearEditedLevel;
   }
 
   function init(){
     setupToolSelectors();
+    renderMapPalette();
+    bindMapEditorTextSync();
+    renderMapEditorGrid();
     setBadge();
     bindUI();
     updateControlsLock();
     render();
+    if(isTeacherLoggedIn()) loadSelectedLevelIntoEditor();
   }
 
   return { init };

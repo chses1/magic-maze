@@ -21,7 +21,7 @@ window.LEVELS = [
       {
         "levelId": "L1",
         "name": "第1關：學院走廊",
-        "targetSteps": 19,
+        "targetSteps": 14,
         "mapSize": 9,
         "itemReward": "魔力水晶",
         "equipmentReward": "頭盔",
@@ -29,36 +29,36 @@ window.LEVELS = [
         "map": [
           "#########",
           "#S..#...#",
-          "#.#.#.#D#",
-          "#.#...#.#",
+          "#.#.#.#.#",
+          "#.#..D#.#",
           "#.###.#.#",
           "#K..C.#.#",
           "###.#.#.#",
           "#..G#T..#",
           "#########"
         ],
-        "bestXml": "{\"blocks\":{\"languageVersion\":0,\"blocks\":[{\"type\":\"mw_turn_right\",\"id\":\"rUzIljS[Jt`7c%Aseqz.\",\"x\":40,\"y\":46,\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"0*VoTxKu,!/Bl_f:yU$Q\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"%Y8TN!$2%|Hf$j[?IJoX\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"_X_Xycc|j[nEG^[S[n1g\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"gDZSL+SP1cV^}_1a:*(q\",\"next\":{\"block\":{\"type\":\"mw_turn_left\",\"id\":\".+=v9s?qSUse)?@%74m$\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"Z1s!-TeB$3e^?,r*:#=x\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"SuYkN;E$l3(N1w1niDtT\",\"next\":{\"block\":{\"type\":\"mw_turn_right\",\"id\":\"7aq$F!:akVnS%^-79{YI\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"46gMQLC0/!,B2XP0tuwe\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"^cRozPQMhg?UqhO#nzlk\",\"next\":{\"block\":{\"type\":\"mw_turn_left\",\"id\":\"_M+2S]SMj9/J+yXxsMRB\",\"next\":{\"block\":{\"type\":\"mw_turn_left\",\"id\":\"@A]jNlAls7)$~5p/DE$[\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"ikbTB6nsJs=We+Y~,dS}\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"Kh/@ro%k;LdzTLwka|`r\",\"next\":{\"block\":{\"type\":\"mw_turn_right\",\"id\":\".x5%*)ceSW!,c,8cO[TV\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"(yZ0rRyU!Rw:|X|wk}DZ\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"G*q%K,}}i-D2hubnJqnp\",\"next\":{\"block\":{\"type\":\"mw_turn_left\",\"id\":\":2HO^?8/^J^auXQ~A|zO\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"I4-,S4D]EP)14u__!+`g\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"WT*y|b=g5FxJlxgJ|b^R\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"wDFWorU(hnnP$lC*E49E\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"fNLr)AyO)WMac%yI2nu7\",\"next\":{\"block\":{\"type\":\"mw_turn_right\",\"id\":\"ZrxyIA66*=U-wG^.F`fT\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"uPJm^B1=#b|F$2Ie2O*t\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\",)YT-XL4H9XYhJ-4^^Z9\",\"next\":{\"block\":{\"type\":\"mw_turn_right\",\"id\":\"@(O[rGn;j`bQ#,,}ui^F\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"Ck2.(7_/kj#5?+|Bue~o\"}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}]}}"
+        "bestXml": "{\"blocks\":{\"languageVersion\":0,\"blocks\":[{\"type\":\"mw_turn_right\",\"id\":\"rUzIljS[Jt`7c%Aseqz.\",\"x\":40,\"y\":46,\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"0*VoTxKu,!/Bl_f:yU$Q\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"%Y8TN!$2%|Hf$j[?IJoX\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"_X_Xycc|j[nEG^[S[n1g\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"gDZSL+SP1cV^}_1a:*(q\",\"next\":{\"block\":{\"type\":\"mw_turn_left\",\"id\":\".+=v9s?qSUse)?@%74m$\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"Z1s!-TeB$3e^?,r*:#=x\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"SuYkN;E$l3(N1w1niDtT\",\"next\":{\"block\":{\"type\":\"mw_turn_right\",\"id\":\"7aq$F!:akVnS%^-79{YI\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"46gMQLC0/!,B2XP0tuwe\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"^cRozPQMhg?UqhO#nzlk\",\"next\":{\"block\":{\"type\":\"mw_turn_left\",\"id\":\"_M+2S]SMj9/J+yXxsMRB\",\"next\":{\"block\":{\"type\":\"mw_turn_left\",\"id\":\"@A]jNlAls7)$~5p/DE$[\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"ikbTB6nsJs=We+Y~,dS}\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"Kh/@ro%k;LdzTLwka|`r\",\"next\":{\"block\":{\"type\":\"mw_turn_right\",\"id\":\".x5%*)ceSW!,c,8cO[TV\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"(yZ0rRyU!Rw:|X|wk}DZ\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"G*q%K,}}i-D2hubnJqnp\",\"next\":{\"block\":{\"type\":\"mw_turn_left\",\"id\":\":2HO^?8/^J^auXQ~A|zO\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"I4-,S4D]EP)14u__!+`g\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"WT*y|b=g5FxJlxgJ|b^R\"}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}]}}"
       },
       {
         "levelId": "L2",
         "name": "第2關：分岔教室",
-        "targetSteps": 18,
+        "targetSteps": 21,
         "mapSize": 9,
         "itemReward": "新生魔杖",
         "equipmentReward": "劍",
         "startDir": 1,
         "map": [
           "#########",
-          "#S....#.#",
-          "#.###.#D#",
-          "#.#...#.#",
-          "#.#.###.#",
-          "#K#...C.#",
+          "#S...K..#",
           "#.###.#.#",
-          "#G..T...#",
+          "#.#...#G#",
+          "#C#D###.#",
+          "#T#.....#",
+          "#.###.#.#",
+          "#...T...#",
           "#########"
         ],
-        "bestXml": ""
+        "bestXml": "{\"blocks\":{\"languageVersion\":0,\"blocks\":[{\"type\":\"mw_turn_right\",\"id\":\"d_Y?xI!R8gR@p6Si`.Y`\",\"x\":-430,\"y\":-650,\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"#c6,;7a*O{pz`tQf~;ZU\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"[J*[5ydX*gs4$MXB9?Lg\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"9Q#Y9C%?C?l7;8DBWDY1\",\"next\":{\"block\":{\"type\":\"mw_turn_left\",\"id\":\"qfF)prah@j-6zhTC;Dn8\",\"next\":{\"block\":{\"type\":\"mw_turn_left\",\"id\":\"YrPEkjPQqi0Ghs#|$7g8\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"(b28R]x!%tT_n(+S=-h9\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"4fGfpS8]2U77r3N4+*)q\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"{`ZH[}Htp{-/`gAZfO0t\",\"next\":{\"block\":{\"type\":\"mw_turn_right\",\"id\":\"cQxaPYyrQ|Tw+,/`[~N(\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"~Ph6g:C}XE4fVAKDidhd\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"Ky5a:9w@W12,j`e;LAV_\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"wb==ayr0mN0:/$G5x=B.\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"__1^OYKOGo@@aH=M7=U=\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"zZ}Z=~nV%g?qh|:=%G(+\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"]bi$qZH`V9?3mtlamtcn\",\"next\":{\"block\":{\"type\":\"mw_turn_right\",\"id\":\"^N.P_EC0MYg$Em/0hNs1\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"L=0Og5yPoMI_n[NKwo?6\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"7(S~=|vZhR]8~vT6pQB@\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"K^^va2X3[w-`FPb{?fLE\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"o%]GU90p$rbqSU-r^#1w\",\"next\":{\"block\":{\"type\":\"mw_turn_right\",\"id\":\"D__ADPm2EA`sEU}2F5_y\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"#(Rh{}qc?jx=(+Xj3,~u\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"U[w|M@^:czCCDi0Ik$2{\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"`2{An{,9|PD7[iNqg*ID\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"hL6NhcG}K!`t+8}{X$]B\",\"next\":{\"block\":{\"type\":\"mw_turn_right\",\"id\":\"iKDE2NAao@FT,.}iMJ6H\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"Eom^dwr$nK2k2/Bxo]kL\"}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}]}}"
       },
       {
         "levelId": "L3",

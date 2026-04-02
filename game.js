@@ -273,6 +273,7 @@ window.GamePage = (()=>{
 
   const PROGRAM_STORE_KEY = "maze_saved_programs_v1";
   const LEVEL_STEP_OVERRIDE_KEY = "mw_published_level_overrides_v1";
+  const LEVEL_EDIT_OVERRIDE_KEY = 'mw_teacher_level_edits_v1';
 
   const PLAYER_BUILD_KEY = "mw_player_build_v1";
   const EQUIPMENT_EFFECTS = {
@@ -531,6 +532,30 @@ window.GamePage = (()=>{
     return `${normalizeWorldId(worldId)}-${normalizeLevelId(levelId)}`;
   }
 
+
+  function getStoredLevelEdits(){
+    try{
+      const raw = localStorage.getItem(LEVEL_EDIT_OVERRIDE_KEY);
+      const data = raw ? JSON.parse(raw) : {};
+      return data && typeof data === 'object' ? data : {};
+    }catch(err){
+      console.warn('讀取教師關卡修改失敗', err);
+      return {};
+    }
+  }
+
+  function applyLevelEditOverride(worldId, levelData){
+    if (!levelData || normalizeLevelId(levelData.levelId) === 'boss') return levelData;
+    const edits = getStoredLevelEdits();
+    const patch = edits[levelOverrideKey(worldId, levelData.levelId)];
+    if (!patch || typeof patch !== 'object') return levelData;
+    return {
+      ...levelData,
+      ...patch,
+      map: Array.isArray(patch.map) ? patch.map.slice() : (Array.isArray(levelData.map) ? levelData.map.slice() : [])
+    };
+  }
+
   function getStoredLevelStepOverrides(){
     try{
       const raw = localStorage.getItem(LEVEL_STEP_OVERRIDE_KEY);
@@ -745,6 +770,7 @@ window.GamePage = (()=>{
     if(!lv) return null;
     if (lv && normalizeLevelId(lv.levelId) !== 'boss') {
       lv = { ...lv, levelId: normalizeLevelId(lv.levelId) };
+      lv = applyLevelEditOverride(normalizedWorldId, lv);
       lv = applyLevelTargetStepOverride(normalizedWorldId, lv);
     }
     return {w: { ...w, worldId: normalizedWorldId }, lv};

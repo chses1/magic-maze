@@ -5,6 +5,35 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>魔法迷宮｜教師後台</title>
   <link rel="stylesheet" href="styles.css" />
+
+  <style>
+    .teacherToolsGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;}
+    .editorSection{margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.08);}
+    .editorTwoCol{display:grid;grid-template-columns:minmax(280px,1.1fr) minmax(320px,.9fr);gap:14px;align-items:start;}
+    .mapPalette{display:grid;grid-template-columns:repeat(auto-fit,minmax(86px,1fr));gap:8px;}
+    .mapToolBtn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:64px;padding:8px 6px;text-align:center;font-weight:800;line-height:1.25;background:rgba(255,255,255,.05);}
+    .mapToolBtn small{font-size:11px;color:var(--muted);font-weight:700;}
+    .mapToolBtn.active{outline:2px solid rgba(124,92,255,.7);background:rgba(124,92,255,.18);}
+    .mapEditorWrap{padding:12px;border-radius:16px;background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.08);overflow:auto;}
+    .mapEditorGrid{display:grid;gap:6px;justify-content:start;align-content:start;width:max-content;user-select:none;}
+    .mapEditorCell{width:34px;height:34px;border-radius:10px;border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;font-weight:900;cursor:pointer;background:rgba(255,255,255,.05);}
+    .mapEditorCell.wall{background:rgba(35,28,85,.80);border-color:rgba(180,140,255,.22);}
+    .mapEditorCell.path{background:rgba(255,255,255,.04);}
+    .mapEditorCell.start{background:rgba(78,227,165,.16);border-color:rgba(78,227,165,.26);}
+    .mapEditorCell.key{background:rgba(124,92,255,.14);border-color:rgba(124,92,255,.25);}
+    .mapEditorCell.exit{background:rgba(255,210,110,.16);border-color:rgba(255,210,110,.28);}
+    .mapEditorCell.trap{background:rgba(255,92,124,.14);border-color:rgba(255,92,124,.28);}
+    .mapEditorCell.portal{background:rgba(49,208,255,.14);border-color:rgba(49,208,255,.22);}
+    .mapEditorCell.item{background:rgba(78,227,165,.14);border-color:rgba(78,227,165,.25);}
+    .mapEditorCell.equipment{background:rgba(255,146,64,.14);border-color:rgba(255,146,64,.25);}
+    .editorActions{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;}
+    .editorActions button{flex:0 0 auto;}
+    .mapHintBox{margin-top:10px;padding:10px 12px;border-radius:14px;background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.08);}
+    .mapHintBox code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;}
+    textarea#editMapText{min-height:240px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;line-height:1.5;resize:vertical;}
+    @media (max-width: 900px){.editorTwoCol{grid-template-columns:1fr;}}
+  </style>
+
 </head>
 
 <body>
@@ -53,7 +82,7 @@
         登入教師模式後，才能使用下列快捷功能。可直接前往指定關卡，或管理各關卡最佳解法。
       </div>
 
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;">
+      <div class="teacherToolsGrid">
         <div>
           <label>世界選擇</label>
           <select id="teacherWorld"></select>
@@ -76,8 +105,76 @@
         儲存位置：本機瀏覽器 localStorage。<br>
         鍵名格式：maze_best_solution::世界::關卡<br>
         例：maze_best_solution::world1::level1<br>
-        匯出功能會把目前瀏覽器已儲存的最佳解法與最佳步數，直接寫進一份可覆蓋的 <b>levels.js</b>。
+        匯出功能會把目前瀏覽器已儲存的最佳解法、最佳步數、以及關卡編輯內容，直接寫進一份可覆蓋的 <b>levels.js</b>。
       </div>
+      <div class="editorSection">
+        <h3 style="margin:0 0 10px 0;">關卡編輯模式（點格子）</h3>
+        <div class="small" style="margin-bottom:10px; line-height:1.7;">
+          先按「載入目前關卡資料」，再用左側工具直接點格子編輯。右側會同步顯示原始地圖文字，可手動微調後再儲存。
+        </div>
+
+        <div class="btnbar" style="margin-bottom:12px; flex-wrap:wrap;">
+          <button id="btnLoadLevelData">載入目前關卡資料</button>
+          <button class="primary" id="btnSaveLevelEdit">儲存關卡修改</button>
+          <button id="btnPreviewLevelEdit">前往此關預覽</button>
+          <button id="btnExportLevelJson">匯出此關 JSON</button>
+          <button class="danger" id="btnClearLevelEdit">清除此關修改</button>
+        </div>
+
+        <div class="editorTwoCol">
+          <div>
+            <label>點格子工具</label>
+            <div class="mapPalette" id="mapPalette"></div>
+
+            <div class="mapHintBox small">
+              目前筆刷：<b id="currentPaintLabel">牆壁 #</b><br>
+              小技巧：按住滑鼠左鍵可連續塗格。放置 <code>S</code> / <code>K</code> / <code>D</code> 時，舊的同類型格子會自動移除，避免重複。
+            </div>
+
+            <label style="margin-top:12px;">點格子地圖編輯區</label>
+            <div class="mapEditorWrap">
+              <div id="mapEditorGrid" class="mapEditorGrid"></div>
+            </div>
+          </div>
+
+          <div>
+            <div class="teacherToolsGrid">
+              <div>
+                <label>關卡名稱</label>
+                <input id="editLevelName" placeholder="例如：第1關：學院走廊" />
+              </div>
+              <div>
+                <label>最佳步數</label>
+                <input id="editTargetSteps" type="number" min="1" />
+              </div>
+              <div>
+                <label>地圖大小</label>
+                <input id="editMapSize" type="number" min="1" />
+              </div>
+              <div>
+                <label>起始方向（0上 1右 2下 3左）</label>
+                <input id="editStartDir" type="number" min="0" max="3" />
+              </div>
+              <div>
+                <label>道具獎勵</label>
+                <input id="editItemReward" placeholder="例如：魔力水晶" />
+              </div>
+              <div>
+                <label>裝備獎勵</label>
+                <input id="editEquipmentReward" placeholder="例如：頭盔" />
+              </div>
+            </div>
+
+            <label style="margin-top:12px;">地圖文字（會與點格子同步）</label>
+            <textarea id="editMapText" spellcheck="false" placeholder="#########
+#S..#..D#
+#.#.#.#.#
+#K..C.G.#
+#########"></textarea>
+          </div>
+        </div>
+      </div>
+
     </div>
 
     <div class="card" id="tableCard" style="margin-top:14px; display:none;">
