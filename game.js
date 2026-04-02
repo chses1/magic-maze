@@ -272,7 +272,7 @@ window.GamePage = (()=>{
   let bossState = null;
 
   const PROGRAM_STORE_KEY = "maze_saved_programs_v1";
-
+  const LEVEL_STEP_OVERRIDE_KEY = "mw_published_level_overrides_v1";
 
   const PLAYER_BUILD_KEY = "mw_player_build_v1";
   const EQUIPMENT_EFFECTS = {
@@ -526,6 +526,44 @@ window.GamePage = (()=>{
     return raw;
   }
 
+
+  function levelOverrideKey(worldId, levelId){
+    return `${normalizeWorldId(worldId)}-${normalizeLevelId(levelId)}`;
+  }
+
+  function getStoredLevelStepOverrides(){
+    try{
+      const raw = localStorage.getItem(LEVEL_STEP_OVERRIDE_KEY);
+      const data = raw ? JSON.parse(raw) : {};
+      return data && typeof data === 'object' ? data : {};
+    }catch(err){
+      console.warn('讀取最佳步數覆寫失敗', err);
+      return {};
+    }
+  }
+
+  function getOverriddenTargetSteps(worldId, levelId){
+    const overrides = getStoredLevelStepOverrides();
+    const entry = overrides[levelOverrideKey(worldId, levelId)];
+    const bestSteps = Number(entry?.targetSteps || 0);
+    return Number.isFinite(bestSteps) && bestSteps > 0 ? bestSteps : null;
+  }
+
+  function applyLevelTargetStepOverride(worldId, levelData){
+    if (!levelData || normalizeLevelId(levelData.levelId) === 'boss') return levelData;
+    const overriddenTarget = getOverriddenTargetSteps(worldId, levelData.levelId);
+    if (!(overriddenTarget > 0)) return levelData;
+    return { ...levelData, targetSteps: overriddenTarget };
+  }
+
+  function refreshSubtitleText(){
+    const subtitleEl = document.getElementById("subtitle");
+    if (!subtitleEl || !level) return;
+    subtitleEl.textContent = isBossLevel()
+      ? `卡牌回合戰（擊敗森林狼王）`
+      : `最佳步數：${level.targetSteps}｜先拿鑰匙，再走到出口門｜一星=過關、二星=拿寶箱、三星=最佳步數過關`;
+  }
+
   function getLevelCopy(worldId, levelId){
     return LEVEL_COPY[levelKeyRaw(worldId, levelId)] || DEFAULT_COPY;
   }
@@ -630,6 +668,17 @@ window.GamePage = (()=>{
       return false;
     }
   }
+  function loadEmbeddedBestSolution(){
+    try{
+      if (!workspace || !level || isBossLevel()) return false;
+      const bestXml = String(level?.bestXml || '').trim();
+      if (!bestXml) return false;
+      return loadDraftTextToWorkspace(bestXml, workspace);
+    }catch(err){
+      console.warn('loadEmbeddedBestSolution failed', err);
+      return false;
+    }
+  }
 
   function clearProgramDraft(worldId = world?.worldId, levelId = level?.levelId){
     try{
@@ -696,6 +745,7 @@ window.GamePage = (()=>{
     if(!lv) return null;
     if (lv && normalizeLevelId(lv.levelId) !== 'boss') {
       lv = { ...lv, levelId: normalizeLevelId(lv.levelId) };
+      lv = applyLevelTargetStepOverride(normalizedWorldId, lv);
     }
     return {w: { ...w, worldId: normalizedWorldId }, lv};
   }
@@ -2143,9 +2193,7 @@ window.GamePage = (()=>{
 
     applyMainContrast();
     document.getElementById("title").textContent = `${getWorldDisplayName(world.worldId)} ➜ ${getCleanLevelTitle()}`;
-    document.getElementById("subtitle").textContent = isBossLevel()
-      ? `卡牌回合戰（擊敗森林狼王）`
-      : `最佳步數：${level.targetSteps}｜先拿鑰匙，再走到出口門｜一星=過關、二星=拿寶箱、三星=最佳步數過關`;
+    refreshSubtitleText();
 
     fillInfoPanels();
 
@@ -2471,8 +2519,38 @@ window.GamePage = (()=>{
     ensureInfoPanels();
     workspace = BlocklySetup.createWorkspace("blocklyDiv", normalizeWorldId(worldId || pack.w?.worldId || "W1"));
     bindUI();
+
+    function refreshVisibleBestStepsText(bestSteps){
+      const resultWrap = document.getElementById("mazeResultWrap");
+      if (!resultWrap || resultWrap.hidden) return;
+
+      const html = String(resultWrap.innerHTML || "");
+      if (!html) return;
+
+      resultWrap.innerHTML = html.replace(
+        /最佳步數目標：\d+/g,
+        `最佳步數目標：${bestSteps}`
+      );
+    }
+
+    window.addEventListener('maze:bestStepsSynced', (event) => {
+      const detail = event?.detail || {};
+      if (!world || !level || isBossLevel()) return;
+      if (normalizeWorldId(detail.world) !== normalizeWorldId(world.worldId)) return;
+      if (normalizeLevelId(detail.level) !== normalizeLevelId(level.levelId)) return;
+
+      const bestSteps = Number(detail.bestSteps || 0);
+      if (!(bestSteps > 0)) return;
+
+      level = { ...level, targetSteps: bestSteps };
+      refreshSubtitleText();
+      refreshVisibleBestStepsText(bestSteps);
+      toast(`本關最佳步數已同步為 ${bestSteps} 步`);
+    });
+
     resetLevel();
-    loadProgramDraft();
+    const hasDraft = loadProgramDraft();
+    if (!hasDraft) loadEmbeddedBestSolution();
     applyMainContrast();
   }
 

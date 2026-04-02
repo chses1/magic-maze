@@ -1,8 +1,9 @@
-
 // teacher.js
 window.TeacherPage = (()=>{
 
   const STORAGE_PREFIX = 'maze_best_solution::';
+  const TEACHER_ACTION_KEY = 'maze_teacher_pending_action';
+  const LEVEL_STEP_OVERRIDE_KEY = 'mw_published_level_overrides_v1';
 
   const WORLD_NAME_MAP = {
     W1: '世界1｜魔法學院（序列）',
@@ -67,6 +68,25 @@ window.TeacherPage = (()=>{
 
   function solutionKey(world, level){
     return `${STORAGE_PREFIX}${world}::${level}`;
+  }
+
+  function levelOverrideKey(world, level){
+    return `${normalizeWorldId(world)}-${normalizeLevelId(level, world)}`;
+  }
+
+  function getStoredStepOverrides(){
+    try{
+      const raw = localStorage.getItem(LEVEL_STEP_OVERRIDE_KEY);
+      const data = raw ? JSON.parse(raw) : {};
+      return data && typeof data === 'object' ? data : {};
+    }catch(err){
+      console.warn('讀取最佳步數覆寫失敗', err);
+      return {};
+    }
+  }
+
+  function saveStoredStepOverrides(data){
+    localStorage.setItem(LEVEL_STEP_OVERRIDE_KEY, JSON.stringify(data || {}));
   }
 
   function getLevelsData(){
@@ -146,7 +166,7 @@ window.TeacherPage = (()=>{
     const ids = [
       'btnClearAll', 'btnRefresh', 'filterClass',
       'teacherWorld', 'teacherLevel',
-      'btnOpenBoss', 'btnSaveBest', 'btnLoadBest', 'btnClearBest'
+      'btnOpenBoss', 'btnSaveBest', 'btnLoadBest', 'btnClearBest', 'btnExportBestCode'
     ];
 
     ids.forEach(id => {
@@ -402,52 +422,187 @@ window.TeacherPage = (()=>{
     }
   }
 
-  async function openBoss(){
-    const picked = validateToolSelection('前往關卡', true);
-    if(!picked) return;
+  function rememberTeacherAction(action, picked){
+    try{
+      sessionStorage.setItem(TEACHER_ACTION_KEY, JSON.stringify({
+        action,
+        world: picked.world,
+        level: picked.level,
+        at: Date.now()
+      }));
+    }catch(_err){}
+  }
 
+  async function openSelectedLevel(picked){
     if(isBossLevel(picked.level)){
       await goToAppPage('boss.html', `world=${encodeURIComponent(picked.world)}&level=boss`);
       return;
     }
-
     await goToAppPage('game.html', `world=${encodeURIComponent(picked.world)}&level=${encodeURIComponent(picked.level)}`);
   }
 
-  function saveBestPlaceholder(){
-    const picked = validateToolSelection('儲存最佳解法', false);
+  async function openBoss(){
+    const picked = validateToolSelection('前往關卡', true);
     if(!picked) return;
-    toast(`請進入 ${picked.world} / ${picked.level} 的遊戲關卡後，再使用遊戲頁中的教師快捷功能儲存最佳解法。`);
+    await openSelectedLevel(picked);
   }
 
-  function loadBestSolution(){
+  async function saveBestSolution(){
+    const picked = validateToolSelection('儲存最佳解法', false);
+    if(!picked) return;
+    rememberTeacherAction('saveBest', picked);
+    toast(`即將前往 ${picked.world} / ${picked.level}。請在遊戲頁面排好積木後，再按右上角教師工具的「儲存最佳解法」。`);
+    await openSelectedLevel(picked);
+  }
+
+  async function loadBestSolution(){
     const picked = validateToolSelection('載入最佳解法', false);
     if(!picked) return;
+
     const raw = localStorage.getItem(solutionKey(picked.world, picked.level));
     if(!raw){
       toast(`這一關還沒有儲存最佳解法：${picked.world} / ${picked.level}`);
       return;
     }
+
     try{
       JSON.parse(raw);
-      toast(`已找到最佳解法：${picked.world} / ${picked.level}（請進入遊戲關卡自動載入）`);
+      rememberTeacherAction('loadBest', picked);
+      toast(`已找到最佳解法，將前往 ${picked.world} / ${picked.level}。進入後可用教師工具載入。`);
+      await openSelectedLevel(picked);
     }catch(err){
       toast('最佳解法資料損壞，請重新儲存。');
     }
   }
 
-  function clearBestSolution(){
-    const picked = validateToolSelection('清除最佳解法', true);
+  function syncBestSteps(){
+    const picked = validateToolSelection('同步最佳步數', false);
     if(!picked) return;
-    const key = solutionKey(picked.world, picked.level);
-    if(!localStorage.getItem(key)){
-      toast(`目前沒有可清除的最佳解法：${picked.world} / ${picked.level}`);
+
+    const raw = localStorage.getItem(solutionKey(picked.world, picked.level));
+    if(!raw){
+      toast(`這一關還沒有儲存最佳解法：${picked.world} / ${picked.level}`);
       return;
     }
-    const ok = confirm(`確定要清除 ${picked.world} / ${picked.level} 的最佳解法嗎？`);
-    if(!ok) return;
-    localStorage.removeItem(key);
-    toast(`✅ 已清除 ${picked.world} / ${picked.level} 的最佳解法`);
+
+    try{
+      const payload = JSON.parse(raw);
+      const bestSteps = Number(payload?.bestSteps || payload?.steps || 0);
+      if(!(bestSteps > 0)){
+        toast('這份最佳解法還沒有步數資訊。請先進入關卡執行最佳解法後重新儲存，再同步。');
+        return;
+      }
+
+      const overrides = getStoredStepOverrides();
+      overrides[levelOverrideKey(picked.world, picked.level)] = {
+        targetSteps: bestSteps,
+        updatedAt: Date.now(),
+        source: 'teacher_best_solution'
+      };
+      saveStoredStepOverrides(overrides);
+      toast(`✅ 已同步 ${picked.world} / ${picked.level} 的最佳步數為 ${bestSteps} 步`);
+    }catch(err){
+      console.warn(err);
+      toast('同步最佳步數失敗，最佳解法資料可能損壞。');
+    }
+  }
+  function normalizeSolutionPayload(raw){
+    try{
+      const payload = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      if(!payload || typeof payload !== 'object') return null;
+      const blockly = typeof payload.blockly === 'string' ? payload.blockly : '';
+      const bestSteps = Number(payload?.bestSteps || payload?.steps || 0);
+      return {
+        blockly,
+        bestSteps: Number.isFinite(bestSteps) && bestSteps > 0 ? bestSteps : 0
+      };
+    }catch(err){
+      return null;
+    }
+  }
+
+  function getCandidateSolutionKeys(worldId, levelId){
+    const worldNum = String(normalizeWorldId(worldId)).replace(/^W/i, '');
+    const levelNum = String(normalizeLevelId(levelId, worldId)).replace(/^L/i, '');
+    return Array.from(new Set([
+      solutionKey(worldId, levelId),
+      solutionKey(normalizeWorldId(worldId), normalizeLevelId(levelId, worldId)),
+      solutionKey(`world${worldNum}`, `level${levelNum}`),
+      solutionKey(`W${worldNum}`, `L${levelNum}`)
+    ]));
+  }
+
+  function findStoredBestSolution(worldId, levelId){
+    const keys = getCandidateSolutionKeys(worldId, levelId);
+    for(const key of keys){
+      const raw = localStorage.getItem(key);
+      if(!raw) continue;
+      const payload = normalizeSolutionPayload(raw);
+      if(payload) return payload;
+    }
+    return null;
+  }
+
+  function downloadTextFile(filename, content){
+    const blob = new Blob([content], { type: 'application/javascript;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=> URL.revokeObjectURL(url), 1000);
+  }
+
+  function exportBestSolutionsToLevels(){
+    if(!requireTeacherOrBlock('匯出最佳解法到 levels.js')) return;
+
+    const worlds = getLevelsData();
+    if(!Array.isArray(worlds) || worlds.length === 0){
+      toast('找不到 LEVELS 資料，無法匯出。');
+      return;
+    }
+
+    const overrides = getStoredStepOverrides();
+    const exported = worlds.map(world => ({
+      ...world,
+      levels: (Array.isArray(world.levels) ? world.levels : []).map(level => {
+        const cloned = { ...level };
+        if(isBossLevel(cloned.levelId)) return cloned;
+
+        const best = findStoredBestSolution(world.worldId, cloned.levelId);
+        const override = overrides[levelOverrideKey(world.worldId, cloned.levelId)];
+        const overrideSteps = Number(override?.targetSteps || 0);
+
+        if(best?.blockly){
+          cloned.bestXml = best.blockly;
+        }
+        if(overrideSteps > 0){
+          cloned.targetSteps = overrideSteps;
+        }else if(best?.bestSteps > 0){
+          cloned.targetSteps = best.bestSteps;
+        }
+        return cloned;
+      })
+    }));
+
+    let solutionCount = 0;
+    let stepCount = 0;
+    exported.forEach(world => {
+      (world.levels || []).forEach(level => {
+        if(isBossLevel(level.levelId)) return;
+        if(level.bestXml) solutionCount += 1;
+        if(Number(level.targetSteps || 0) > 0) stepCount += 1;
+      });
+    });
+
+    const js = `// levels.js
+// ✅ 此檔由教師後台匯出，已內嵌目前瀏覽器儲存的最佳解法與最佳步數
+window.LEVELS = ${JSON.stringify(exported, null, 2)};
+`;
+    downloadTextFile('levels.js', js);
+    toast(`✅ 已匯出 levels.js（含 ${solutionCount} 筆最佳解法、${stepCount} 筆最佳步數）`);
   }
 
   function bindUI(){
@@ -496,11 +651,14 @@ window.TeacherPage = (()=>{
     const btnSaveBest = document.getElementById('btnSaveBest');
     const btnLoadBest = document.getElementById('btnLoadBest');
     const btnClearBest = document.getElementById('btnClearBest');
+    const btnExportBestCode = document.getElementById('btnExportBestCode');
+    if (btnClearBest) btnClearBest.textContent = '同步最佳步數';
 
     if(btnOpenBoss) btnOpenBoss.onclick = ()=> openBoss();
-    if(btnSaveBest) btnSaveBest.onclick = saveBestPlaceholder;
-    if(btnLoadBest) btnLoadBest.onclick = loadBestSolution;
-    if(btnClearBest) btnClearBest.onclick = clearBestSolution;
+    if(btnSaveBest) btnSaveBest.onclick = ()=> saveBestSolution();
+    if(btnLoadBest) btnLoadBest.onclick = ()=> loadBestSolution();
+    if(btnClearBest) btnClearBest.onclick = syncBestSteps;
+    if(btnExportBestCode) btnExportBestCode.onclick = exportBestSolutionsToLevels;
   }
 
   function init(){

@@ -68,13 +68,15 @@
         <button id="btnOpenBoss">前往關卡</button>
         <button class="primary" id="btnSaveBest">儲存最佳解法</button>
         <button id="btnLoadBest">載入最佳解法</button>
-        <button class="danger" id="btnClearBest">清除最佳解法</button>
+        <button class="danger" id="btnClearBest">同步最佳步數</button>
+        <button id="btnExportBestCode">匯出到 levels.js</button>
       </div>
 
       <div class="small" style="margin-top:10px; line-height:1.7;">
         儲存位置：本機瀏覽器 localStorage。<br>
         鍵名格式：maze_best_solution::世界::關卡<br>
-        例：maze_best_solution::world1::level1
+        例：maze_best_solution::world1::level1<br>
+        匯出功能會把目前瀏覽器已儲存的最佳解法與最佳步數，直接寫進一份可覆蓋的 <b>levels.js</b>。
       </div>
     </div>
 

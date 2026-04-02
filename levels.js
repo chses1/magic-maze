@@ -1,14 +1,5 @@
 // levels.js
-// 16 關迷宮藍圖版（每世界 4 關）
-// 地圖符號：
-// # 牆, . 路, S 起點
-// K 鑰匙, D 出口門, T 回起點陷阱, P 傳送陷阱
-// C 道具寶箱, G 裝備寶箱
-//
-// ⚠️ 規則已統一：所有一般關都以 D（出口門）作為通關點，拿到 K（鑰匙）後才能通過。
-// 這份 levels.js 已先把 16 關的新藍圖與新符號放入，
-// 下一步還需要同步修改 game.js 才能完整支援 C / G / P、新星等與新獎勵邏輯。
-
+// ✅ 此檔由教師後台匯出，已內嵌目前瀏覽器儲存的最佳解法與最佳步數
 window.LEVELS = [
   {
     "worldId": "W1",
@@ -30,7 +21,7 @@ window.LEVELS = [
       {
         "levelId": "L1",
         "name": "第1關：學院走廊",
-        "targetSteps": 16,
+        "targetSteps": 19,
         "mapSize": 9,
         "itemReward": "魔力水晶",
         "equipmentReward": "頭盔",
@@ -46,7 +37,7 @@ window.LEVELS = [
           "#..G#T..#",
           "#########"
         ],
-        "bestXml": ""
+        "bestXml": "{\"blocks\":{\"languageVersion\":0,\"blocks\":[{\"type\":\"mw_turn_right\",\"id\":\"rUzIljS[Jt`7c%Aseqz.\",\"x\":40,\"y\":46,\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"0*VoTxKu,!/Bl_f:yU$Q\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"%Y8TN!$2%|Hf$j[?IJoX\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"_X_Xycc|j[nEG^[S[n1g\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"gDZSL+SP1cV^}_1a:*(q\",\"next\":{\"block\":{\"type\":\"mw_turn_left\",\"id\":\".+=v9s?qSUse)?@%74m$\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"Z1s!-TeB$3e^?,r*:#=x\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"SuYkN;E$l3(N1w1niDtT\",\"next\":{\"block\":{\"type\":\"mw_turn_right\",\"id\":\"7aq$F!:akVnS%^-79{YI\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"46gMQLC0/!,B2XP0tuwe\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"^cRozPQMhg?UqhO#nzlk\",\"next\":{\"block\":{\"type\":\"mw_turn_left\",\"id\":\"_M+2S]SMj9/J+yXxsMRB\",\"next\":{\"block\":{\"type\":\"mw_turn_left\",\"id\":\"@A]jNlAls7)$~5p/DE$[\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"ikbTB6nsJs=We+Y~,dS}\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"Kh/@ro%k;LdzTLwka|`r\",\"next\":{\"block\":{\"type\":\"mw_turn_right\",\"id\":\".x5%*)ceSW!,c,8cO[TV\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"(yZ0rRyU!Rw:|X|wk}DZ\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"G*q%K,}}i-D2hubnJqnp\",\"next\":{\"block\":{\"type\":\"mw_turn_left\",\"id\":\":2HO^?8/^J^auXQ~A|zO\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"I4-,S4D]EP)14u__!+`g\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"WT*y|b=g5FxJlxgJ|b^R\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"wDFWorU(hnnP$lC*E49E\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"fNLr)AyO)WMac%yI2nu7\",\"next\":{\"block\":{\"type\":\"mw_turn_right\",\"id\":\"ZrxyIA66*=U-wG^.F`fT\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"uPJm^B1=#b|F$2Ie2O*t\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\",)YT-XL4H9XYhJ-4^^Z9\",\"next\":{\"block\":{\"type\":\"mw_turn_right\",\"id\":\"@(O[rGn;j`bQ#,,}ui^F\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"Ck2.(7_/kj#5?+|Bue~o\"}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}]}}"
       },
       {
         "levelId": "L2",
