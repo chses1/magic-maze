@@ -556,29 +556,29 @@ window.GamePage = (()=>{
     };
   }
 
-  function getStoredLevelStepOverrides(){
+  function getStoredLevelTargetBlockOverrides(){
     try{
-      const raw = localStorage.getItem(LEVEL_STEP_OVERRIDE_KEY);
+      const raw = localStorage.getItem(LEVEL_TARGET_BLOCK_OVERRIDE_KEY);
       const data = raw ? JSON.parse(raw) : {};
       return data && typeof data === 'object' ? data : {};
     }catch(err){
-      console.warn('讀取最佳步數覆寫失敗', err);
+      console.warn('讀取最佳程式碼數覆寫失敗', err);
       return {};
     }
   }
 
-  function getOverriddenTargetSteps(worldId, levelId){
-    const overrides = getStoredLevelStepOverrides();
+  function getOverriddenTargetBlocks(worldId, levelId){
+    const overrides = getStoredLevelTargetBlockOverrides();
     const entry = overrides[levelOverrideKey(worldId, levelId)];
-    const bestSteps = Number(entry?.targetSteps || 0);
-    return Number.isFinite(bestSteps) && bestSteps > 0 ? bestSteps : null;
+    const targetBlocks = Number(entry?.targetBlocks || entry?.targetSteps || 0);
+    return Number.isFinite(targetBlocks) && targetBlocks > 0 ? targetBlocks : null;
   }
 
-  function applyLevelTargetStepOverride(worldId, levelData){
+  function applyLevelTargetBlockOverride(worldId, levelData){
     if (!levelData || normalizeLevelId(levelData.levelId) === 'boss') return levelData;
-    const overriddenTarget = getOverriddenTargetSteps(worldId, levelData.levelId);
+    const overriddenTarget = getOverriddenTargetBlocks(worldId, levelData.levelId);
     if (!(overriddenTarget > 0)) return levelData;
-    return { ...levelData, targetSteps: overriddenTarget };
+    return { ...levelData, targetBlocks: overriddenTarget };
   }
 
   function refreshSubtitleText(){
@@ -586,7 +586,7 @@ window.GamePage = (()=>{
     if (!subtitleEl || !level) return;
     subtitleEl.textContent = isBossLevel()
       ? `卡牌回合戰（擊敗森林狼王）`
-      : `最佳步數：${level.targetSteps}｜先拿鑰匙，再走到出口門｜一星=過關、二星=拿寶箱、三星=最佳步數過關`;
+      : `最佳程式碼數：${level.targetBlocks || level.targetSteps || 0}｜先拿鑰匙，再走到出口門｜一星=過關、二星=拿寶箱、三星=最佳程式碼數過關`;
   }
 
   function getLevelCopy(worldId, levelId){
@@ -741,7 +741,7 @@ window.GamePage = (()=>{
     return {
       levelId: "boss",
       name: "森林狼王 Boss 戰",
-      targetSteps: 0,
+      targetBlocks: 0,
       map: ["S"],
       startDir: 1,
       isBoss: true,
@@ -771,7 +771,7 @@ window.GamePage = (()=>{
     if (lv && normalizeLevelId(lv.levelId) !== 'boss') {
       lv = { ...lv, levelId: normalizeLevelId(lv.levelId) };
       lv = applyLevelEditOverride(normalizedWorldId, lv);
-      lv = applyLevelTargetStepOverride(normalizedWorldId, lv);
+      lv = applyLevelTargetBlockOverride(normalizedWorldId, lv);
     }
     return {w: { ...w, worldId: normalizedWorldId }, lv};
   }
@@ -2124,20 +2124,29 @@ window.GamePage = (()=>{
     if(abortRun) throw new Error("aborted");
   }
 
+  function getCurrentProgramBlockCount(){
+    try{
+      return Number(BlocklySetup?.countScoringBlocks?.(workspace) || 0);
+    }catch(_err){
+      return 0;
+    }
+  }
+
   function scoreAndStars(){
     const timeMs = Math.max(0, Date.now()-startAt);
     const collectedAnyReward = !!(openedItemChest || openedEquipmentChest);
-    const bestSteps = Number(level?.targetSteps || 0);
+    const targetBlocks = Number(level?.targetBlocks || level?.targetSteps || 0);
+    const codeBlocks = getCurrentProgramBlockCount();
 
     let stars = 1;
     if (collectedAnyReward) stars = 2;
-    if (collectedAnyReward && steps === bestSteps) stars = 3;
+    if (collectedAnyReward && targetBlocks > 0 && codeBlocks > 0 && codeBlocks <= targetBlocks) stars = 3;
 
     const base = 1200;
     const rewardBonus = (openedItemChest ? 120 : 0) + (openedEquipmentChest ? 120 : 0) + (stars >= 3 ? 200 : 0);
     const score = Math.max(100, base + rewardBonus - steps*6 - bumps*30 - Math.floor(timeMs/1000)*2);
 
-    return {score, stars, timeMs, collectedAnyReward};
+    return {score, stars, timeMs, collectedAnyReward, codeBlocks, targetBlocks};
   }
 
   function levelKey(){
@@ -2420,7 +2429,7 @@ window.GamePage = (()=>{
         stepCredits = 0;
         resolvePendingStep();
 
-        const {score, stars, timeMs, collectedAnyReward} = scoreAndStars();
+        const {score, stars, timeMs, collectedAnyReward, codeBlocks, targetBlocks} = scoreAndStars();
         const record = { score, stars, steps, timeMs, bumps, at: Date.now() };
 
         const session = StorageAPI.getSession();
@@ -2430,7 +2439,7 @@ window.GamePage = (()=>{
         const copy = getLevelCopy(world.worldId, level.levelId);
 
         const starDesc = stars === 3
-          ? '三星通關！你拿到寶箱，而且剛好用最佳步數完成，本關會提升玩家生命上限。'
+          ? '三星通關！你拿到寶箱，而且程式碼數達到三星標準，本關會提升玩家生命上限。'
           : stars === 2
             ? '二星通關！你有拿到寶箱，因此道具／裝備會帶進 Boss 戰。'
             : '一星通關！你只有成功走到門，這次不會獲得裝備與道具。';
@@ -2452,13 +2461,14 @@ window.GamePage = (()=>{
             <span class="result-badge">分數：${score}</span>
             <span class="result-badge">星等：★${stars}</span>
             <span class="result-badge">步數：${steps}</span>
+            <span class="result-badge">程式碼數：${codeBlocks}</span>
             <span class="result-badge">撞牆：${bumps}</span>
             <span class="result-badge">時間：${Math.round(timeMs/1000)} 秒</span>
           </div>
           <div class="stage-current-reward" style="margin-top:12px;display:block;">
             ${itemRow}
             ${equipRow}
-            <div style="margin-top:8px;color:#34523b;">最佳步數目標：${level.targetSteps}｜本次是否拿寶箱：${collectedAnyReward ? '有' : '沒有'}</div>
+            <div style="margin-top:8px;color:#34523b;">最佳程式碼數目標：${targetBlocks}｜本次是否拿寶箱：${collectedAnyReward ? '有' : '沒有'}</div>
           </div>
           ${formatWorldInventory(world.worldId, updatedBuild)}
           <div style="margin-top:8px;">${improved ? "🎉 這是你的最佳紀錄，已存檔！" : "已完成本關，紀錄已更新。"}</div>`
@@ -2546,7 +2556,7 @@ window.GamePage = (()=>{
     workspace = BlocklySetup.createWorkspace("blocklyDiv", normalizeWorldId(worldId || pack.w?.worldId || "W1"));
     bindUI();
 
-    function refreshVisibleBestStepsText(bestSteps){
+    function refreshVisibleTargetBlocksText(targetBlocks){
       const resultWrap = document.getElementById("mazeResultWrap");
       if (!resultWrap || resultWrap.hidden) return;
 
@@ -2554,24 +2564,24 @@ window.GamePage = (()=>{
       if (!html) return;
 
       resultWrap.innerHTML = html.replace(
-        /最佳步數目標：\d+/g,
-        `最佳步數目標：${bestSteps}`
+        /最佳程式碼數目標：\d+/g,
+        `最佳程式碼數目標：${targetBlocks}`
       );
     }
 
-    window.addEventListener('maze:bestStepsSynced', (event) => {
+    window.addEventListener('maze:bestCodeSynced', (event) => {
       const detail = event?.detail || {};
       if (!world || !level || isBossLevel()) return;
       if (normalizeWorldId(detail.world) !== normalizeWorldId(world.worldId)) return;
       if (normalizeLevelId(detail.level) !== normalizeLevelId(level.levelId)) return;
 
-      const bestSteps = Number(detail.bestSteps || 0);
-      if (!(bestSteps > 0)) return;
+      const targetBlocks = Number(detail.targetBlocks || 0);
+      if (!(targetBlocks > 0)) return;
 
-      level = { ...level, targetSteps: bestSteps };
+      level = { ...level, targetBlocks };
       refreshSubtitleText();
-      refreshVisibleBestStepsText(bestSteps);
-      toast(`本關最佳步數已同步為 ${bestSteps} 步`);
+      refreshVisibleTargetBlocksText(targetBlocks);
+      toast(`本關最佳程式碼數已同步為 ${targetBlocks}`);
     });
 
     resetLevel();

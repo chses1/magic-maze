@@ -46,6 +46,14 @@ window.BlocklySetup = (()=>{
     if(Blockly.Blocks["mw_move_forward"]) return;
 
     Blockly.defineBlocksWithJsonArray([
+      {
+        "type":"mw_start",
+        "message0":"當開始執行 %1",
+        "args0":[{"type":"input_statement","name":"DO"}],
+        "colour":"#4caf50",
+        "tooltip":"把積木接在這裡，程式會從這裡開始執行。",
+        "helpUrl":""
+      },
       { "type":"mw_move_forward","message0":"向前走 1 格","previousStatement":null,"nextStatement":null,"colour":"#7c5cff" },
       { "type":"mw_turn_left","message0":"左轉","previousStatement":null,"nextStatement":null,"colour":"#7c5cff" },
       { "type":"mw_turn_right","message0":"右轉","previousStatement":null,"nextStatement":null,"colour":"#7c5cff" },
@@ -71,6 +79,10 @@ window.BlocklySetup = (()=>{
 
     // ✅ 步進除錯：每個「指令積木」執行前先反白目前積木
     js.STATEMENT_PREFIX = 'await api.__highlight(%1);\n';
+
+    js.forBlock["mw_start"] = function(block){
+      return js.statementToCode(block, "DO");
+    };
 
     js.forBlock["mw_move_forward"] = ()=> "await api.moveForward();\n";
     js.forBlock["mw_turn_left"]   = ()=> "await api.turnLeft();\n";
@@ -176,11 +188,12 @@ window.BlocklySetup = (()=>{
     if(loadDefaultBlocks){
       const xmlText = `
         <xml xmlns="https://developers.google.com/blockly/xml">
-          <block type="mw_move_forward" x="20" y="20"></block>
+          <block type="mw_start" x="20" y="20" deletable="false" movable="false"></block>
         </xml>
       `;
       const xml = xmlTextToDom(xmlText);
       domToWorkspace(xml, workspace);
+      lockStartBlocks(workspace);
     }
 
     return workspace;
@@ -210,6 +223,7 @@ window.BlocklySetup = (()=>{
       workspace.clear();
       const dom = xmlTextToDom(xmlText);
       domToWorkspace(dom, workspace);
+      lockStartBlocks(workspace);
       return true;
     }catch(e){
       console.warn("loadXmlText failed", e);
@@ -217,11 +231,34 @@ window.BlocklySetup = (()=>{
     }
   }
 
+  function lockStartBlocks(workspace){
+    if(!workspace?.getAllBlocks) return;
+    workspace.getAllBlocks(false).forEach(block=>{
+      if(block?.type === "mw_start"){
+        block.setMovable(false);
+        block.setDeletable(false);
+      }
+    });
+  }
+
+  function countScoringBlocks(workspace){
+    if(!workspace?.getAllBlocks) return 0;
+    return workspace.getAllBlocks(false).filter(block=>{
+      if(!block || (typeof block.isShadow === "function" && block.isShadow())) return false;
+      const type = String(block.type || "");
+      if(type === "mw_start") return false;
+      if(type === "math_number") return false;
+      return true;
+    }).length;
+  }
+
   return {
     createWorkspace,
     workspaceToAsyncCode,
     exportXmlText,
     loadXmlText,
-    buildToolbox
+    buildToolbox,
+    countScoringBlocks,
+    lockStartBlocks
   };
 })();

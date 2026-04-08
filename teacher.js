@@ -3,7 +3,7 @@ window.TeacherPage = (()=>{
 
   const STORAGE_PREFIX = 'maze_best_solution::';
   const TEACHER_ACTION_KEY = 'maze_teacher_pending_action';
-  const LEVEL_STEP_OVERRIDE_KEY = 'mw_published_level_overrides_v1';
+  const LEVEL_TARGET_BLOCK_OVERRIDE_KEY = 'mw_published_level_overrides_v1';
   const LEVEL_EDIT_OVERRIDE_KEY = 'mw_teacher_level_edits_v1';
 
   const WORLD_NAME_MAP = {
@@ -91,18 +91,18 @@ window.TeacherPage = (()=>{
     return `${normalizeWorldId(world)}-${normalizeLevelId(level, world)}`;
   }
 
-  function getStoredStepOverrides(){
+  function getStoredTargetBlockOverrides(){
     try{
-      const raw = localStorage.getItem(LEVEL_STEP_OVERRIDE_KEY);
+      const raw = localStorage.getItem(LEVEL_TARGET_BLOCK_OVERRIDE_KEY);
       const data = raw ? JSON.parse(raw) : {};
       return data && typeof data === 'object' ? data : {};
     }catch(err){
-      console.warn('讀取最佳步數覆寫失敗', err);
+      console.warn('讀取最佳程式碼數覆寫失敗', err);
       return {};
     }
   }
 
-  function saveStoredStepOverrides(data){
+  function saveStoredTargetBlockOverrides(data){
     localStorage.setItem(LEVEL_STEP_OVERRIDE_KEY, JSON.stringify(data || {}));
   }
 
@@ -501,8 +501,8 @@ window.TeacherPage = (()=>{
     }
   }
 
-  function syncBestSteps(){
-    const picked = validateToolSelection('同步最佳步數', false);
+  function syncBestCode(){
+    const picked = validateToolSelection('同步最佳程式碼數', false);
     if(!picked) return;
 
     const raw = localStorage.getItem(solutionKey(picked.world, picked.level));
@@ -513,23 +513,23 @@ window.TeacherPage = (()=>{
 
     try{
       const payload = JSON.parse(raw);
-      const bestSteps = Number(payload?.bestSteps || payload?.steps || 0);
-      if(!(bestSteps > 0)){
-        toast('這份最佳解法還沒有步數資訊。請先進入關卡執行最佳解法後重新儲存，再同步。');
+      const targetBlocks = Number(payload?.targetBlocks || payload?.bestSteps || payload?.steps || 0);
+      if(!(targetBlocks > 0)){
+        toast('這份最佳解法還沒有程式碼數資訊。請先進入關卡整理好最佳解法後重新儲存，再同步。');
         return;
       }
 
-      const overrides = getStoredStepOverrides();
+      const overrides = getStoredTargetBlockOverrides();
       overrides[levelOverrideKey(picked.world, picked.level)] = {
-        targetSteps: bestSteps,
+        targetBlocks,
         updatedAt: Date.now(),
         source: 'teacher_best_solution'
       };
-      saveStoredStepOverrides(overrides);
-      toast(`✅ 已同步 ${picked.world} / ${picked.level} 的最佳步數為 ${bestSteps} 步`);
+      saveStoredTargetBlockOverrides(overrides);
+      toast(`✅ 已同步 ${picked.world} / ${picked.level} 的最佳程式碼數為 ${targetBlocks}`);
     }catch(err){
       console.warn(err);
-      toast('同步最佳步數失敗，最佳解法資料可能損壞。');
+      toast('同步最佳程式碼數失敗，最佳解法資料可能損壞。');
     }
   }
   function normalizeSolutionPayload(raw){
@@ -537,10 +537,10 @@ window.TeacherPage = (()=>{
       const payload = typeof raw === 'string' ? JSON.parse(raw) : raw;
       if(!payload || typeof payload !== 'object') return null;
       const blockly = typeof payload.blockly === 'string' ? payload.blockly : '';
-      const bestSteps = Number(payload?.bestSteps || payload?.steps || 0);
+      const targetBlocks = Number(payload?.targetBlocks || payload?.bestSteps || payload?.steps || 0);
       return {
         blockly,
-        bestSteps: Number.isFinite(bestSteps) && bestSteps > 0 ? bestSteps : 0
+        targetBlocks: Number.isFinite(targetBlocks) && targetBlocks > 0 ? targetBlocks : 0
       };
     }catch(err){
       return null;
@@ -593,7 +593,7 @@ window.TeacherPage = (()=>{
       return;
     }
 
-    const overrides = getStoredStepOverrides();
+    const overrides = getStoredTargetBlockOverrides();
     const levelEdits = getStoredLevelEdits();
     const exported = worlds.map(world => ({
       ...world,
@@ -608,15 +608,15 @@ window.TeacherPage = (()=>{
 
         const best = findStoredBestSolution(world.worldId, cloned.levelId);
         const override = overrides[levelOverrideKey(world.worldId, cloned.levelId)];
-        const overrideSteps = Number(override?.targetSteps || 0);
+        const overrideBlocks = Number(override?.targetBlocks || override?.targetSteps || 0);
 
         if(best?.blockly){
           cloned.bestXml = best.blockly;
         }
-        if(overrideSteps > 0){
-          cloned.targetSteps = overrideSteps;
-        }else if(best?.bestSteps > 0){
-          cloned.targetSteps = best.bestSteps;
+        if(overrideBlocks > 0){
+          cloned.targetBlocks = overrideBlocks;
+        }else if(best?.targetBlocks > 0){
+          cloned.targetBlocks = best.targetBlocks;
         }
         delete cloned.updatedAt;
         delete cloned.source;
@@ -630,16 +630,16 @@ window.TeacherPage = (()=>{
       (world.levels || []).forEach(level => {
         if(isBossLevel(level.levelId)) return;
         if(level.bestXml) solutionCount += 1;
-        if(Number(level.targetSteps || 0) > 0) stepCount += 1;
+        if(Number(level.targetBlocks || level.targetSteps || 0) > 0) stepCount += 1;
       });
     });
 
     const js = `// levels.js
-// ✅ 此檔由教師後台匯出，已內嵌目前瀏覽器儲存的最佳解法與最佳步數
+// ✅ 此檔由教師後台匯出，已內嵌目前瀏覽器儲存的最佳解法與最佳程式碼數
 window.LEVELS = ${JSON.stringify(exported, null, 2)};
 `;
     downloadTextFile('levels.js', js);
-    toast(`✅ 已匯出 levels.js（含 ${solutionCount} 筆最佳解法、${stepCount} 筆最佳步數）`);
+    toast(`✅ 已匯出 levels.js（含 ${solutionCount} 筆最佳解法、${stepCount} 筆最佳程式碼數）`);
   }
 
 
@@ -800,7 +800,7 @@ window.LEVELS = ${JSON.stringify(exported, null, 2)};
       if(el) el.value = value == null ? '' : String(value);
     };
     setValue('editLevelName', levelData.name || '');
-    setValue('editTargetSteps', levelData.targetSteps || '');
+    setValue('editTargetSteps', levelData.targetBlocks || levelData.targetSteps || '');
     setValue('editMapSize', levelData.mapSize || '');
     setValue('editStartDir', levelData.startDir ?? 1);
     setValue('editItemReward', levelData.itemReward || '');
@@ -823,7 +823,7 @@ window.LEVELS = ${JSON.stringify(exported, null, 2)};
 
   function buildLevelPatchFromEditor(picked){
     const name = document.getElementById('editLevelName')?.value.trim() || '';
-    const targetSteps = Number(document.getElementById('editTargetSteps')?.value || 0);
+    const targetBlocks = Number(document.getElementById('editTargetSteps')?.value || 0);
     const mapSize = Number(document.getElementById('editMapSize')?.value || 0);
     const startDir = Number(document.getElementById('editStartDir')?.value || 0);
     const itemReward = document.getElementById('editItemReward')?.value.trim() || '';
@@ -843,7 +843,7 @@ window.LEVELS = ${JSON.stringify(exported, null, 2)};
     if(countChar('K') !== 1) throw new Error('地圖必須剛好有 1 個鑰匙 K。');
     if(countChar('D') !== 1) throw new Error('地圖必須剛好有 1 個出口門 D。');
     if(!/^[#\.SKDTPCG]+$/.test(joined)) throw new Error('地圖只能使用 # . S K D T P C G 這些符號。');
-    if(!(targetSteps > 0)) throw new Error('最佳步數必須大於 0。');
+    if(!(targetBlocks > 0)) throw new Error('最佳程式碼數必須大於 0。');
     const inferredMapSize = map.length;
     const finalMapSize = mapSize > 0 ? mapSize : inferredMapSize;
     if(!(finalMapSize > 0)) throw new Error('地圖大小必須大於 0。');
@@ -852,7 +852,7 @@ window.LEVELS = ${JSON.stringify(exported, null, 2)};
     return {
       levelId: normalizeLevelId(picked.level, picked.world),
       name,
-      targetSteps,
+      targetBlocks,
       mapSize: finalMapSize,
       startDir,
       itemReward,
@@ -973,12 +973,12 @@ window.LEVELS = ${JSON.stringify(exported, null, 2)};
     const btnPreviewLevelEdit = document.getElementById('btnPreviewLevelEdit');
     const btnExportLevelJson = document.getElementById('btnExportLevelJson');
     const btnClearLevelEdit = document.getElementById('btnClearLevelEdit');
-    if (btnClearBest) btnClearBest.textContent = '同步最佳步數';
+    if (btnClearBest) btnClearBest.textContent = '同步最佳程式碼數';
 
     if(btnOpenBoss) btnOpenBoss.onclick = ()=> openBoss();
     if(btnSaveBest) btnSaveBest.onclick = ()=> saveBestSolution();
     if(btnLoadBest) btnLoadBest.onclick = ()=> loadBestSolution();
-    if(btnClearBest) btnClearBest.onclick = syncBestSteps;
+    if(btnClearBest) btnClearBest.onclick = syncBestCode;
     if(btnExportBestCode) btnExportBestCode.onclick = exportBestSolutionsToLevels;
     if(btnLoadLevelData) btnLoadLevelData.onclick = loadSelectedLevelIntoEditor;
     if(btnSaveLevelEdit) btnSaveLevelEdit.onclick = saveEditedLevel;

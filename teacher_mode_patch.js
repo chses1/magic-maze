@@ -1,6 +1,6 @@
 (function(){
   const STORAGE_PREFIX = 'maze_best_solution::';
-  const LEVEL_STEP_OVERRIDE_KEY = 'mw_published_level_overrides_v1';
+  const LEVEL_TARGET_BLOCK_OVERRIDE_KEY = 'mw_published_level_overrides_v1';
 
   function qs(name){
     try { return new URL(location.href).searchParams.get(name); } catch(e){ return null; }
@@ -61,13 +61,13 @@
     return Number.isFinite(num) && num > 0 ? num : 0;
   }
 
-  function getStoredStepOverrides(){
+  function getStoredTargetBlockOverrides(){
     try{
-      const raw = localStorage.getItem(LEVEL_STEP_OVERRIDE_KEY);
+      const raw = localStorage.getItem(LEVEL_TARGET_BLOCK_OVERRIDE_KEY);
       const data = raw ? JSON.parse(raw) : {};
       return data && typeof data === 'object' ? data : {};
     }catch(err){
-      console.warn('讀取最佳步數覆寫失敗', err);
+      console.warn('讀取最佳程式碼數覆寫失敗', err);
       return {};
     }
   }
@@ -76,17 +76,17 @@
     localStorage.setItem(LEVEL_STEP_OVERRIDE_KEY, JSON.stringify(data || {}));
   }
 
-  function updatePageBestSteps(world, level, bestSteps){
+  function updatePageBestCode(world, level, targetBlocks){
     try{
-      window.dispatchEvent(new CustomEvent('maze:bestStepsSynced', {
+      window.dispatchEvent(new CustomEvent('maze:bestCodeSynced', {
         detail: {
           world: normalizeWorldId(world),
           level: normalizeLevelId(level),
-          bestSteps: Number(bestSteps || 0)
+          targetBlocks: Number(targetBlocks || 0)
         }
       }));
     }catch(err){
-      console.warn('派送最佳步數同步事件失敗', err);
+      console.warn('派送最佳程式碼數同步事件失敗', err);
     }
   }
 
@@ -105,6 +105,15 @@
       return Blockly.Xml.domToText(Blockly.Xml.workspaceToDom(workspace));
     }
     return '';
+  }
+
+  function getCurrentProgramBlockCount(){
+    const workspace = getBlocklyWorkspace();
+    try{
+      return Number(window.BlocklySetup?.countScoringBlocks?.(workspace) || 0);
+    }catch(_err){
+      return 0;
+    }
   }
 
   function textToWorkspace(text, workspace){
@@ -145,17 +154,17 @@
     const workspace = getBlocklyWorkspace();
     const data = workspaceToText(workspace);
     if (!data) return toast('目前沒有可儲存的積木內容。');
-    const currentSteps = getCurrentDisplayedSteps();
+    const currentCodeBlocks = getCurrentProgramBlockCount();
     const payload = {
       world,
       level,
       savedAt: Date.now(),
       blockly: data,
-      bestSteps: currentSteps > 0 ? currentSteps : undefined
+      targetBlocks: currentCodeBlocks > 0 ? currentCodeBlocks : undefined
     };
     localStorage.setItem(solutionKey(world, level), JSON.stringify(payload));
-    toast(currentSteps > 0
-      ? `已儲存 ${world} / ${level} 的最佳解法（最佳步數：${currentSteps}）`
+    toast(currentCodeBlocks > 0
+      ? `已儲存 ${world} / ${level} 的最佳解法（最佳程式碼數：${currentCodeBlocks}）`
       : `已儲存 ${world} / ${level} 的最佳解法`);
   }
 
@@ -184,43 +193,43 @@
     }
   }
 
-  function syncBestSteps(){
+  function syncBestCode(){
     const { world, level } = detectWorldLevel();
     if (!world || !level) return toast('找不到目前關卡。');
-    if (isBossLevel(level)) return toast('Boss 戰沒有一般關卡的最佳步數設定。');
+    if (isBossLevel(level)) return toast('Boss 戰沒有一般關卡的最佳程式碼數設定。');
 
     const raw = localStorage.getItem(solutionKey(world, level));
-    if (!raw) return toast('這一關還沒有儲存最佳解法，不能同步最佳步數。');
+    if (!raw) return toast('這一關還沒有儲存最佳解法，不能同步最佳程式碼數。');
 
     try{
       const payload = JSON.parse(raw);
-      const currentSteps = getCurrentDisplayedSteps();
-      let bestSteps = Number(payload?.bestSteps || payload?.steps || 0);
+      const currentCodeBlocks = getCurrentProgramBlockCount();
+      let targetBlocks = Number(payload?.targetBlocks || payload?.bestSteps || payload?.steps || 0);
 
-      if (currentSteps > 0) {
-        bestSteps = currentSteps;
+      if (currentCodeBlocks > 0) {
+        targetBlocks = currentCodeBlocks;
       }
 
-      if (!Number.isFinite(bestSteps) || bestSteps <= 0) {
-        return toast('找不到已儲存的最佳步數。請先載入最佳解法並執行一次，再按「同步最佳步數」。');
+      if (!Number.isFinite(targetBlocks) || targetBlocks <= 0) {
+        return toast('找不到已儲存的最佳程式碼數。請先載入最佳解法並確認工作區有積木，再按「同步最佳程式碼數」。');
       }
 
-      payload.bestSteps = bestSteps;
+      payload.targetBlocks = targetBlocks;
       payload.syncedAt = Date.now();
       localStorage.setItem(solutionKey(world, level), JSON.stringify(payload));
 
-      const overrides = getStoredStepOverrides();
+      const overrides = getStoredTargetBlockOverrides();
       overrides[levelOverrideKey(world, level)] = {
-        targetSteps: bestSteps,
+        targetBlocks,
         updatedAt: Date.now(),
         source: 'teacher_best_solution'
       };
       saveStoredStepOverrides(overrides);
-      updatePageBestSteps(world, level, bestSteps);
-      toast(`已同步 ${world} / ${level} 的最佳步數為 ${bestSteps} 步`);
+      updatePageBestCode(world, level, targetBlocks);
+      toast(`已同步 ${world} / ${level} 的最佳程式碼數為 ${targetBlocks}`);
     }catch(err){
-      console.error('同步最佳步數失敗', err);
-      toast('同步最佳步數失敗，請確認最佳解法資料是否正常。');
+      console.error('同步最佳程式碼數失敗', err);
+      toast('同步最佳程式碼數失敗，請確認最佳解法資料是否正常。');
     }
   }
 
@@ -254,7 +263,7 @@
         <button id="tpBossBtn" type="button" style="padding:10px 12px;border:none;border-radius:12px;background:#7c3aed;color:#fff;font-weight:800;cursor:pointer;">查看 Boss 戰</button>
         <button id="tpSaveBtn" type="button" style="padding:10px 12px;border:none;border-radius:12px;background:#059669;color:#fff;font-weight:800;cursor:pointer;">儲存最佳解法</button>
         <button id="tpLoadBtn" type="button" style="padding:10px 12px;border:none;border-radius:12px;background:#2563eb;color:#fff;font-weight:800;cursor:pointer;">載入最佳解法</button>
-        <button id="tpClearBtn" type="button" style="padding:10px 12px;border:none;border-radius:12px;background:#dc2626;color:#fff;font-weight:800;cursor:pointer;">同步最佳步數</button>
+        <button id="tpClearBtn" type="button" style="padding:10px 12px;border:none;border-radius:12px;background:#dc2626;color:#fff;font-weight:800;cursor:pointer;">同步最佳程式碼數</button>
       </div>
       <div style="margin-top:10px;font-size:12px;color:#6b7280;line-height:1.5;">
         儲存位置：本機瀏覽器 localStorage。<br>鍵名格式：<code style="background:#f3f4f6;padding:2px 4px;border-radius:6px;">maze_best_solution::世界::關卡</code>
@@ -264,7 +273,7 @@
     panel.querySelector('#tpBossBtn').addEventListener('click', openBoss);
     panel.querySelector('#tpSaveBtn').addEventListener('click', saveBestSolution);
     panel.querySelector('#tpLoadBtn').addEventListener('click', () => loadBestSolution(false));
-    panel.querySelector('#tpClearBtn').addEventListener('click', syncBestSteps);
+    panel.querySelector('#tpClearBtn').addEventListener('click', syncBestCode);
   }
 
   function setupAutoLoad(){
@@ -306,7 +315,7 @@
   window.TeacherModePatch = {
     saveBestSolution,
     loadBestSolution,
-    syncBestSteps,
+    syncBestCode,
     clearBestSolution,
     detectWorldLevel,
     solutionKey
