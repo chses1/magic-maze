@@ -272,7 +272,7 @@ window.GamePage = (()=>{
   let bossState = null;
 
   const PROGRAM_STORE_KEY = "maze_saved_programs_v1";
-  const LEVEL_STEP_OVERRIDE_KEY = "mw_published_level_overrides_v1";
+  const LEVEL_TARGET_BLOCK_OVERRIDE_KEY = "mw_published_level_overrides_v1";
   const LEVEL_EDIT_OVERRIDE_KEY = 'mw_teacher_level_edits_v1';
 
   const PLAYER_BUILD_KEY = "mw_player_build_v1";
@@ -586,7 +586,7 @@ window.GamePage = (()=>{
     if (!subtitleEl || !level) return;
     subtitleEl.textContent = isBossLevel()
       ? `卡牌回合戰（擊敗森林狼王）`
-      : `最佳程式碼數：${level.targetBlocks || level.targetSteps || 0}｜先拿鑰匙，再走到出口門｜一星=過關、二星=拿寶箱、三星=最佳程式碼數過關`;
+      : `目標程式碼數：${level.targetBlocks || level.targetSteps || 0}｜先拿鑰匙，再走到出口門｜一星=過關、二星=拿寶箱、三星=達成目標程式碼數`;
   }
 
   function getLevelCopy(worldId, levelId){
@@ -641,13 +641,16 @@ window.GamePage = (()=>{
   function loadDraftTextToWorkspace(textValue, ws){
     if (!textValue || !ws || !window.Blockly) return false;
     try{
-      ws.clear();
-      if (String(textValue).trim().startsWith('{') && Blockly.serialization?.workspaces?.load) {
-        Blockly.serialization.workspaces.load(JSON.parse(textValue), ws);
-        return true;
+      BlocklySetup?.ensureDefinitions?.();
+      if (String(textValue).trim().startsWith('{')) {
+        const ok = BlocklySetup?.loadSerializedText?.(ws, textValue);
+        if (ok) return true;
       }
       if (Blockly.Xml?.textToDom && Blockly.Xml?.domToWorkspace) {
+        ws.clear();
         Blockly.Xml.domToWorkspace(Blockly.Xml.textToDom(textValue), ws);
+        BlocklySetup?.ensureStartBlock?.(ws);
+        BlocklySetup?.lockStartBlocks?.(ws);
         return true;
       }
     }catch(err){
@@ -1349,7 +1352,7 @@ window.GamePage = (()=>{
     const btnReset = document.getElementById('btnReset');
     const btnExit = document.getElementById('btnExit');
     const btnStep = document.getElementById('btnStep');
-    const ids = ['steps','bumps','hasKey','time'];
+    const ids = ['codeCount','targetCodeCount','bumps','hasKey','time'];
     const containerEl = document.querySelector('.container');
     const stageEl = document.querySelector('.stage');
     const gameLayoutEl = document.querySelector('.gameLayout');
@@ -2031,7 +2034,20 @@ window.GamePage = (()=>{
       const el = document.getElementById(id);
       if (el) el.textContent = value;
     };
-    setText("steps", steps);
+    const codeBlocks = getCurrentProgramBlockCount();
+    const targetBlocks = Number(level?.targetBlocks || level?.targetSteps || 0);
+    setText("codeCount", codeBlocks);
+    setText("targetCodeCount", targetBlocks > 0 ? targetBlocks : '—');
+    const codeBadge = document.getElementById("codeBadge");
+    if (codeBadge) {
+      const overTarget = targetBlocks > 0 && codeBlocks > targetBlocks;
+      codeBadge.style.borderColor = overTarget ? "rgba(220,38,38,.45)" : "";
+      codeBadge.style.background = overTarget ? "rgba(254,226,226,.85)" : "";
+      const currentEl = document.getElementById("codeCount");
+      const targetEl = document.getElementById("targetCodeCount");
+      if (currentEl) currentEl.style.color = overTarget ? "#dc2626" : "";
+      if (targetEl) targetEl.style.color = overTarget ? "#dc2626" : "";
+    }
     setText("bumps", bumps);
     setText("hasKey", hasKey ? "是" : "否");
     const t = running ? Math.max(0, Date.now()-startAt) : (startAt ? Math.max(0, Date.now()-startAt) : 0);
@@ -2460,15 +2476,14 @@ window.GamePage = (()=>{
           `<div class="result-stats">
             <span class="result-badge">分數：${score}</span>
             <span class="result-badge">星等：★${stars}</span>
-            <span class="result-badge">步數：${steps}</span>
-            <span class="result-badge">程式碼數：${codeBlocks}</span>
+            <span class="result-badge">程式碼數：${codeBlocks}/${targetBlocks || "—"}</span>
             <span class="result-badge">撞牆：${bumps}</span>
             <span class="result-badge">時間：${Math.round(timeMs/1000)} 秒</span>
           </div>
           <div class="stage-current-reward" style="margin-top:12px;display:block;">
             ${itemRow}
             ${equipRow}
-            <div style="margin-top:8px;color:#34523b;">最佳程式碼數目標：${targetBlocks}｜本次是否拿寶箱：${collectedAnyReward ? '有' : '沒有'}</div>
+            <div style="margin-top:8px;color:#34523b;">目前程式碼數／目標程式碼數：${codeBlocks}/${targetBlocks || "—"}｜本次是否拿寶箱：${collectedAnyReward ? '有' : '沒有'}</div>
           </div>
           ${formatWorldInventory(world.worldId, updatedBuild)}
           <div style="margin-top:8px;">${improved ? "🎉 這是你的最佳紀錄，已存檔！" : "已完成本關，紀錄已更新。"}</div>`
@@ -2564,8 +2579,8 @@ window.GamePage = (()=>{
       if (!html) return;
 
       resultWrap.innerHTML = html.replace(
-        /最佳程式碼數目標：\d+/g,
-        `最佳程式碼數目標：${targetBlocks}`
+        /目前程式碼數／目標程式碼數：[0-9—]+\/[0-9—]+/g,
+        `目前程式碼數／目標程式碼數：${getCurrentProgramBlockCount()}/${targetBlocks}`
       );
     }
 
@@ -2580,6 +2595,7 @@ window.GamePage = (()=>{
 
       level = { ...level, targetBlocks };
       refreshSubtitleText();
+      render();
       refreshVisibleTargetBlocksText(targetBlocks);
       toast(`本關最佳程式碼數已同步為 ${targetBlocks}`);
     });

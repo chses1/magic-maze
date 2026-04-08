@@ -55,13 +55,7 @@
     return `${normalizeWorldId(world)}-${normalizeLevelId(level)}`;
   }
 
-  function getCurrentDisplayedSteps(){
-    const el = document.getElementById('steps');
-    const num = Number(String(el?.textContent || '').trim());
-    return Number.isFinite(num) && num > 0 ? num : 0;
-  }
-
-  function getStoredTargetBlockOverrides(){
+    function getStoredTargetBlockOverrides(){
     try{
       const raw = localStorage.getItem(LEVEL_TARGET_BLOCK_OVERRIDE_KEY);
       const data = raw ? JSON.parse(raw) : {};
@@ -73,7 +67,7 @@
   }
 
   function saveStoredStepOverrides(data){
-    localStorage.setItem(LEVEL_STEP_OVERRIDE_KEY, JSON.stringify(data || {}));
+    localStorage.setItem(LEVEL_TARGET_BLOCK_OVERRIDE_KEY, JSON.stringify(data || {}));
   }
 
   function updatePageBestCode(world, level, targetBlocks){
@@ -119,13 +113,16 @@
   function textToWorkspace(text, workspace){
     if (!text || !workspace || !window.Blockly) return false;
     try{
-      workspace.clear();
-      if (text.trim().startsWith('{') && Blockly.serialization?.workspaces?.load) {
-        Blockly.serialization.workspaces.load(JSON.parse(text), workspace);
-        return true;
+      window.BlocklySetup?.ensureDefinitions?.();
+      if (text.trim().startsWith('{')) {
+        const ok = window.BlocklySetup?.loadSerializedText?.(workspace, text);
+        if (ok) return true;
       }
       if (Blockly.Xml?.textToDom && Blockly.Xml?.domToWorkspace) {
+        workspace.clear();
         Blockly.Xml.domToWorkspace(Blockly.Xml.textToDom(text), workspace);
+        window.BlocklySetup?.ensureStartBlock?.(workspace);
+        window.BlocklySetup?.lockStartBlocks?.(workspace);
         return true;
       }
     }catch(err){

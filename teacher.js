@@ -103,7 +103,7 @@ window.TeacherPage = (()=>{
   }
 
   function saveStoredTargetBlockOverrides(data){
-    localStorage.setItem(LEVEL_STEP_OVERRIDE_KEY, JSON.stringify(data || {}));
+    localStorage.setItem(LEVEL_TARGET_BLOCK_OVERRIDE_KEY, JSON.stringify(data || {}));
   }
 
   function getLevelsData(){
@@ -185,9 +185,9 @@ window.TeacherPage = (()=>{
       'teacherWorld', 'teacherLevel',
       'btnOpenBoss', 'btnSaveBest', 'btnLoadBest', 'btnClearBest', 'btnExportBestCode',
       'btnLoadLevelData', 'btnSaveLevelEdit', 'btnPreviewLevelEdit', 'btnExportLevelJson', 'btnClearLevelEdit',
-      'editLevelName', 'editTargetSteps', 'editMapSize', 'editStartDir', 'editItemReward', 'editEquipmentReward', 'editMapText',
+      'editLevelName', 'editTargetBlocks', 'editMapSize', 'editStartDir', 'editItemReward', 'editEquipmentReward', 'editMapText',
       'btnLoadLevelEditor', 'btnSaveLevelEditor', 'btnPreviewLevelEditor', 'btnExportEditedLevelJson', 'btnResetLevelEditor',
-      'editLevelName', 'editTargetSteps', 'editMapSize', 'editStartDir', 'editItemReward', 'editEquipmentReward', 'editMapText'
+      'editLevelName', 'editTargetBlocks', 'editMapSize', 'editStartDir', 'editItemReward', 'editEquipmentReward', 'editMapText'
     ];
 
     ids.forEach(id => {
@@ -800,7 +800,7 @@ window.LEVELS = ${JSON.stringify(exported, null, 2)};
       if(el) el.value = value == null ? '' : String(value);
     };
     setValue('editLevelName', levelData.name || '');
-    setValue('editTargetSteps', levelData.targetBlocks || levelData.targetSteps || '');
+    setValue('editTargetBlocks', levelData.targetBlocks || levelData.targetSteps || '');
     setValue('editMapSize', levelData.mapSize || '');
     setValue('editStartDir', levelData.startDir ?? 1);
     setValue('editItemReward', levelData.itemReward || '');
@@ -823,7 +823,7 @@ window.LEVELS = ${JSON.stringify(exported, null, 2)};
 
   function buildLevelPatchFromEditor(picked){
     const name = document.getElementById('editLevelName')?.value.trim() || '';
-    const targetBlocks = Number(document.getElementById('editTargetSteps')?.value || 0);
+    const targetBlocks = Number(document.getElementById('editTargetBlocks')?.value || 0);
     const mapSize = Number(document.getElementById('editMapSize')?.value || 0);
     const startDir = Number(document.getElementById('editStartDir')?.value || 0);
     const itemReward = document.getElementById('editItemReward')?.value.trim() || '';

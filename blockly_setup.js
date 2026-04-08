@@ -4,7 +4,6 @@
 
 window.BlocklySetup = (()=>{
 
-  // ✅（選配）用國小友善字詞
   function applyKidFriendlyMsgs(){
     if (window.Blockly && Blockly.Msg) {
       Blockly.Msg.CONTROLS_REPEAT_TITLE = "重複 %1 次";
@@ -15,9 +14,42 @@ window.BlocklySetup = (()=>{
     }
   }
 
-  // -------------------------------
-  // ✅ Blockly XML 相容層（修正你截圖的 textToDom 問題）
-  // -------------------------------
+  const BLOCK_COLORS = {
+    START: "#f4b400",
+    SEQUENCE: "#34a853",
+    LOOP: "#ea4335",
+    CONDITION: "#4285f4",
+    FUNCTION: "#ab47bc",
+    NUMBER: "#f29900"
+  };
+
+  function wrapSetColour(blockType, color){
+    if(!window.Blockly?.Blocks?.[blockType]) return;
+    const def = Blockly.Blocks[blockType];
+    if(!def || def.__mwColorWrapped) return;
+    const origInit = def.init;
+    if(typeof origInit !== 'function') return;
+    def.init = function(){
+      origInit.call(this);
+      try{ this.setColour?.(color); }catch(_err){}
+    };
+    def.__mwColorWrapped = true;
+  }
+
+  function recolorBuiltinBlocks(){
+    if(!window.Blockly?.Blocks) return;
+    wrapSetColour('controls_repeat_ext', BLOCK_COLORS.LOOP);
+    wrapSetColour('controls_whileUntil', BLOCK_COLORS.LOOP);
+    wrapSetColour('controls_for', BLOCK_COLORS.LOOP);
+    wrapSetColour('controls_forEach', BLOCK_COLORS.LOOP);
+    wrapSetColour('controls_if', BLOCK_COLORS.CONDITION);
+    wrapSetColour('logic_compare', BLOCK_COLORS.CONDITION);
+    wrapSetColour('logic_operation', BLOCK_COLORS.CONDITION);
+    wrapSetColour('logic_boolean', BLOCK_COLORS.CONDITION);
+    wrapSetColour('logic_negate', BLOCK_COLORS.CONDITION);
+    wrapSetColour('math_number', BLOCK_COLORS.NUMBER);
+  }
+
   function xmlTextToDom(xmlText){
     if(Blockly?.utils?.xml?.textToDom) return Blockly.utils.xml.textToDom(xmlText);
     if(Blockly?.Xml?.textToDom) return Blockly.Xml.textToDom(xmlText);
@@ -37,51 +69,52 @@ window.BlocklySetup = (()=>{
     throw new Error("Blockly XML API 不可用：找不到 workspaceToDom");
   }
 
-  // -------------------------------
-  // ✅ 自訂積木（移動 + 感測器 + 函式）
-  // -------------------------------
+  function ensureDefinitions(){
+    ensureDefinitions();
+  }
+
   function defineCustomBlocksOnce(){
     if(!window.Blockly) return;
-
     if(Blockly.Blocks["mw_move_forward"]) return;
 
     Blockly.defineBlocksWithJsonArray([
       {
         "type":"mw_start",
-        "message0":"當開始執行 %1",
-        "args0":[{"type":"input_statement","name":"DO"}],
-        "colour":"#4caf50",
-        "tooltip":"把積木接在這裡，程式會從這裡開始執行。",
+        "message0":"當開始執行",
+        "nextStatement":null,
+        "colour":BLOCK_COLORS.START,
+        "tooltip":"程式會從這裡開始往下執行。",
         "helpUrl":""
       },
-      { "type":"mw_move_forward","message0":"向前走 1 格","previousStatement":null,"nextStatement":null,"colour":"#7c5cff" },
-      { "type":"mw_turn_left","message0":"左轉","previousStatement":null,"nextStatement":null,"colour":"#7c5cff" },
-      { "type":"mw_turn_right","message0":"右轉","previousStatement":null,"nextStatement":null,"colour":"#7c5cff" },
+      { "type":"mw_move_forward","message0":"向前走 1 格","previousStatement":null,"nextStatement":null,"colour":BLOCK_COLORS.SEQUENCE },
+      { "type":"mw_turn_left","message0":"左轉","previousStatement":null,"nextStatement":null,"colour":BLOCK_COLORS.SEQUENCE },
+      { "type":"mw_turn_right","message0":"右轉","previousStatement":null,"nextStatement":null,"colour":BLOCK_COLORS.SEQUENCE },
 
-      { "type":"mw_path_ahead","message0":"前方有路？","output":"Boolean","colour":"#ffd26e" },
+      { "type":"mw_path_ahead","message0":"前方有路？","output":"Boolean","colour":BLOCK_COLORS.CONDITION },
 
       {
         "type":"mw_func_def_a","message0":"定義咒語A 做 %1",
         "args0":[{"type":"input_statement","name":"DO"}],
-        "colour":"#ff5c7c","tooltip":"把一段常用走法放進咒語A，之後可以重複施放。","helpUrl":""
+        "colour":BLOCK_COLORS.FUNCTION,"tooltip":"把一段常用走法放進咒語A，之後可以重複施放。","helpUrl":""
       },
-      { "type":"mw_func_call_a","message0":"施放咒語A","previousStatement":null,"nextStatement":null,"colour":"#ff5c7c" },
+      { "type":"mw_func_call_a","message0":"施放咒語A","previousStatement":null,"nextStatement":null,"colour":BLOCK_COLORS.FUNCTION },
 
       {
         "type":"mw_func_def_b","message0":"定義咒語B 做 %1",
         "args0":[{"type":"input_statement","name":"DO"}],
-        "colour":"#ff5c7c","tooltip":"把另一段常用走法放進咒語B。","helpUrl":""
+        "colour":BLOCK_COLORS.FUNCTION,"tooltip":"把另一段常用走法放進咒語B。","helpUrl":""
       },
-      { "type":"mw_func_call_b","message0":"施放咒語B","previousStatement":null,"nextStatement":null,"colour":"#ff5c7c" }
+      { "type":"mw_func_call_b","message0":"施放咒語B","previousStatement":null,"nextStatement":null,"colour":BLOCK_COLORS.FUNCTION }
     ]);
 
-    const js = Blockly.JavaScript;
+    recolorBuiltinBlocks();
 
-    // ✅ 步進除錯：每個「指令積木」執行前先反白目前積木
+    const js = Blockly.JavaScript;
     js.STATEMENT_PREFIX = 'await api.__highlight(%1);\n';
 
     js.forBlock["mw_start"] = function(block){
-      return js.statementToCode(block, "DO");
+      const nextBlock = block.getNextBlock?.();
+      return nextBlock ? js.blockToCode(nextBlock) : "";
     };
 
     js.forBlock["mw_move_forward"] = ()=> "await api.moveForward();\n";
@@ -103,16 +136,28 @@ window.BlocklySetup = (()=>{
     js.forBlock["mw_func_call_b"] = ()=> "await spellB();\n";
   }
 
-  // -------------------------------
-  // ✅ 依世界解鎖工具箱
-  // -------------------------------
+  function loopRepeatBlockToolboxItem(defaultTimes = 3){
+    return {
+      kind:"block",
+      type:"controls_repeat_ext",
+      inputs:{
+        TIMES:{
+          shadow:{
+            type:"math_number",
+            fields:{ NUM: Number(defaultTimes) || 3 }
+          }
+        }
+      }
+    };
+  }
+
   function buildToolbox(worldId){
     const contents = [];
 
     contents.push({
       kind:"category",
       name:"移動",
-      colour:"#7c5cff",
+      colour:BLOCK_COLORS.SEQUENCE,
       contents:[
         {kind:"block", type:"mw_move_forward"},
         {kind:"block", type:"mw_turn_left"},
@@ -124,17 +169,11 @@ window.BlocklySetup = (()=>{
       contents.push({
         kind:"category",
         name:"迴圈",
-        colour:"#31d0ff",
+        colour:BLOCK_COLORS.LOOP,
         contents:[
-          {kind:"block", type:"controls_repeat_ext"},
+          loopRepeatBlockToolboxItem(3),
           {kind:"block", type:"controls_whileUntil"}
         ]
-      });
-      contents.push({
-        kind:"category",
-        name:"數字",
-        colour:"#ffd26e",
-        contents:[ {kind:"block", type:"math_number"} ]
       });
     }
 
@@ -142,7 +181,7 @@ window.BlocklySetup = (()=>{
       contents.push({
         kind:"category",
         name:"條件",
-        colour:"#ffd26e",
+        colour:BLOCK_COLORS.CONDITION,
         contents:[
           {kind:"block", type:"controls_if"},
           {kind:"block", type:"mw_path_ahead"}
@@ -154,7 +193,7 @@ window.BlocklySetup = (()=>{
       contents.push({
         kind:"category",
         name:"函式（咒語）",
-        colour:"#ff5c7c",
+        colour:BLOCK_COLORS.FUNCTION,
         contents:[
           {kind:"block", type:"mw_func_def_a"},
           {kind:"block", type:"mw_func_call_a"},
@@ -168,8 +207,7 @@ window.BlocklySetup = (()=>{
   }
 
   function createWorkspace(containerId, worldId, opts = {}){
-    applyKidFriendlyMsgs();
-    defineCustomBlocksOnce();
+    ensureDefinitions();
 
     const readOnly = !!opts.readOnly;
     const loadDefaultBlocks = opts.loadDefaultBlocks !== false;
@@ -199,6 +237,75 @@ window.BlocklySetup = (()=>{
     return workspace;
   }
 
+
+
+  function migrateLegacyStartInSerializedNode(node){
+    if(!node || typeof node !== "object") return;
+
+    const thisBlock = node.block && typeof node.block === "object" ? node.block : node;
+    if(thisBlock && thisBlock.type === "mw_start" && thisBlock.inputs && thisBlock.inputs.DO && !thisBlock.next){
+      const doInput = thisBlock.inputs.DO;
+      const firstBlock = doInput.block || (doInput.shadow ? null : null);
+      if(firstBlock){
+        thisBlock.next = { block: firstBlock };
+      }
+      delete thisBlock.inputs.DO;
+      if(thisBlock.inputs && Object.keys(thisBlock.inputs).length === 0){
+        delete thisBlock.inputs;
+      }
+    }
+
+    Object.keys(thisBlock || {}).forEach((key)=>{
+      const value = thisBlock[key];
+      if(Array.isArray(value)){
+        value.forEach(item => migrateLegacyStartInSerializedNode(item));
+      }else if(value && typeof value === "object"){
+        migrateLegacyStartInSerializedNode(value);
+      }
+    });
+  }
+
+  function normalizeSerializedWorkspaceData(data){
+    if(!data || typeof data !== "object") return data;
+    try{
+      const cloned = JSON.parse(JSON.stringify(data));
+      migrateLegacyStartInSerializedNode(cloned);
+      return cloned;
+    }catch(_err){
+      return data;
+    }
+  }
+
+  function loadWorkspaceData(workspace, data){
+    if(!workspace || !window.Blockly || !data) return false;
+    try{
+      ensureDefinitions();
+      workspace.clear();
+      const normalized = normalizeSerializedWorkspaceData(data);
+      if(Blockly.serialization?.workspaces?.load){
+        Blockly.serialization.workspaces.load(normalized, workspace);
+      }else{
+        return false;
+      }
+      ensureStartBlock(workspace);
+      lockStartBlocks(workspace);
+      return true;
+    }catch(e){
+      console.warn("loadWorkspaceData failed", e);
+      return false;
+    }
+  }
+
+  function loadSerializedText(workspace, textValue){
+    if(!workspace || typeof textValue !== "string" || !textValue.trim()) return false;
+    try{
+      const parsed = JSON.parse(textValue);
+      return loadWorkspaceData(workspace, parsed);
+    }catch(_err){
+      return false;
+    }
+  }
+
   function workspaceToAsyncCode(workspace){
     const code = Blockly.JavaScript.workspaceToCode(workspace);
     const safe = code.trim() ? code : "/* 沒有積木 */\n";
@@ -209,7 +316,6 @@ window.BlocklySetup = (()=>{
     `;
   }
 
-  // ✅ 匯出/匯入 XML（教師後台也會用到）
   function exportXmlText(workspace){
     if(!workspace) return "";
     const dom = workspaceToDom(workspace);
@@ -220,9 +326,11 @@ window.BlocklySetup = (()=>{
     if(!workspace) return false;
     if(!xmlText || typeof xmlText !== "string") return false;
     try{
+      ensureDefinitions();
       workspace.clear();
       const dom = xmlTextToDom(xmlText);
       domToWorkspace(dom, workspace);
+      ensureStartBlock(workspace);
       lockStartBlocks(workspace);
       return true;
     }catch(e){
@@ -231,12 +339,45 @@ window.BlocklySetup = (()=>{
     }
   }
 
+  function ensureStartBlock(workspace){
+    if(!workspace || !window.Blockly) return null;
+    const allBlocks = typeof workspace.getAllBlocks === "function" ? workspace.getAllBlocks(false) : [];
+    let startBlock = allBlocks.find(block => block?.type === "mw_start") || null;
+
+    if(!startBlock){
+      startBlock = workspace.newBlock("mw_start");
+      startBlock.initSvg?.();
+      startBlock.render?.();
+      startBlock.moveBy?.(20, 20);
+    }
+
+    const topBlocks = (typeof workspace.getTopBlocks === "function" ? workspace.getTopBlocks(true) : [])
+      .filter(block => block && block.id !== startBlock.id);
+
+    if(startBlock.nextConnection && !startBlock.nextConnection.targetConnection && topBlocks.length){
+      const mainTopBlock = topBlocks[0];
+      const previousConnection = mainTopBlock.previousConnection || null;
+      if(previousConnection){
+        try{ startBlock.nextConnection.connect(previousConnection); }catch(_err){}
+      }
+    }
+
+    topBlocks.slice(1).forEach((block, index)=>{
+      try{
+        block.moveBy?.(220 + index * 28, 20 + index * 28);
+      }catch(_err){}
+    });
+
+    return startBlock;
+  }
+
   function lockStartBlocks(workspace){
     if(!workspace?.getAllBlocks) return;
     workspace.getAllBlocks(false).forEach(block=>{
       if(block?.type === "mw_start"){
         block.setMovable(false);
         block.setDeletable(false);
+        block.setEditable?.(false);
       }
     });
   }
@@ -257,8 +398,13 @@ window.BlocklySetup = (()=>{
     workspaceToAsyncCode,
     exportXmlText,
     loadXmlText,
+    loadSerializedText,
+    loadWorkspaceData,
     buildToolbox,
     countScoringBlocks,
-    lockStartBlocks
+    lockStartBlocks,
+    ensureStartBlock,
+    ensureDefinitions,
+    normalizeSerializedWorkspaceData
   };
 })();
