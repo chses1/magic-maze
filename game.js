@@ -270,6 +270,7 @@ window.GamePage = (()=>{
   let stepCredits = 0;
   let stepWaiterResolve = null;
   let bossState = null;
+  let runGeneration = 0;
 
   const PROGRAM_STORE_KEY = "maze_saved_programs_v1";
   const LEVEL_TARGET_BLOCK_OVERRIDE_KEY = "mw_published_level_overrides_v1";
@@ -2133,11 +2134,11 @@ window.GamePage = (()=>{
     return new Promise(r=>setTimeout(r, ms));
   }
 
-  async function ensureNotPaused(){
-    while(paused && !abortRun){
+  async function ensureNotPaused(expectedGeneration = runGeneration){
+    while(paused && !abortRun && expectedGeneration === runGeneration){
       await sleep(80);
     }
-    if(abortRun) throw new Error("aborted");
+    if(abortRun || expectedGeneration !== runGeneration) throw new Error("aborted");
   }
 
   function getCurrentProgramBlockCount(){
@@ -2236,6 +2237,14 @@ window.GamePage = (()=>{
     return `<div class="${cls}"><h3>${title}</h3><div>${body}</div>${statsHtml}</div>`;
   }
 
+  function forceStopCurrentRun(){
+    runGeneration += 1;
+    abortRun = true;
+    paused = false;
+    resolvePendingStep();
+    stopTimers();
+  }
+
   function resetLevel(){
     const pack = findLevel(qs("world"), qs("level"));
     world = pack.w;
@@ -2279,7 +2288,7 @@ window.GamePage = (()=>{
     tickTimer = setInterval(()=>render(), 300);
   }
 
-  function makeAPI(){
+  function makeAPI(expectedGeneration = runGeneration){
     async function __highlight(blockId){
       try{
         if (workspace && typeof workspace.highlightBlock === "function") {
@@ -2320,8 +2329,8 @@ window.GamePage = (()=>{
       __sleep,
 
       async moveForward(){
-        await ensureNotPaused();
-        if(abortRun) throw new Error("aborted");
+        await ensureNotPaused(expectedGeneration);
+        if(abortRun || expectedGeneration !== runGeneration) throw new Error("aborted");
 
         const d = DIRS[dir];
         const nx = px + d.dx;
@@ -2331,6 +2340,11 @@ window.GamePage = (()=>{
 
         if(!canMoveTo(nx, ny)){
           bumps++;
+          if (bumps >= 5) {
+            abortRun = true;
+            render();
+            throw new Error("SAFE_STOP_TOO_MANY_BUMPS");
+          }
           toast(doorBlockedAhead(nx,ny) ? UI.common.doorLocked : UI.common.wall);
           render();
           await sleep(220);
@@ -2353,22 +2367,33 @@ window.GamePage = (()=>{
       },
 
       async turnLeft(){
-        await ensureNotPaused();
+        await ensureNotPaused(expectedGeneration);
+        if(abortRun || expectedGeneration !== runGeneration) throw new Error("aborted");
         dir = (dir + 3) % 4;
         render();
         await sleep(120);
       },
 
       async turnRight(){
-        await ensureNotPaused();
+        await ensureNotPaused(expectedGeneration);
+        if(abortRun || expectedGeneration !== runGeneration) throw new Error("aborted");
         dir = (dir + 1) % 4;
         render();
         await sleep(120);
       },
 
+      async turnDirection(turnDir){
+        await ensureNotPaused(expectedGeneration);
+        if(abortRun || expectedGeneration !== runGeneration) throw new Error("aborted");
+        const key = String(turnDir || "left").toLowerCase();
+        dir = key === "right" ? (dir + 1) % 4 : (dir + 3) % 4;
+        render();
+        await sleep(120);
+      },
+
       async canMoveForward(){
-        await ensureNotPaused();
-        if(abortRun) throw new Error("aborted");
+        await ensureNotPaused(expectedGeneration);
+        if(abortRun || expectedGeneration !== runGeneration) throw new Error("aborted");
         const d = DIRS[dir];
         const nx = px + d.dx;
         const ny = py + d.dy;
@@ -2376,8 +2401,8 @@ window.GamePage = (()=>{
       },
 
       async canMoveDirection(relativeDir){
-        await ensureNotPaused();
-        if(abortRun) throw new Error("aborted");
+        await ensureNotPaused(expectedGeneration);
+        if(abortRun || expectedGeneration !== runGeneration) throw new Error("aborted");
         const key = String(relativeDir || 'ahead').toLowerCase();
         let checkDir = dir;
         if(key === 'right') checkDir = (dir + 1) % 4;
@@ -2389,8 +2414,8 @@ window.GamePage = (()=>{
       },
 
       async isAtGoal(){
-        await ensureNotPaused();
-        if(abortRun) throw new Error("aborted");
+        await ensureNotPaused(expectedGeneration);
+        if(abortRun || expectedGeneration !== runGeneration) throw new Error("aborted");
         return !!reachedExit();
       }
     };
@@ -2435,13 +2460,14 @@ window.GamePage = (()=>{
     running = true;
     paused = false;
     abortRun = false;
+    const expectedGeneration = ++runGeneration;
     stepMode = requestedStepMode;
     if (!requestedStepMode) stepCredits = 0;
     showResult("");
     toast(requestedStepMode ? "步進模式進行中…" : UI.common.running);
     if (!startAt) startClock();
 
-    const api = makeAPI();
+    const api = makeAPI(expectedGeneration);
     const code = BlocklySetup.workspaceToAsyncCode(workspace);
 
     try{
@@ -2521,6 +2547,14 @@ window.GamePage = (()=>{
       }else if(err?.message === "aborted"){
         resetRunState();
         toast(UI.common.stopped);
+      }else if(err?.message === "SAFE_STOP_TOO_MANY_BUMPS"){
+        resetRunState();
+        showResult(buildResultCard(
+          "warn",
+          "安全停止",
+          `角色已撞牆太多次，系統已自動停止程式。<br><b>目前撞牆次數：${bumps}</b>`
+        ));
+        toast("安全停止：撞牆太多次，已自動中止程式。");
       }else{
         resetRunState();
         showResult(buildResultCard(
@@ -2556,8 +2590,7 @@ window.GamePage = (()=>{
     };
 
     document.getElementById("btnReset").onclick = ()=>{
-      abortRun = true;
-      resolvePendingStep();
+      forceStopCurrentRun();
       resetLevel();
     };
 
@@ -2571,8 +2604,7 @@ window.GamePage = (()=>{
     document.getElementById("btnExit").onclick = ()=>{
       if(!confirm("確定要離開這一關嗎？系統會先保存你目前的積木進度。")) return;
       const saved = saveProgramDraft();
-      abortRun = true;
-      resolvePendingStep();
+      forceStopCurrentRun();
       if (!isBossLevel()) {
         toast(saved ? '已保存目前積木進度，返回首頁中…' : '這一關目前沒有可保存的積木，直接返回首頁。');
       }

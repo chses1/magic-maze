@@ -88,8 +88,20 @@ window.BlocklySetup = (()=>{
           "helpUrl":""
         },
         { "type":"mw_move_forward","message0":"向前走 1 格","previousStatement":null,"nextStatement":null,"colour":BLOCK_COLORS.SEQUENCE },
-        { "type":"mw_turn_left","message0":"左轉","previousStatement":null,"nextStatement":null,"colour":BLOCK_COLORS.SEQUENCE },
-        { "type":"mw_turn_right","message0":"右轉","previousStatement":null,"nextStatement":null,"colour":BLOCK_COLORS.SEQUENCE },
+        {
+          "type":"mw_turn",
+          "message0":"轉向－%1",
+          "args0":[
+            {"type":"field_dropdown","name":"DIR","options":[["左方","left"],["右方","right"]]}
+          ],
+          "previousStatement":null,
+          "nextStatement":null,
+          "colour":BLOCK_COLORS.SEQUENCE,
+          "tooltip":"選擇要往左方或右方轉向。",
+          "helpUrl":""
+        },
+        { "type":"mw_turn_left","message0":"轉向－左方","previousStatement":null,"nextStatement":null,"colour":BLOCK_COLORS.SEQUENCE },
+        { "type":"mw_turn_right","message0":"轉向－右方","previousStatement":null,"nextStatement":null,"colour":BLOCK_COLORS.SEQUENCE },
         {
           "type":"mw_repeat_times",
           "message0":"重複 %1 次 %2 做 %3",
@@ -120,16 +132,17 @@ window.BlocklySetup = (()=>{
         { "type":"mw_path_ahead","message0":"前方有路？","output":"Boolean","colour":BLOCK_COLORS.CONDITION },
         {
           "type":"mw_if_path",
-          "message0":"如果 %1 有路 %2 就 %3",
+          "message0":"如果 %1 有路 %2 就 %3 否則 %4",
           "args0":[
             {"type":"field_dropdown","name":"DIR","options":[["前面","ahead"],["右邊","right"],["左邊","left"]]},
             {"type":"input_dummy"},
-            {"type":"input_statement","name":"DO"}
+            {"type":"input_statement","name":"DO"},
+            {"type":"input_statement","name":"ELSE"}
           ],
           "previousStatement":null,
           "nextStatement":null,
           "colour":BLOCK_COLORS.CONDITION,
-          "tooltip":"先判斷指定方向有沒有路，再決定要不要執行裡面的動作。",
+          "tooltip":"先判斷指定方向有沒有路；有路就執行上面，沒有路就執行否則。",
           "helpUrl":""
         },
         { "type":"mw_if_path_ahead","message0":"如果前方有路 %1 就 %2 否則 %3","args0":[{"type":"input_dummy"},{"type":"input_statement","name":"DO"},{"type":"input_statement","name":"ELSE"}],"previousStatement":null,"nextStatement":null,"colour":BLOCK_COLORS.CONDITION,"tooltip":"舊版相容積木。","helpUrl":"" },
@@ -163,8 +176,12 @@ window.BlocklySetup = (()=>{
     };
 
     js.forBlock["mw_move_forward"] = ()=> "await api.moveForward();\n";
-    js.forBlock["mw_turn_left"]   = ()=> "await api.turnLeft();\n";
-    js.forBlock["mw_turn_right"]  = ()=> "await api.turnRight();\n";
+    js.forBlock["mw_turn"] = function(block){
+      const dir = String(block.getFieldValue("DIR") || "left");
+      return `await api.turnDirection(${JSON.stringify(dir)});\n`;
+    };
+    js.forBlock["mw_turn_left"]   = ()=> "await api.turnDirection(\"left\");\n";
+    js.forBlock["mw_turn_right"]  = ()=> "await api.turnDirection(\"right\");\n";
 
     js.forBlock["mw_repeat_times"] = function(block){
       const times = Number(block.getFieldValue("TIMES") || 3);
@@ -184,8 +201,10 @@ ${body}}
     js.forBlock["mw_if_path"] = function(block){
       const dir = String(block.getFieldValue("DIR") || "ahead");
       const doCode = js.statementToCode(block, "DO");
+      const elseCode = js.statementToCode(block, "ELSE");
       return `if (await api.canMoveDirection(${JSON.stringify(dir)})) {
-${doCode}}
+${doCode}} else {
+${elseCode}}
 `;
     };
 
@@ -240,8 +259,7 @@ ${doCode}}
       colour:BLOCK_COLORS.SEQUENCE,
       contents:[
         {kind:"block", type:"mw_move_forward"},
-        {kind:"block", type:"mw_turn_left"},
-        {kind:"block", type:"mw_turn_right"}
+        {kind:"block", type:"mw_turn", fields:{ DIR:"left" }}
       ]
     });
 
@@ -266,9 +284,7 @@ ${doCode}}
         name:"條件",
         colour:BLOCK_COLORS.CONDITION,
         contents:[
-          {kind:"block", type:"mw_if_path", fields:{ DIR:"ahead" }},
-          {kind:"block", type:"mw_if_path", fields:{ DIR:"right" }},
-          {kind:"block", type:"mw_if_path", fields:{ DIR:"left" }}
+          {kind:"block", type:"mw_if_path", fields:{ DIR:"ahead" }}
         ]
       });
     }
