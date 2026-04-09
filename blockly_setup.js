@@ -106,7 +106,7 @@ window.BlocklySetup = (()=>{
           "type":"mw_repeat_times",
           "message0":"重複 %1 次 %2 做 %3",
           "args0":[
-            {"type":"field_dropdown","name":"TIMES","options":[["3","3"],["4","4"],["5","5"],["6","6"],["7","7"],["8","8"],["9","9"],["10","10"]]},
+            {"type":"field_dropdown","name":"TIMES","options":[["2","2"],["3","3"],["4","4"],["5","5"],["6","6"],["7","7"],["8","8"],["9","9"],["10","10"]]},
             {"type":"input_dummy"},
             {"type":"input_statement","name":"DO"}
           ],
@@ -484,13 +484,47 @@ ${elseCode}}
 
   function countScoringBlocks(workspace){
     if(!workspace?.getAllBlocks) return 0;
-    return workspace.getAllBlocks(false).filter(block=>{
-      if(!block || (typeof block.isShadow === "function" && block.isShadow())) return false;
+
+    const allBlocks = workspace.getAllBlocks(false);
+    const startBlock = allBlocks.find(block => block?.type === "mw_start");
+    if(!startBlock) return 0;
+
+    const visited = new Set();
+
+    function shouldCount(block){
+      if(!block) return false;
+      if(typeof block.isShadow === "function" && block.isShadow()) return false;
+
       const type = String(block.type || "");
       if(type === "mw_start") return false;
       if(type === "math_number") return false;
+
       return true;
-    }).length;
+    }
+
+    function walk(block){
+      if(!block || visited.has(block.id)) return 0;
+      visited.add(block.id);
+
+      let total = shouldCount(block) ? 1 : 0;
+
+      if(Array.isArray(block.inputList)){
+        block.inputList.forEach(input => {
+          const child = input?.connection?.targetBlock?.();
+          if(child) total += walk(child);
+        });
+      }
+
+      const nextBlock = block.getNextBlock?.();
+      if(nextBlock) total += walk(nextBlock);
+
+      return total;
+    }
+
+    const firstExecutable = startBlock.getNextBlock?.();
+    if(!firstExecutable) return 0;
+
+    return walk(firstExecutable);
   }
 
   return {
