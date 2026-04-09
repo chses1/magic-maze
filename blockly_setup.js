@@ -91,6 +91,7 @@ window.BlocklySetup = (()=>{
         { "type":"mw_turn_left","message0":"左轉","previousStatement":null,"nextStatement":null,"colour":BLOCK_COLORS.SEQUENCE },
         { "type":"mw_turn_right","message0":"右轉","previousStatement":null,"nextStatement":null,"colour":BLOCK_COLORS.SEQUENCE },
         { "type":"mw_path_ahead","message0":"前方有路？","output":"Boolean","colour":BLOCK_COLORS.CONDITION },
+        { "type":"mw_if_path_ahead","message0":"如果前方有路 %1 就 %2 否則 %3","args0":[{"type":"input_dummy"},{"type":"input_statement","name":"DO"},{"type":"input_statement","name":"ELSE"}],"previousStatement":null,"nextStatement":null,"colour":BLOCK_COLORS.CONDITION,"tooltip":"先判斷前方能不能走，再決定要做什麼。","helpUrl":"" },
         {
           "type":"mw_func_def_a","message0":"定義咒語A 做 %1",
           "args0":[{"type":"input_statement","name":"DO"}],
@@ -126,6 +127,12 @@ window.BlocklySetup = (()=>{
 
     const orderNone = js.ORDER_NONE ?? 99;
     js.forBlock["mw_path_ahead"] = ()=> ["await api.canMoveForward()", orderNone];
+
+    js.forBlock["mw_if_path_ahead"] = function(block){
+      const doCode = js.statementToCode(block, "DO");
+      const elseCode = js.statementToCode(block, "ELSE");
+      return `if (await api.canMoveForward()) {\n${doCode}} else {\n${elseCode}}\n`;
+    };
 
     js.forBlock["mw_func_def_a"] = function(block){
       const body = js.statementToCode(block, "DO");
@@ -185,8 +192,9 @@ window.BlocklySetup = (()=>{
         name:"迴圈",
         colour:BLOCK_COLORS.LOOP,
         contents:[
+          loopRepeatBlockToolboxItem(2),
           loopRepeatBlockToolboxItem(3),
-          {kind:"block", type:"controls_whileUntil"}
+          loopRepeatBlockToolboxItem(4)
         ]
       });
     }
@@ -197,8 +205,7 @@ window.BlocklySetup = (()=>{
         name:"條件",
         colour:BLOCK_COLORS.CONDITION,
         contents:[
-          {kind:"block", type:"controls_if"},
-          {kind:"block", type:"mw_path_ahead"}
+          {kind:"block", type:"mw_if_path_ahead"}
         ]
       });
     }

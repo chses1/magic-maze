@@ -2364,6 +2364,15 @@ window.GamePage = (()=>{
         dir = (dir + 1) % 4;
         render();
         await sleep(120);
+      },
+
+      async canMoveForward(){
+        await ensureNotPaused();
+        if(abortRun) throw new Error("aborted");
+        const d = DIRS[dir];
+        const nx = px + d.dx;
+        const ny = py + d.dy;
+        return !!canMoveTo(nx, ny);
       }
     };
   }
