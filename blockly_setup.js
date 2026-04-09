@@ -4,6 +4,8 @@
 
 window.BlocklySetup = (()=>{
 
+  let definitionsReady = false;
+
   function applyKidFriendlyMsgs(){
     if (window.Blockly && Blockly.Msg) {
       Blockly.Msg.CONTROLS_REPEAT_TITLE = "重複 %1 次";
@@ -22,6 +24,10 @@ window.BlocklySetup = (()=>{
     FUNCTION: "#ab47bc",
     NUMBER: "#f29900"
   };
+
+  function getJavaScriptGenerator(){
+    return Blockly.JavaScript || Blockly.javascriptGenerator || null;
+  }
 
   function wrapSetColour(blockType, color){
     if(!window.Blockly?.Blocks?.[blockType]) return;
@@ -69,48 +75,45 @@ window.BlocklySetup = (()=>{
     throw new Error("Blockly XML API 不可用：找不到 workspaceToDom");
   }
 
-  function ensureDefinitions(){
-    ensureDefinitions();
-  }
-
   function defineCustomBlocksOnce(){
     if(!window.Blockly) return;
-    if(Blockly.Blocks["mw_move_forward"]) return;
-
-    Blockly.defineBlocksWithJsonArray([
-      {
-        "type":"mw_start",
-        "message0":"當開始執行",
-        "nextStatement":null,
-        "colour":BLOCK_COLORS.START,
-        "tooltip":"程式會從這裡開始往下執行。",
-        "helpUrl":""
-      },
-      { "type":"mw_move_forward","message0":"向前走 1 格","previousStatement":null,"nextStatement":null,"colour":BLOCK_COLORS.SEQUENCE },
-      { "type":"mw_turn_left","message0":"左轉","previousStatement":null,"nextStatement":null,"colour":BLOCK_COLORS.SEQUENCE },
-      { "type":"mw_turn_right","message0":"右轉","previousStatement":null,"nextStatement":null,"colour":BLOCK_COLORS.SEQUENCE },
-
-      { "type":"mw_path_ahead","message0":"前方有路？","output":"Boolean","colour":BLOCK_COLORS.CONDITION },
-
-      {
-        "type":"mw_func_def_a","message0":"定義咒語A 做 %1",
-        "args0":[{"type":"input_statement","name":"DO"}],
-        "colour":BLOCK_COLORS.FUNCTION,"tooltip":"把一段常用走法放進咒語A，之後可以重複施放。","helpUrl":""
-      },
-      { "type":"mw_func_call_a","message0":"施放咒語A","previousStatement":null,"nextStatement":null,"colour":BLOCK_COLORS.FUNCTION },
-
-      {
-        "type":"mw_func_def_b","message0":"定義咒語B 做 %1",
-        "args0":[{"type":"input_statement","name":"DO"}],
-        "colour":BLOCK_COLORS.FUNCTION,"tooltip":"把另一段常用走法放進咒語B。","helpUrl":""
-      },
-      { "type":"mw_func_call_b","message0":"施放咒語B","previousStatement":null,"nextStatement":null,"colour":BLOCK_COLORS.FUNCTION }
-    ]);
+    if(!Blockly.Blocks["mw_start"]){
+      Blockly.defineBlocksWithJsonArray([
+        {
+          "type":"mw_start",
+          "message0":"當開始執行",
+          "nextStatement":null,
+          "colour":BLOCK_COLORS.START,
+          "tooltip":"程式會從這裡開始往下執行。",
+          "helpUrl":""
+        },
+        { "type":"mw_move_forward","message0":"向前走 1 格","previousStatement":null,"nextStatement":null,"colour":BLOCK_COLORS.SEQUENCE },
+        { "type":"mw_turn_left","message0":"左轉","previousStatement":null,"nextStatement":null,"colour":BLOCK_COLORS.SEQUENCE },
+        { "type":"mw_turn_right","message0":"右轉","previousStatement":null,"nextStatement":null,"colour":BLOCK_COLORS.SEQUENCE },
+        { "type":"mw_path_ahead","message0":"前方有路？","output":"Boolean","colour":BLOCK_COLORS.CONDITION },
+        {
+          "type":"mw_func_def_a","message0":"定義咒語A 做 %1",
+          "args0":[{"type":"input_statement","name":"DO"}],
+          "colour":BLOCK_COLORS.FUNCTION,"tooltip":"把一段常用走法放進咒語A，之後可以重複施放。","helpUrl":""
+        },
+        { "type":"mw_func_call_a","message0":"施放咒語A","previousStatement":null,"nextStatement":null,"colour":BLOCK_COLORS.FUNCTION },
+        {
+          "type":"mw_func_def_b","message0":"定義咒語B 做 %1",
+          "args0":[{"type":"input_statement","name":"DO"}],
+          "colour":BLOCK_COLORS.FUNCTION,"tooltip":"把另一段常用走法放進咒語B。","helpUrl":""
+        },
+        { "type":"mw_func_call_b","message0":"施放咒語B","previousStatement":null,"nextStatement":null,"colour":BLOCK_COLORS.FUNCTION }
+      ]);
+    }
 
     recolorBuiltinBlocks();
 
-    const js = Blockly.JavaScript;
-    js.STATEMENT_PREFIX = 'await api.__highlight(%1);\n';
+    const js = getJavaScriptGenerator();
+    if(!js) return;
+
+    try{ js.STATEMENT_PREFIX = 'await api.__highlight(%1);\n'; }catch(_err){}
+
+    js.forBlock = js.forBlock || {};
 
     js.forBlock["mw_start"] = function(block){
       const nextBlock = block.getNextBlock?.();
@@ -121,7 +124,8 @@ window.BlocklySetup = (()=>{
     js.forBlock["mw_turn_left"]   = ()=> "await api.turnLeft();\n";
     js.forBlock["mw_turn_right"]  = ()=> "await api.turnRight();\n";
 
-    js.forBlock["mw_path_ahead"] = ()=> ["await api.canMoveForward()", js.ORDER_NONE];
+    const orderNone = js.ORDER_NONE ?? 99;
+    js.forBlock["mw_path_ahead"] = ()=> ["await api.canMoveForward()", orderNone];
 
     js.forBlock["mw_func_def_a"] = function(block){
       const body = js.statementToCode(block, "DO");
@@ -134,6 +138,15 @@ window.BlocklySetup = (()=>{
       return `async function spellB(){\n${body}}\n`;
     };
     js.forBlock["mw_func_call_b"] = ()=> "await spellB();\n";
+  }
+
+  function ensureDefinitions(){
+    if(definitionsReady) return true;
+    if(!window.Blockly) return false;
+    applyKidFriendlyMsgs();
+    defineCustomBlocksOnce();
+    definitionsReady = true;
+    return true;
   }
 
   function loopRepeatBlockToolboxItem(defaultTimes = 3){
@@ -152,6 +165,7 @@ window.BlocklySetup = (()=>{
   }
 
   function buildToolbox(worldId){
+    ensureDefinitions();
     const contents = [];
 
     contents.push({
@@ -237,15 +251,13 @@ window.BlocklySetup = (()=>{
     return workspace;
   }
 
-
-
   function migrateLegacyStartInSerializedNode(node){
     if(!node || typeof node !== "object") return;
 
     const thisBlock = node.block && typeof node.block === "object" ? node.block : node;
     if(thisBlock && thisBlock.type === "mw_start" && thisBlock.inputs && thisBlock.inputs.DO && !thisBlock.next){
       const doInput = thisBlock.inputs.DO;
-      const firstBlock = doInput.block || (doInput.shadow ? null : null);
+      const firstBlock = doInput.block || null;
       if(firstBlock){
         thisBlock.next = { block: firstBlock };
       }
@@ -307,7 +319,9 @@ window.BlocklySetup = (()=>{
   }
 
   function workspaceToAsyncCode(workspace){
-    const code = Blockly.JavaScript.workspaceToCode(workspace);
+    const js = getJavaScriptGenerator();
+    if(!js) return "return (async () => {})();";
+    const code = js.workspaceToCode(workspace);
     const safe = code.trim() ? code : "/* 沒有積木 */\n";
     return `
       return (async () => {
