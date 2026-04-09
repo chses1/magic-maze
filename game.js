@@ -2373,6 +2373,25 @@ window.GamePage = (()=>{
         const nx = px + d.dx;
         const ny = py + d.dy;
         return !!canMoveTo(nx, ny);
+      },
+
+      async canMoveDirection(relativeDir){
+        await ensureNotPaused();
+        if(abortRun) throw new Error("aborted");
+        const key = String(relativeDir || 'ahead').toLowerCase();
+        let checkDir = dir;
+        if(key === 'right') checkDir = (dir + 1) % 4;
+        else if(key === 'left') checkDir = (dir + 3) % 4;
+        const d = DIRS[checkDir];
+        const nx = px + d.dx;
+        const ny = py + d.dy;
+        return !!canMoveTo(nx, ny);
+      },
+
+      async isAtGoal(){
+        await ensureNotPaused();
+        if(abortRun) throw new Error("aborted");
+        return !!reachedExit();
       }
     };
   }

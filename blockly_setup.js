@@ -90,8 +90,49 @@ window.BlocklySetup = (()=>{
         { "type":"mw_move_forward","message0":"向前走 1 格","previousStatement":null,"nextStatement":null,"colour":BLOCK_COLORS.SEQUENCE },
         { "type":"mw_turn_left","message0":"左轉","previousStatement":null,"nextStatement":null,"colour":BLOCK_COLORS.SEQUENCE },
         { "type":"mw_turn_right","message0":"右轉","previousStatement":null,"nextStatement":null,"colour":BLOCK_COLORS.SEQUENCE },
+        {
+          "type":"mw_repeat_times",
+          "message0":"重複 %1 次 %2 做 %3",
+          "args0":[
+            {"type":"field_dropdown","name":"TIMES","options":[["3","3"],["4","4"],["5","5"],["6","6"],["7","7"],["8","8"],["9","9"],["10","10"]]},
+            {"type":"input_dummy"},
+            {"type":"input_statement","name":"DO"}
+          ],
+          "previousStatement":null,
+          "nextStatement":null,
+          "colour":BLOCK_COLORS.LOOP,
+          "tooltip":"把裡面的動作重複執行指定次數。",
+          "helpUrl":""
+        },
+        {
+          "type":"mw_repeat_until_goal",
+          "message0":"重複直到抵達目的地 %1 做 %2",
+          "args0":[
+            {"type":"input_dummy"},
+            {"type":"input_statement","name":"DO"}
+          ],
+          "previousStatement":null,
+          "nextStatement":null,
+          "colour":BLOCK_COLORS.LOOP,
+          "tooltip":"一直重複執行，直到角色走到出口。",
+          "helpUrl":""
+        },
         { "type":"mw_path_ahead","message0":"前方有路？","output":"Boolean","colour":BLOCK_COLORS.CONDITION },
-        { "type":"mw_if_path_ahead","message0":"如果前方有路 %1 就 %2 否則 %3","args0":[{"type":"input_dummy"},{"type":"input_statement","name":"DO"},{"type":"input_statement","name":"ELSE"}],"previousStatement":null,"nextStatement":null,"colour":BLOCK_COLORS.CONDITION,"tooltip":"先判斷前方能不能走，再決定要做什麼。","helpUrl":"" },
+        {
+          "type":"mw_if_path",
+          "message0":"如果 %1 有路 %2 就 %3",
+          "args0":[
+            {"type":"field_dropdown","name":"DIR","options":[["前面","ahead"],["右邊","right"],["左邊","left"]]},
+            {"type":"input_dummy"},
+            {"type":"input_statement","name":"DO"}
+          ],
+          "previousStatement":null,
+          "nextStatement":null,
+          "colour":BLOCK_COLORS.CONDITION,
+          "tooltip":"先判斷指定方向有沒有路，再決定要不要執行裡面的動作。",
+          "helpUrl":""
+        },
+        { "type":"mw_if_path_ahead","message0":"如果前方有路 %1 就 %2 否則 %3","args0":[{"type":"input_dummy"},{"type":"input_statement","name":"DO"},{"type":"input_statement","name":"ELSE"}],"previousStatement":null,"nextStatement":null,"colour":BLOCK_COLORS.CONDITION,"tooltip":"舊版相容積木。","helpUrl":"" },
         {
           "type":"mw_func_def_a","message0":"定義咒語A 做 %1",
           "args0":[{"type":"input_statement","name":"DO"}],
@@ -124,6 +165,29 @@ window.BlocklySetup = (()=>{
     js.forBlock["mw_move_forward"] = ()=> "await api.moveForward();\n";
     js.forBlock["mw_turn_left"]   = ()=> "await api.turnLeft();\n";
     js.forBlock["mw_turn_right"]  = ()=> "await api.turnRight();\n";
+
+    js.forBlock["mw_repeat_times"] = function(block){
+      const times = Number(block.getFieldValue("TIMES") || 3);
+      const body = js.statementToCode(block, "DO");
+      return `for (let i = 0; i < ${times}; i++) {
+${body}}
+`;
+    };
+
+    js.forBlock["mw_repeat_until_goal"] = function(block){
+      const body = js.statementToCode(block, "DO");
+      return `while (!(await api.isAtGoal())) {
+${body}}
+`;
+    };
+
+    js.forBlock["mw_if_path"] = function(block){
+      const dir = String(block.getFieldValue("DIR") || "ahead");
+      const doCode = js.statementToCode(block, "DO");
+      return `if (await api.canMoveDirection(${JSON.stringify(dir)})) {
+${doCode}}
+`;
+    };
 
     const orderNone = js.ORDER_NONE ?? 99;
     js.forBlock["mw_path_ahead"] = ()=> ["await api.canMoveForward()", orderNone];
@@ -159,14 +223,9 @@ window.BlocklySetup = (()=>{
   function loopRepeatBlockToolboxItem(defaultTimes = 3){
     return {
       kind:"block",
-      type:"controls_repeat_ext",
-      inputs:{
-        TIMES:{
-          shadow:{
-            type:"math_number",
-            fields:{ NUM: Number(defaultTimes) || 3 }
-          }
-        }
+      type:"mw_repeat_times",
+      fields:{
+        TIMES: String(Number(defaultTimes) || 3)
       }
     };
   }
@@ -187,15 +246,17 @@ window.BlocklySetup = (()=>{
     });
 
     if(worldId === "W2" || worldId === "W3" || worldId === "W4"){
+      const loopContents = [
+        loopRepeatBlockToolboxItem(3)
+      ];
+      if(worldId === "W3" || worldId === "W4"){
+        loopContents.push({kind:"block", type:"mw_repeat_until_goal"});
+      }
       contents.push({
         kind:"category",
         name:"迴圈",
         colour:BLOCK_COLORS.LOOP,
-        contents:[
-          loopRepeatBlockToolboxItem(2),
-          loopRepeatBlockToolboxItem(3),
-          loopRepeatBlockToolboxItem(4)
-        ]
+        contents: loopContents
       });
     }
 
@@ -205,7 +266,9 @@ window.BlocklySetup = (()=>{
         name:"條件",
         colour:BLOCK_COLORS.CONDITION,
         contents:[
-          {kind:"block", type:"mw_if_path_ahead"}
+          {kind:"block", type:"mw_if_path", fields:{ DIR:"ahead" }},
+          {kind:"block", type:"mw_if_path", fields:{ DIR:"right" }},
+          {kind:"block", type:"mw_if_path", fields:{ DIR:"left" }}
         ]
       });
     }
