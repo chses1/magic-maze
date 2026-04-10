@@ -31,7 +31,7 @@
       cards: {
         potion: { key: 'potion', title: '魔力水晶', desc: '回復 10 點生命，並獲得 1 點蓄力。', img: 'img/world1_item_01_mana_crystal.png', effect(state){ state.playerHp = Math.min(state.playerMaxHp, state.playerHp + 10); state.playerPower += 1; state.fxText = '🔷 魔力充能，恢復 10 點生命並蓄力 +1！'; return '恢復了 10 點生命，並獲得 1 點蓄力。'; } },
         dagger: { key: 'dagger', title: '新生魔杖', desc: '立刻造成 8 點魔法傷害。', img: 'img/world1_item_02_novice_wand.png', effect(state){ return { damage: 8, fxText: '✨ 新生魔杖命中，造成 8 點魔法傷害！', log: '新生魔杖造成 8 點傷害。' }; } },
-        shield: { key: 'shield', title: '學院法袍', desc: '獲得 10 點護盾。', img: 'img/world1_item_03_academy_robe.png', effect(state){ state.playerShield += 10; state.fxText = '🧥 學院法袍展開結界，護盾 +10！'; return '提供 10 點護盾。'; } },
+        shield: { key: 'shield', title: '學院法袍', desc: '獲得 10 點護盾。', img: 'img/world1_item_03_academy_robe.png', effect(state){ const gain = addPlayerShield(10, '學院法袍'); state.fxText = `🧥 學院法袍展開結界，護盾 +${gain}！`; return `提供 ${gain} 點護盾。`; } },
         freeze: { key: 'freeze', title: '封印卷軸', desc: '讓教授下一回合無法行動。', img: 'img/world1_item_04_seal_scroll.png', effect(state){ state.bossFreezeTurns = Math.max(state.bossFreezeTurns, 1); state.fxText = '📜 封印卷軸啟動，教授下一回合無法行動！'; return '讓教授下一回合無法行動。'; } }
       },
       phaseNames: ['考核模式', '終極試煉'],
@@ -64,7 +64,7 @@
       cards: {
         potion: { key: 'potion', title: '補血小藥水', desc: '立刻補滿生命值。', img: 'img/world2_item_01_healing_potion.png', effect(state){ state.playerHp = state.playerMaxHp; state.fxText = '💚 生命值完全恢復！'; return '讓生命值完全恢復。'; } },
         dagger: { key: 'dagger', title: '小刀攻擊', desc: '快速出手，造成 9 點傷害。', img: 'img/world2_item_02_dagger_attack.png', effect(state){ return { damage: 9, fxText: '🗡️ 小刀攻擊命中，造成 9 點傷害！', log: '小刀攻擊造成 9 點傷害。' }; } },
-        shield: { key: 'shield', title: '木盾防禦', desc: '本回合獲得 12 點護盾。', img: 'img/world2_item_03_wooden_shield.png', effect(state){ state.playerShield += 12; state.fxText = '🪵 木盾展開，護盾 +12！'; return '提供 12 點護盾。'; } },
+        shield: { key: 'shield', title: '木盾防禦', desc: '本回合獲得 12 點護盾。', img: 'img/world2_item_03_wooden_shield.png', effect(state){ const gain = addPlayerShield(12, '木盾防禦'); state.fxText = `🪵 木盾展開，護盾 +${gain}！`; return `提供 ${gain} 點護盾。`; } },
         freeze: { key: 'freeze', title: '冰凍藤蔓', desc: '讓 Boss 連續 2 回合無法行動。', img: 'img/world2_item_04_frozen_vine.png', effect(state){ state.bossFreezeTurns = Math.max(state.bossFreezeTurns, 2); state.fxText = '❄️ 狼王將被凍住接下來 2 回合！'; return '讓狼王連續 2 回合無法行動。'; } }
       },
       phaseNames: ['森林試探', '狂暴模式'],
@@ -97,7 +97,7 @@
       cards: {
         potion: { key: 'potion', title: '時光沙漏', desc: '回復 9 點生命，並讓館長速度減慢。', img: 'img/world3_item_01_time_hourglass.png', effect(state){ state.playerHp = Math.min(state.playerMaxHp, state.playerHp + 9); state.bossFreezeTurns = Math.max(state.bossFreezeTurns, 1); state.fxText = '⏳ 時光沙漏逆轉，恢復 9 點生命並延遲館長行動！'; return '恢復 9 點生命，並讓館長下一回合無法行動。'; } },
         dagger: { key: 'dagger', title: '館藏羽毛筆', desc: '寫下反擊咒文，造成 8 點傷害並獲得 1 點蓄力。', img: 'img/world3_item_02_magic_quill.png', effect(state){ state.playerPower += 1; return { damage: 8, fxText: '🪶 羽毛筆寫下反擊咒文，造成 8 點傷害並蓄力 +1！', log: '館藏羽毛筆造成 8 點傷害，並獲得 1 點蓄力。' }; } },
-        shield: { key: 'shield', title: '預言書頁', desc: '預見攻擊，獲得 11 點護盾。', img: 'img/world3_item_03_prophecy_page.png', effect(state){ state.playerShield += 11; state.fxText = '📄 預言書頁發光，護盾 +11！'; return '提供 11 點護盾。'; } },
+        shield: { key: 'shield', title: '預言書頁', desc: '預見攻擊，獲得 11 點護盾。', img: 'img/world3_item_03_prophecy_page.png', effect(state){ const gain = addPlayerShield(11, '預言書頁'); state.fxText = `📄 預言書頁發光，護盾 +${gain}！`; return `提供 ${gain} 點護盾。`; } },
         freeze: { key: 'freeze', title: '時空鑰匙', desc: '造成 6 點傷害，並凍結館長 1 回合。', img: 'img/world3_item_04_time_key.png', effect(state){ state.bossFreezeTurns = Math.max(state.bossFreezeTurns, 1); return { damage: 6, fxText: '🗝️ 時空鑰匙啟動，造成 6 點傷害並鎖住時間！', log: '時空鑰匙造成 6 點傷害，並讓館長下一回合無法行動。' }; } }
       },
       phaseNames: ['整理書庫', '時空錯位'],
@@ -130,7 +130,7 @@
       cards: {
         potion: { key: 'potion', title: '齒輪核心', desc: '回復 8 點生命，並讓下次普通攻擊 +2。', img: 'img/world4_item_01_gear_core.png', effect(state){ state.playerHp = Math.min(state.playerMaxHp, state.playerHp + 8); state.playerPower += 2; state.fxText = '⚙️ 齒輪核心啟動，恢復 8 點生命並蓄力 +2！'; return '恢復 8 點生命，並獲得 2 點蓄力。'; } },
         dagger: { key: 'dagger', title: '蒸汽手套', desc: '重擊造成 10 點傷害。', img: 'img/world4_item_02_steam_gauntlet.png', effect(state){ return { damage: 10, fxText: '👊 蒸汽手套重擊，造成 10 點傷害！', log: '蒸汽手套造成 10 點傷害。' }; } },
-        shield: { key: 'shield', title: '機械咒語晶片', desc: '展開護罩，獲得 12 點護盾。', img: 'img/world4_item_03_spell_chip.png', effect(state){ state.playerShield += 12; state.fxText = '💠 機械咒語晶片展開護罩，護盾 +12！'; return '提供 12 點護盾。'; } },
+        shield: { key: 'shield', title: '機械咒語晶片', desc: '展開護罩，獲得 12 點護盾。', img: 'img/world4_item_03_spell_chip.png', effect(state){ const gain = addPlayerShield(12, '機械咒語晶片'); state.fxText = `💠 機械咒語晶片展開護罩，護盾 +${gain}！`; return `提供 ${gain} 點護盾。`; } },
         freeze: { key: 'freeze', title: '傳動發條鑰匙', desc: '卡住齒輪，讓主宰下一回合無法行動並造成 5 點傷害。', img: 'img/world4_item_04_clockwork_key.png', effect(state){ state.bossFreezeTurns = Math.max(state.bossFreezeTurns, 1); return { damage: 5, fxText: '🗝️ 發條鑰匙卡住核心，主宰暫時停機！', log: '傳動發條鑰匙造成 5 點傷害，並讓主宰下一回合無法行動。' }; } }
       },
       phaseNames: ['系統掃描', '過載暴走'],
@@ -150,6 +150,21 @@
   };
 
   const config = WORLD_CONFIG[worldId] || WORLD_CONFIG.world1;
+
+  const COMBAT_RULES = {
+    basePlayerCrit: 0.18,
+    baseBossCrit: 0.14,
+    basePlayerDodge: 0.08,
+    baseBossDodge: 0.06,
+    defendDodgeBonus: 0.22,
+    perfectGuardChance: 0.18,
+    perfectGuardBonus: 0.5,
+    critMultiplier: 1.7,
+    shieldCarryRatio: 0.35,
+    minShieldCarry: 1,
+    maxShieldFromDefendMultiplier: 2.2,
+    maxShieldFlatBonus: 4
+  };
 
   function getSessionSafe(){
     try { return StorageAPI?.getSession?.() || null; } catch(_err){ return null; }
@@ -363,6 +378,7 @@
       playerAtkBonus: Number(inventory.atkBonus || 0),
       playerDefBonus: Number(inventory.defBonus || 0),
       playerEquipments: inventory.equipments || [],
+      playerDodgeBonus: 0,
       bossMaxHp: config.stats.bossMaxHp,
       bossHp: config.stats.bossMaxHp,
       turn: 1,
@@ -376,7 +392,50 @@
       fxText: '⚔️ Boss 戰開始！',
       lastBossAction: '尚未行動',
       lastPlayerAction: '尚未行動',
+      lastPlayerRoll: '尚未觸發',
+      lastBossRoll: '尚未觸發',
     };
+  }
+
+  function clampRate(value){
+    return Math.max(0, Math.min(0.85, Number(value || 0)));
+  }
+
+  function rollChance(rate){
+    return Math.random() < clampRate(rate);
+  }
+
+  function getPlayerMaxShield(){
+    return Math.max(8, Math.round(config.stats.defendShield * COMBAT_RULES.maxShieldFromDefendMultiplier + Number(bossState?.playerDefBonus || 0) * 3 + COMBAT_RULES.maxShieldFlatBonus));
+  }
+
+  function addPlayerShield(amount, sourceLabel){
+    const gain = Math.max(0, Math.round(Number(amount || 0)));
+    const before = Number(bossState.playerShield || 0);
+    const cap = getPlayerMaxShield();
+    bossState.playerShield = Math.min(cap, before + gain);
+    const actualGain = bossState.playerShield - before;
+    if (sourceLabel) {
+      if (actualGain > 0) {
+        pushBossLog(`<strong>${sourceLabel}：</strong>護盾 +${actualGain}（上限 ${cap}）。`);
+      }
+      if (before + gain > cap) {
+        pushBossLog(`<strong>護盾上限：</strong>超出的護盾無法繼續累積。`);
+      }
+    }
+    return actualGain;
+  }
+
+  function decayPlayerShield(){
+    const current = Math.max(0, Number(bossState.playerShield || 0));
+    if (current <= 0) return 0;
+    const keep = Math.min(current, Math.max(COMBAT_RULES.minShieldCarry, Math.round(current * COMBAT_RULES.shieldCarryRatio)));
+    const lost = current - keep;
+    bossState.playerShield = keep;
+    if (lost > 0) {
+      pushBossLog(`<strong>護盾衰減：</strong>回合結束後護盾減少 ${lost}，剩下 ${keep}。`);
+    }
+    return lost;
   }
 
   let bossState = createBossState();
@@ -410,18 +469,72 @@
     bossState.log = bossState.log.slice(0, 14);
   }
 
-  function applyDamageToBoss(rawDamage, sourceLabel){
-    const damage = Math.max(0, rawDamage);
-    bossState.bossHp = Math.max(0, bossState.bossHp - damage);
-    if (sourceLabel) pushBossLog(`<strong>玩家：</strong>${sourceLabel}造成 ${damage} 點傷害。`);
-    bossState.fxText = `💥 對${config.bossShortName}造成 ${damage} 點傷害！`;
-    return damage;
+  function applyDamageToBoss(rawDamage, sourceLabel, options = {}){
+    const canDodge = options.canDodge !== false;
+    const canCrit = options.canCrit !== false;
+    const baseDamage = Math.max(0, Math.round(Number(rawDamage || 0)));
+    let damage = baseDamage;
+    let isCrit = false;
+    let isDodged = false;
+    const bossDodgeRate = clampRate(COMBAT_RULES.baseBossDodge + (bossState.phase >= 2 ? 0.04 : 0));
+    const playerCritRate = clampRate(COMBAT_RULES.basePlayerCrit + Number(bossState.playerAtkBonus || 0) * 0.01 + Number(bossState.playerPower || 0) * 0.005);
+
+    if (canDodge && rollChance(bossDodgeRate)) {
+      damage = 0;
+      isDodged = true;
+      bossState.lastBossRoll = `閃避成功 ${Math.round(bossDodgeRate * 100)}%`;
+      pushBossLog(`<strong>${config.bossShortName}：</strong>成功閃避了這次攻擊！`);
+      bossState.fxText = `💨 ${config.bossShortName} 閃避了你的攻擊！`;
+    } else {
+      if (canCrit && damage > 0 && rollChance(playerCritRate)) {
+        damage = Math.max(1, Math.round(damage * COMBAT_RULES.critMultiplier));
+        isCrit = true;
+      }
+      bossState.bossHp = Math.max(0, bossState.bossHp - damage);
+      bossState.lastBossRoll = isCrit ? `被爆擊！-${damage}` : `受傷 ${damage}`;
+      if (sourceLabel) pushBossLog(`<strong>玩家：</strong>${sourceLabel}${isCrit ? ' 觸發爆擊，' : ''}造成 ${damage} 點傷害。`);
+      bossState.fxText = isCrit
+        ? `💥 爆擊！對${config.bossShortName}造成 ${damage} 點傷害！`
+        : `💥 對${config.bossShortName}造成 ${damage} 點傷害！`;
+    }
+
+    bossState.lastPlayerRoll = isDodged
+      ? `攻擊被閃避（對手 ${Math.round(bossDodgeRate * 100)}%）`
+      : (isCrit ? `爆擊成功！${Math.round(playerCritRate * 100)}%` : '普通命中');
+
+    return { damage, isCrit, isDodged };
   }
 
-  function applyDamageToPlayer(rawDamage, sourceLabel){
-    let damage = Math.max(0, rawDamage - Number(bossState.playerDefBonus || 0));
-    if (Number(bossState.playerDefBonus || 0) > 0) {
-      pushBossLog(`<strong>裝備防禦：</strong>裝備減少了 ${Number(bossState.playerDefBonus || 0)} 點傷害。`);
+  function applyDamageToPlayer(rawDamage, sourceLabel, options = {}){
+    const canDodge = options.canDodge !== false;
+    const canCrit = options.canCrit !== false;
+    const baseDamage = Math.max(0, Math.round(Number(rawDamage || 0)));
+    const playerDodgeRate = clampRate(COMBAT_RULES.basePlayerDodge + Number(bossState.playerDodgeBonus || 0));
+    const bossCritRate = clampRate(COMBAT_RULES.baseBossCrit + (bossState.phase >= 2 ? 0.06 : 0));
+    let damage = baseDamage;
+    let isCrit = false;
+    let isDodged = false;
+
+    if (canDodge && rollChance(playerDodgeRate)) {
+      damage = 0;
+      isDodged = true;
+      bossState.lastPlayerRoll = `閃避成功 ${Math.round(playerDodgeRate * 100)}%`;
+      bossState.lastBossRoll = '攻擊落空';
+      if (sourceLabel) pushBossLog(`<strong>玩家：</strong>你閃過了 ${sourceLabel}！`);
+      bossState.fxText = '💨 你成功閃避了這次攻擊！';
+      bossState.playerDodgeBonus = 0;
+      return { damage, isCrit, isDodged };
+    }
+
+    if (canCrit && damage > 0 && rollChance(bossCritRate)) {
+      damage = Math.max(1, Math.round(damage * COMBAT_RULES.critMultiplier));
+      isCrit = true;
+    }
+
+    const defBonus = Number(bossState.playerDefBonus || 0);
+    damage = Math.max(0, damage - defBonus);
+    if (defBonus > 0) {
+      pushBossLog(`<strong>裝備防禦：</strong>裝備減少了 ${defBonus} 點傷害。`);
     }
     if (bossState.playerShield > 0) {
       const blocked = Math.min(bossState.playerShield, damage);
@@ -430,9 +543,14 @@
       if (blocked > 0) pushBossLog(`<strong>防禦：</strong>護盾擋下了 ${blocked} 點傷害。`);
     }
     bossState.playerHp = Math.max(0, bossState.playerHp - damage);
-    if (sourceLabel) pushBossLog(`<strong>${config.bossShortName}：</strong>${sourceLabel}，你受到 ${damage} 點傷害。`);
-    bossState.fxText = damage > 0 ? `😵 你受到 ${damage} 點傷害！` : '🛡️ 你完全擋住了這次攻擊！';
-    return damage;
+    bossState.lastBossRoll = isCrit ? `爆擊成功！${Math.round(bossCritRate * 100)}%` : '普通命中';
+    bossState.lastPlayerRoll = damage > 0 ? `受傷 ${damage}` : '完全擋住';
+    if (sourceLabel) pushBossLog(`<strong>${config.bossShortName}：</strong>${sourceLabel}${isCrit ? ' 觸發爆擊，' : '，'}你受到 ${damage} 點傷害。`);
+    bossState.fxText = isCrit
+      ? `💢 ${config.bossShortName} 爆擊！你受到 ${damage} 點傷害！`
+      : (damage > 0 ? `😵 你受到 ${damage} 點傷害！` : '🛡️ 你完全擋住了這次攻擊！');
+    bossState.playerDodgeBonus = 0;
+    return { damage, isCrit, isDodged };
   }
 
   function bossTakeTurn(){
@@ -451,8 +569,15 @@
 
     if (action.type === 'multi') {
       let total = 0;
-      for (const hit of action.hits) total += applyDamageToPlayer(hit, `${action.label}（${hit}）`);
-      pushBossLog(`<strong>${config.bossShortName}連擊：</strong>${action.label}總共造成 ${total} 點傷害。`);
+      let critCount = 0;
+      let dodgeCount = 0;
+      for (const hit of action.hits) {
+        const result = applyDamageToPlayer(hit, `${action.label}（${hit}）`);
+        total += result.damage;
+        if (result.isCrit) critCount += 1;
+        if (result.isDodged) dodgeCount += 1;
+      }
+      pushBossLog(`<strong>${config.bossShortName}連擊：</strong>${action.label}總共造成 ${total} 點傷害${critCount ? `，其中 ${critCount} 次爆擊` : ''}${dodgeCount ? `，你閃掉 ${dodgeCount} 下` : ''}。`);
     } else {
       applyDamageToPlayer(action.damage, action.label);
     }
@@ -563,18 +688,33 @@
     if (actionKey === 'basic') {
       const extra = bossState.playerPower;
       const total = config.stats.basicDamage + Number(bossState.playerAtkBonus || 0) + extra;
-      applyDamageToBoss(total, `普通攻擊${Number(bossState.playerAtkBonus || 0) > 0 ? `（裝備 +${Number(bossState.playerAtkBonus || 0)}）` : ''}${extra > 0 ? `（含蓄力 +${extra}）` : ''}`);
-      bossState.lastPlayerAction = `普通攻擊 ${total}`;
+      const result = applyDamageToBoss(total, `普通攻擊${Number(bossState.playerAtkBonus || 0) > 0 ? `（裝備 +${Number(bossState.playerAtkBonus || 0)}）` : ''}${extra > 0 ? `（含蓄力 +${extra}）` : ''}`);
+      bossState.lastPlayerAction = `普通攻擊 ${result.damage}${result.isCrit ? '（爆擊）' : ''}${result.isDodged ? '（被閃避）' : ''}`;
       bossState.playerPower = 0;
     } else if (actionKey === 'defend') {
       const shieldGain = config.stats.defendShield + Number(bossState.playerDefBonus || 0) * 2;
-      bossState.playerShield += shieldGain;
-      bossState.lastPlayerAction = '防禦姿態';
-      bossState.fxText = `🛡️ 你架起防禦姿態，護盾 +${shieldGain}！`;
-      pushBossLog(`<strong>玩家：</strong>進入防禦姿態，護盾增加 ${shieldGain}。`);
+      let actualGain = addPlayerShield(shieldGain, '玩家防禦');
+      let dodgeBonus = COMBAT_RULES.defendDodgeBonus;
+      let perfectGuard = false;
+      if (rollChance(COMBAT_RULES.perfectGuardChance)) {
+        perfectGuard = true;
+        const extraShield = Math.max(1, Math.round(shieldGain * COMBAT_RULES.perfectGuardBonus));
+        actualGain += addPlayerShield(extraShield, '完美防禦');
+        dodgeBonus += 0.08;
+      }
+      bossState.playerDodgeBonus = Math.max(bossState.playerDodgeBonus || 0, dodgeBonus);
+      bossState.lastPlayerAction = perfectGuard ? '完美防禦' : '防禦姿態';
+      bossState.lastPlayerRoll = perfectGuard
+        ? `完美防禦成功！額外閃避 ${Math.round(dodgeBonus * 100)}%`
+        : `下回合閃避 +${Math.round(dodgeBonus * 100)}%`;
+      bossState.fxText = perfectGuard
+        ? `🛡️ 完美防禦！護盾共 +${actualGain}，下次更容易閃避！`
+        : `🛡️ 你架起防禦姿態，護盾 +${actualGain}，下次閃避率提升！`;
+      pushBossLog(`<strong>玩家：</strong>${perfectGuard ? '完美防禦' : '進入防禦姿態'}，護盾增加 ${actualGain}，下次閃避率提升。`);
     } else if (actionKey === 'focus') {
       bossState.playerPower += config.stats.focusGain;
       bossState.lastPlayerAction = '專注蓄力';
+      bossState.lastPlayerRoll = '蓄力中';
       bossState.fxText = `✨ 你正在蓄力，下次普通攻擊 +${config.stats.focusGain}！`;
       pushBossLog(`<strong>玩家：</strong>專注蓄力，下次普通攻擊 +${config.stats.focusGain} 傷害。`);
     } else if (actionKey === 'skip') {
@@ -590,7 +730,10 @@
       if (typeof result === 'string' && result) {
         pushBossLog(`<strong>玩家卡牌：</strong>${card.title}${result}`);
       } else if (result && typeof result === 'object') {
-        if (result.damage) applyDamageToBoss(result.damage, card.title);
+        if (result.damage) {
+          const hit = applyDamageToBoss(result.damage, card.title);
+          bossState.lastPlayerAction = `使用卡牌：${card.title}${hit.isCrit ? '（爆擊）' : ''}${hit.isDodged ? '（被閃避）' : ''}`;
+        }
         if (result.log) pushBossLog(`<strong>玩家卡牌：</strong>${result.log}`);
         if (result.fxText) bossState.fxText = result.fxText;
       }
@@ -608,6 +751,7 @@
       return;
     }
 
+    decayPlayerShield();
     bossState.turn += 1;
     render();
   }
@@ -672,7 +816,7 @@
     const defend = document.getElementById('bossDefend');
     const focus = document.getElementById('bossFocus');
     if (basic) basic.textContent = `普通攻擊（${config.stats.basicDamage}＋蓄力）`;
-    if (defend) defend.textContent = `防禦姿態（+${config.stats.defendShield} 護盾）`;
+    if (defend) defend.textContent = `防禦姿態（+${config.stats.defendShield} 護盾＋提高閃避）`;
     if (focus) focus.textContent = `專注蓄力（下次 +${config.stats.focusGain}）`;
 
     await resolveConfigAssets();
@@ -707,12 +851,14 @@
 
     document.getElementById('playerHpText').textContent = `${bossState.playerHp} / ${bossState.playerMaxHp}`;
     const playerHintEl = document.getElementById('playerHintText');
-    if (playerHintEl) playerHintEl.textContent = `裝備：${bossState.playerEquipments?.length ? bossState.playerEquipments.join('、') : '尚未取得'}｜攻擊 +${bossState.playerAtkBonus}｜防禦 +${bossState.playerDefBonus}`;
+    if (playerHintEl) playerHintEl.textContent = `裝備：${bossState.playerEquipments?.length ? bossState.playerEquipments.join('、') : '尚未取得'}｜攻擊 +${bossState.playerAtkBonus}｜防禦 +${bossState.playerDefBonus}｜爆擊 ${Math.round((COMBAT_RULES.basePlayerCrit + bossState.playerAtkBonus * 0.01 + bossState.playerPower * 0.005) * 100)}%｜閃避 ${Math.round((COMBAT_RULES.basePlayerDodge + bossState.playerDodgeBonus) * 100)}%`;
     document.getElementById('bossHpText').textContent = `${bossState.bossHp} / ${bossState.bossMaxHp}`;
     document.getElementById('playerShield').textContent = bossState.playerShield;
     document.getElementById('playerPower').textContent = bossState.playerPower;
     document.getElementById('bossPhase').textContent = bossState.phase === 1 ? config.phaseNames[0] : config.phaseNames[1];
     document.getElementById('bossFreeze').textContent = bossState.bossFreezeTurns;
+    const bossHintEl = document.getElementById('bossHintText');
+    if (bossHintEl) bossHintEl.textContent = `爆擊 ${Math.round((COMBAT_RULES.baseBossCrit + (bossState.phase >= 2 ? 0.06 : 0)) * 100)}%｜閃避 ${Math.round((COMBAT_RULES.baseBossDodge + (bossState.phase >= 2 ? 0.04 : 0)) * 100)}%`;
     const topBossBadge = document.getElementById('topBossBadge');
     if (topBossBadge) topBossBadge.textContent = config.bossName;
     document.getElementById('turnText').textContent = `第 ${bossState.turn} 回合｜${config.bossShortName}下一招`;
@@ -722,6 +868,8 @@
     document.getElementById('bossHpBar').style.width = `${bossPct}%`;
     document.getElementById('bossCards').innerHTML = bossCardsHtml();
     document.getElementById('battleLog').innerHTML = logPillsHtml();
+    const fxEl = document.getElementById('fxText');
+    if (fxEl) fxEl.textContent = bossState.fxText || '';
 
     bindButtons();
 

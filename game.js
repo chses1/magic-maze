@@ -587,7 +587,7 @@ window.GamePage = (()=>{
     if (!subtitleEl || !level) return;
     subtitleEl.textContent = isBossLevel()
       ? `卡牌回合戰（擊敗森林狼王）`
-      : `目標程式碼數：${level.targetBlocks || level.targetSteps || 0}｜先拿鑰匙，再走到出口門｜一星=過關、二星=拿寶箱、三星=達成目標程式碼數`;
+      : `目標程式碼數：${level.targetBlocks || level.targetSteps || 0}｜先拿鑰匙，再走到出口門｜一星=過關、二星=拿到2個寶箱、三星=拿到2個寶箱且達成目標程式碼數`;
   }
 
   function getLevelCopy(worldId, levelId){
@@ -2151,19 +2151,20 @@ window.GamePage = (()=>{
 
   function scoreAndStars(){
     const timeMs = Math.max(0, Date.now()-startAt);
-    const collectedAnyReward = !!(openedItemChest || openedEquipmentChest);
+    const rewardCount = (openedItemChest ? 1 : 0) + (openedEquipmentChest ? 1 : 0);
+    const gotBothRewards = openedItemChest && openedEquipmentChest;
     const targetBlocks = Number(level?.targetBlocks || level?.targetSteps || 0);
     const codeBlocks = getCurrentProgramBlockCount();
 
     let stars = 1;
-    if (collectedAnyReward) stars = 2;
-    if (collectedAnyReward && targetBlocks > 0 && codeBlocks > 0 && codeBlocks <= targetBlocks) stars = 3;
+    if (rewardCount >= 2) stars = 2;
+    if (gotBothRewards && targetBlocks > 0 && codeBlocks > 0 && codeBlocks <= targetBlocks) stars = 3;
 
     const base = 1200;
     const rewardBonus = (openedItemChest ? 120 : 0) + (openedEquipmentChest ? 120 : 0) + (stars >= 3 ? 200 : 0);
     const score = Math.max(100, base + rewardBonus - steps*6 - bumps*30 - Math.floor(timeMs/1000)*2);
 
-    return {score, stars, timeMs, collectedAnyReward, codeBlocks, targetBlocks};
+    return {score, stars, timeMs, rewardCount, gotBothRewards, codeBlocks, targetBlocks};
   }
 
   function levelKey(){
@@ -2499,7 +2500,7 @@ window.GamePage = (()=>{
         stepCredits = 0;
         resolvePendingStep();
 
-        const {score, stars, timeMs, collectedAnyReward, codeBlocks, targetBlocks} = scoreAndStars();
+        const {score, stars, timeMs, rewardCount, gotBothRewards, codeBlocks, targetBlocks} = scoreAndStars();
         const record = { score, stars, steps, timeMs, bumps, at: Date.now() };
 
         const session = StorageAPI.getSession();
@@ -2509,10 +2510,10 @@ window.GamePage = (()=>{
         const copy = getLevelCopy(world.worldId, level.levelId);
 
         const starDesc = stars === 3
-          ? '三星通關！你拿到寶箱，而且程式碼數達到三星標準，本關會提升玩家生命上限。'
+          ? '三星通關！你同時拿到道具寶箱與裝備寶箱，而且程式碼數達到三星標準，本關會提升玩家生命上限。'
           : stars === 2
-            ? '二星通關！你有拿到寶箱，因此道具／裝備會帶進 Boss 戰。'
-            : '一星通關！你只有成功走到門，這次不會獲得裝備與道具。';
+            ? '二星通關！你同時拿到道具寶箱與裝備寶箱，因此道具／裝備會帶進 Boss 戰。'
+            : '一星通關！你有成功走到出口，但還沒有同時拿到兩個寶箱。';
 
         const itemRow = openedItemChest
           ? `<div>🎁 道具寶箱：<b>${collectedItemName}</b></div>`
@@ -2537,7 +2538,7 @@ window.GamePage = (()=>{
           <div class="stage-current-reward" style="margin-top:12px;display:block;">
             ${itemRow}
             ${equipRow}
-            <div style="margin-top:8px;color:#34523b;">目前程式碼數／目標程式碼數：${codeBlocks}/${targetBlocks || "—"}｜本次是否拿寶箱：${collectedAnyReward ? '有' : '沒有'}</div>
+            <div style="margin-top:8px;color:#34523b;">目前程式碼數／目標程式碼數：${codeBlocks}/${targetBlocks || "—"}｜本次拿到寶箱數：${rewardCount}/2</div>
           </div>
           ${formatWorldInventory(world.worldId, updatedBuild)}
           <div style="margin-top:8px;">${improved ? "🎉 這是你的最佳紀錄，已存檔！" : "已完成本關，紀錄已更新。"}</div>`

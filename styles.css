@@ -751,13 +751,21 @@ button.danger{
   box-shadow: none !important;
 }
 
-.level-btn.completed {
-  background: #22c55e !important;
-  color: #0b1b10 !important;
-  border-color: rgba(22,101,52,.18) !important;
+.level-btn.star1 {
+  background: #86efac !important;
+  color: #14532d !important;
+  border-color: rgba(22,101,52,.24) !important;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.18) inset, 0 6px 18px rgba(34,197,94,.14);
 }
 
-.level-btn.gold {
+.level-btn.star2 {
+  background: #22c55e !important;
+  color: #0b1b10 !important;
+  border-color: rgba(22,101,52,.22) !important;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.16) inset, 0 6px 18px rgba(34,197,94,.18);
+}
+
+.level-btn.star3 {
   background: #fbbf24 !important;
   color: #2b1b00 !important;
   border-color: rgba(146,64,14,.12) !important;

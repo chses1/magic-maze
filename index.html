@@ -275,10 +275,15 @@
 
         if(!canPlay){
           btn.classList.add('locked');
-        }else if(!isTeacher && best?.stars >= 3){
-          btn.classList.add('gold');
         }else if(!isTeacher && best){
-          btn.classList.add('completed');
+          const starCount = Number(best.stars || 0);
+          if(starCount >= 3){
+            btn.classList.add('star3');
+          }else if(starCount >= 2){
+            btn.classList.add('star2');
+          }else{
+            btn.classList.add('star1');
+          }
         }
 
         btn.textContent = isTeacher ? `👩‍🏫 ${lv.name}` : lv.name;
