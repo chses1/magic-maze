@@ -298,7 +298,7 @@ window.GamePage = (()=>{
     { icon: '🗝️', title: '鑰匙', desc: '先拿到鑰匙，鎖住的出口門才會打開。' },
     { icon: '🚪🔒', title: '鎖住的出口門', desc: '門就是出口；沒有鑰匙時不能通過。' },
     { icon: '🎁', title: '道具寶箱', desc: '拿到本關道具，Boss 戰時就能使用一次。' },
-    { icon: '🛡️', title: '裝備寶箱', desc: '拿到裝備後，Boss 戰會提升攻擊或防禦。' },
+    { icon: '🧰', title: '裝備寶箱', desc: '拿到裝備後，Boss 戰會提升攻擊或防禦。' },
     { icon: '🕳️', title: '陷阱', desc: '踩到陷阱會被懲罰，可能回起點或被傳送。' },
     { icon: '🌀', title: '同色傳送門', desc: '藍、紫、紅傳送門會把角色送到同顏色的另一個位置。' },
     { icon: '🧊', title: '特殊地形', desc: '冰塊、岩漿、妖怪、火焰目前都會擋路，之後可再搭配對應咒語。' }
@@ -2008,6 +2008,30 @@ window.GamePage = (()=>{
     return "";
   }
 
+
+  function getCellSymbolHtml(ch, hasKeyNow = hasKey){
+    const s = String(ch || '').toUpperCase();
+    if(s === 'K') return '🗝️';
+    if(s === 'D') return hasKeyNow
+      ? '<span class="cell-symbol-stack"><span class="door-icon">🚪</span></span>'
+      : '<span class="cell-symbol-stack"><span class="door-icon">🚪</span><span class="lock-icon">🔒</span></span>';
+    if(s === 'T') return '🕳️';
+    if(s === 'P') return '<span class="cell-symbol symbol-portal symbol-portal-blue">🌀</span>';
+    if(s === 'Q') return '<span class="cell-symbol symbol-portal symbol-portal-purple">🌀</span>';
+    if(s === 'R') return '<span class="cell-symbol symbol-portal symbol-portal-red">🌀</span>';
+    if(s === 'C') return '🎁';
+    if(s === 'G') return '<span class="cell-symbol symbol-gold-chest">🧰</span>';
+    if(s === 'I') return '✨';
+    if(s === 'M') return '⚙️';
+    if(s === 'N') return '🌲';
+    if(s === 'B') return '📚';
+    if(s === 'X') return '🧊';
+    if(s === 'L') return '🌊';
+    if(s === 'O') return '👾';
+    if(s === 'F') return '🔥';
+    return '';
+  }
+
   function render(){
     const gridEl = document.getElementById("grid");
     if (!gridEl) return;
@@ -2025,29 +2049,13 @@ window.GamePage = (()=>{
           div.classList.add("player");
           div.textContent = DIRS[dir].emoji;
         }else{
-          if(ch==="K") {
-            div.textContent = "🗝️";
-          } else if(ch==="D") {
+          if(ch === "D") {
             const isLockedDoor = !hasKey;
-            div.innerHTML = isLockedDoor
-              ? '<span class="cell-symbol-stack"><span class="door-icon">🚪</span><span class="lock-icon">🔒</span></span>'
-              : '<span class="cell-symbol-stack"><span class="door-icon">🚪</span></span>';
+            div.innerHTML = getCellSymbolHtml(ch, hasKey);
             div.setAttribute('aria-label', isLockedDoor ? '鎖住的出口門' : '已解鎖的出口門');
-          } else if(ch==="T") div.textContent = "🕳️";
-          else if(ch==="P") div.textContent = "🌀";
-          else if(ch==="Q") div.textContent = "🌀";
-          else if(ch==="R") div.textContent = "🌀";
-          else if(ch==="C") div.textContent = "🎁";
-          else if(ch==="G") div.textContent = "🛡️";
-          else if(ch==="I") div.textContent = "✨";
-          else if(ch==="M") div.textContent = "⚙️";
-          else if(ch==="N") div.textContent = "🌲";
-          else if(ch==="B") div.textContent = "📚";
-          else if(ch==="X") div.textContent = "🧊";
-          else if(ch==="L") div.textContent = "🌋";
-          else if(ch==="O") div.textContent = "👾";
-          else if(ch==="F") div.textContent = "🔥";
-          else div.textContent = "";
+          } else {
+            div.innerHTML = getCellSymbolHtml(ch, hasKey);
+          }
         }
 
         gridEl.appendChild(div);

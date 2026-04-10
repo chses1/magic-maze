@@ -58,7 +58,7 @@ window.TeacherPage = (()=>{
     'R': { label:'傳送門（紅）', emoji:'🌀', className:'portal portal-red' },
 
     'C': { label:'道具寶箱', emoji:'🎁', className:'item' },
-    'G': { label:'裝備寶箱', emoji:'🛡️', className:'equipment' },
+    'G': { label:'裝備寶箱', emoji:'🧰', className:'equipment' },
 
     'M': { label:'齒輪牆', emoji:'⚙️', className:'gear' },
     'N': { label:'樹木', emoji:'🌲', className:'tree' },
@@ -792,7 +792,7 @@ window.LEVELS = ${JSON.stringify(exported, null, 2)};
     if(!wrap) return;
     wrap.innerHTML = Object.entries(MAP_SYMBOLS).map(([symbol, meta])=> `
       <button type="button" class="mapToolBtn ${symbol === currentPaintSymbol ? 'active' : ''}" data-symbol="${symbol}">
-        <div style="font-size:20px;">${meta.emoji}</div>
+        <div style="font-size:20px;">${getMapSymbolHtml(symbol)}</div>
         <div>${meta.label}</div>
         <small>${symbol}</small>
       </button>
@@ -805,6 +805,17 @@ window.LEVELS = ${JSON.stringify(exported, null, 2)};
       };
     });
     updateCurrentPaintLabel();
+  }
+
+
+  function getMapSymbolHtml(symbol){
+    const s = String(symbol || '').toUpperCase();
+    if(s === 'P') return '<span class="mapSymbol symbol-portal symbol-portal-blue">🌀</span>';
+    if(s === 'Q') return '<span class="mapSymbol symbol-portal symbol-portal-purple">🌀</span>';
+    if(s === 'R') return '<span class="mapSymbol symbol-portal symbol-portal-red">🌀</span>';
+    if(s === 'G') return '<span class="mapSymbol symbol-gold-chest">🧰</span>';
+    const meta = MAP_SYMBOLS[s] || MAP_SYMBOLS['.'];
+    return `<span class="mapSymbol">${meta.emoji}</span>`;
   }
 
   function normalizeSingleSymbolRows(rows, symbol, x, y){
@@ -844,7 +855,7 @@ window.LEVELS = ${JSON.stringify(exported, null, 2)};
         const cell = document.createElement('button');
         cell.type = 'button';
         cell.className = `mapEditorCell ${meta.className}`;
-        cell.textContent = meta.emoji;
+        cell.innerHTML = getMapSymbolHtml(symbol);
         cell.title = `(${x+1},${y+1}) ${meta.label} ${symbol}`;
         cell.onmousedown = (e)=>{
           e.preventDefault();

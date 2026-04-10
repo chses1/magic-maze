@@ -18,6 +18,13 @@
     .mapEditorGrid{display:grid;gap:6px;justify-content:start;align-content:start;width:max-content;user-select:none;}
     .mapEditorCell{width:34px;height:34px;border-radius:10px;border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;font-weight:900;cursor:pointer;background:rgba(255,255,255,.05);}
     .mapEditorCell.wall{background:rgba(35,28,85,.80);border-color:rgba(180,140,255,.22);}
+
+    .mapSymbol{display:inline-flex;align-items:center;justify-content:center;line-height:1;}
+    .symbol-portal{display:inline-flex;transform:translateY(1px);}
+    .symbol-portal-blue{filter:hue-rotate(180deg) saturate(1.9) brightness(1.08) drop-shadow(0 0 4px rgba(49,208,255,.42));}
+    .symbol-portal-purple{filter:hue-rotate(255deg) saturate(1.95) brightness(1.02) drop-shadow(0 0 4px rgba(168,85,247,.42));}
+    .symbol-portal-red{filter:hue-rotate(315deg) saturate(2.05) brightness(1.02) drop-shadow(0 0 4px rgba(248,113,113,.42));}
+    .symbol-gold-chest{filter:hue-rotate(330deg) saturate(1.5) brightness(1.12) drop-shadow(0 0 4px rgba(255,210,110,.30));}
     .mapEditorCell.path{background:rgba(255,255,255,.04);}
     .mapEditorCell.start{background:rgba(78,227,165,.16);border-color:rgba(78,227,165,.26);}
     .mapEditorCell.key{background:rgba(124,92,255,.14);border-color:rgba(124,92,255,.25);}
@@ -33,7 +40,7 @@
     .mapEditorCell.tree{background:rgba(34,197,94,.14);border-color:rgba(34,197,94,.26);}
     .mapEditorCell.bookshelf{background:rgba(245,158,11,.16);border-color:rgba(245,158,11,.28);}
     .mapEditorCell.ice{background:rgba(125,211,252,.16);border-color:rgba(125,211,252,.28);}
-    .mapEditorCell.lava{background:rgba(251,113,133,.18);border-color:rgba(251,113,133,.30);}
+    .mapEditorCell.lava{background:rgba(56,189,248,.16);border-color:rgba(56,189,248,.30);}
     .mapEditorCell.monster{background:rgba(192,132,252,.16);border-color:rgba(192,132,252,.28);}
     .mapEditorCell.flame{background:rgba(251,146,60,.16);border-color:rgba(251,146,60,.28);}
     .editorActions{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;}

@@ -509,6 +509,36 @@ button.danger{
   overflow: hidden;
 }
 
+
+.cell-symbol{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  line-height:1;
+}
+
+.symbol-portal{
+  display:inline-flex;
+  transform:translateY(1px);
+  filter:saturate(1.35) drop-shadow(0 0 4px rgba(255,255,255,.18));
+}
+
+.symbol-portal-blue{
+  filter:hue-rotate(180deg) saturate(1.9) brightness(1.08) drop-shadow(0 0 5px rgba(49,208,255,.42));
+}
+
+.symbol-portal-purple{
+  filter:hue-rotate(255deg) saturate(1.95) brightness(1.02) drop-shadow(0 0 5px rgba(168,85,247,.42));
+}
+
+.symbol-portal-red{
+  filter:hue-rotate(315deg) saturate(2.05) brightness(1.02) drop-shadow(0 0 5px rgba(248,113,113,.42));
+}
+
+.symbol-gold-chest{
+  filter:hue-rotate(330deg) saturate(1.5) brightness(1.12) drop-shadow(0 0 4px rgba(255,210,110,.30));
+}
+
 .cell.portal-blue{
   background: rgba(49,208,255,.14);
   border-color: rgba(49,208,255,.24);
@@ -526,8 +556,8 @@ button.danger{
   border-color: rgba(125,211,252,.28);
 }
 .cell.lava{
-  background: rgba(251,113,133,.18);
-  border-color: rgba(251,113,133,.30);
+  background: rgba(56,189,248,.16);
+  border-color: rgba(56,189,248,.30);
 }
 .cell.monster{
   background: rgba(192,132,252,.16);
