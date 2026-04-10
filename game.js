@@ -289,7 +289,7 @@ window.GamePage = (()=>{
   let openedEquipmentChest = false;
   let collectedItemName = "";
   let collectedEquipmentName = "";
-  let portalPositions = [];
+  let portalPositions = {};
   let legendTimer = null;
   let legendIndex = 0;
   let mazeScale = 1;
@@ -299,7 +299,9 @@ window.GamePage = (()=>{
     { icon: '🚪🔒', title: '鎖住的出口門', desc: '門就是出口；沒有鑰匙時不能通過。' },
     { icon: '🎁', title: '道具寶箱', desc: '拿到本關道具，Boss 戰時就能使用一次。' },
     { icon: '🛡️', title: '裝備寶箱', desc: '拿到裝備後，Boss 戰會提升攻擊或防禦。' },
-    { icon: '🕳️', title: '陷阱', desc: '踩到陷阱會被懲罰，可能回起點或被傳送。' }
+    { icon: '🕳️', title: '陷阱', desc: '踩到陷阱會被懲罰，可能回起點或被傳送。' },
+    { icon: '🌀', title: '同色傳送門', desc: '藍、紫、紅傳送門會把角色送到同顏色的另一個位置。' },
+    { icon: '🧊', title: '特殊地形', desc: '冰塊、岩漿、妖怪、火焰目前都會擋路，之後可再搭配對應咒語。' }
   ];
 
   function getSessionSafe(){
@@ -412,11 +414,16 @@ window.GamePage = (()=>{
     });
   }
 
-  function getTeleportDestination(x, y){
-    if (!Array.isArray(portalPositions) || portalPositions.length < 2) return null;
-    const idx = portalPositions.findIndex(p => p.x === x && p.y === y);
+  function isPortalSymbol(ch){
+    return ['P','Q','R'].includes(String(ch || '').toUpperCase());
+  }
+
+  function getTeleportDestination(x, y, symbol = ''){
+    const list = portalPositions[String(symbol || '').toUpperCase()] || [];
+    if (!Array.isArray(list) || list.length < 2) return null;
+    const idx = list.findIndex(p => p.x === x && p.y === y);
     if (idx === -1) return null;
-    return portalPositions[(idx + 1) % portalPositions.length];
+    return list[(idx + 1) % list.length];
   }
 
   function formatWorldInventory(worldId, build){
@@ -1960,7 +1967,7 @@ window.GamePage = (()=>{
     H = mapLines.length;
     W = mapLines[0].length;
     grid = mapLines.map(line => line.split(""));
-    portalPositions = [];
+    portalPositions = { P: [], Q: [], R: [] };
     for(let y=0;y<H;y++){
       for(let x=0;x<W;x++){
         let ch = grid[y][x];
@@ -1974,8 +1981,8 @@ window.GamePage = (()=>{
           startX = x;
           startY = y;
         }
-        if(ch === "P"){
-          portalPositions.push({ x, y });
+        if(isPortalSymbol(ch)){
+          portalPositions[ch].push({ x, y });
         }
       }
     }
@@ -1983,14 +1990,21 @@ window.GamePage = (()=>{
 
   function cellClass(ch){
     if(ch==="#") return "wall";
+    if(['M','N','B'].includes(ch)) return "wall obstacle";
     if(ch==="S") return "start";
     if(ch==="K") return "key";
     if(ch==="D") return "door exit";
     if(ch==="T") return "trap";
-    if(ch==="P") return "portal";
+    if(ch==="P") return "portal portal-blue";
+    if(ch==="Q") return "portal portal-purple";
+    if(ch==="R") return "portal portal-red";
     if(ch==="C") return "item";
     if(ch==="G") return "block";
     if(ch==="I") return "item";
+    if(ch==="X") return "ice";
+    if(ch==="L") return "lava";
+    if(ch==="O") return "monster";
+    if(ch==="F") return "flame";
     return "";
   }
 
@@ -2021,9 +2035,18 @@ window.GamePage = (()=>{
             div.setAttribute('aria-label', isLockedDoor ? '鎖住的出口門' : '已解鎖的出口門');
           } else if(ch==="T") div.textContent = "🕳️";
           else if(ch==="P") div.textContent = "🌀";
+          else if(ch==="Q") div.textContent = "🌀";
+          else if(ch==="R") div.textContent = "🌀";
           else if(ch==="C") div.textContent = "🎁";
           else if(ch==="G") div.textContent = "🛡️";
           else if(ch==="I") div.textContent = "✨";
+          else if(ch==="M") div.textContent = "⚙️";
+          else if(ch==="N") div.textContent = "🌲";
+          else if(ch==="B") div.textContent = "📚";
+          else if(ch==="X") div.textContent = "🧊";
+          else if(ch==="L") div.textContent = "🌋";
+          else if(ch==="O") div.textContent = "👾";
+          else if(ch==="F") div.textContent = "🔥";
           else div.textContent = "";
         }
 
@@ -2057,7 +2080,18 @@ window.GamePage = (()=>{
 
   function isWall(x,y){
     const ch = grid[y]?.[x];
-    return ch === "#" || ch === undefined;
+    return ['#','M','N','B','X','L','O','F', undefined].includes(ch);
+  }
+
+  function getTileBlockMessage(ch){
+    if(ch === 'M') return '前方有齒輪牆，不能直接通過。';
+    if(ch === 'N') return '前方有樹木擋住，不能直接通過。';
+    if(ch === 'B') return '前方有書櫃擋住，不能直接通過。';
+    if(ch === 'X') return '前方有冰塊，需要破壞後才能通過。';
+    if(ch === 'L') return '前方是岩漿，需要先蓋橋。';
+    if(ch === 'O') return '前方有妖怪，需要用咒語擊退。';
+    if(ch === 'F') return '前方有火焰，需要用咒語熄滅。';
+    return UI.common.wall;
   }
 
   function isInside(x,y){
@@ -2100,14 +2134,15 @@ window.GamePage = (()=>{
       toast('踩到回起點陷阱！回到起點，步數 +3');
       return;
     }
-    if(ch==="P"){
-      const destination = getTeleportDestination(px, py);
+    if(isPortalSymbol(ch)){
+      const destination = getTeleportDestination(px, py, ch);
       if (destination) {
         px = destination.x;
         py = destination.y;
-        toast('踩到傳送陷阱！你被移動到另一個位置。');
+        const portalName = ch === 'P' ? '藍色' : (ch === 'Q' ? '紫色' : '紅色');
+        toast(`踩到${portalName}傳送門！你被傳送到同色的另一個位置。`);
       } else {
-        toast('這個傳送陷阱還沒有配對位置。');
+        toast('這個傳送門還沒有同色配對位置。');
       }
     }
   }
@@ -2346,7 +2381,8 @@ window.GamePage = (()=>{
             render();
             throw new Error("SAFE_STOP_TOO_MANY_BUMPS");
           }
-          toast(doorBlockedAhead(nx,ny) ? UI.common.doorLocked : UI.common.wall);
+          const blockedCh = grid[ny]?.[nx];
+          toast(doorBlockedAhead(nx,ny) ? UI.common.doorLocked : getTileBlockMessage(blockedCh));
           render();
           await sleep(220);
           return;

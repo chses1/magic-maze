@@ -52,13 +52,52 @@ window.TeacherPage = (()=>{
     'K': { label:'鑰匙', emoji:'🗝️', className:'key' },
     'D': { label:'出口門', emoji:'🚪', className:'exit' },
     'T': { label:'陷阱', emoji:'🕳️', className:'trap' },
-    'P': { label:'傳送點', emoji:'🌀', className:'portal' },
+
+    'P': { label:'傳送門（藍）', emoji:'🌀', className:'portal portal-blue' },
+    'Q': { label:'傳送門（紫）', emoji:'🌀', className:'portal portal-purple' },
+    'R': { label:'傳送門（紅）', emoji:'🌀', className:'portal portal-red' },
+
     'C': { label:'道具寶箱', emoji:'🎁', className:'item' },
-    'G': { label:'裝備寶箱', emoji:'🛡️', className:'equipment' }
+    'G': { label:'裝備寶箱', emoji:'🛡️', className:'equipment' },
+
+    'M': { label:'齒輪牆', emoji:'⚙️', className:'gear' },
+    'N': { label:'樹木', emoji:'🌲', className:'tree' },
+    'B': { label:'書櫃', emoji:'📚', className:'bookshelf' },
+
+    'X': { label:'冰塊', emoji:'🧊', className:'ice' },
+    'L': { label:'岩漿', emoji:'🌋', className:'lava' },
+    'O': { label:'妖怪', emoji:'👾', className:'monster' },
+    'F': { label:'火焰', emoji:'🔥', className:'flame' }
   };
 
   let currentPaintSymbol = '#';
   let isPainting = false;
+
+  const START_DIR_OPTIONS = [
+    { value: 0, label: '上方 ↑' },
+    { value: 1, label: '右方 →' },
+    { value: 2, label: '下方 ↓' },
+    { value: 3, label: '左方 ←' }
+  ];
+
+  const WORLD_REWARD_OPTIONS = {
+    W1: {
+      items: ['魔力水晶', '新生魔杖', '學院法袍', '封印卷軸'],
+      equipments: ['頭盔', '劍', '盔甲', '盾牌']
+    },
+    W2: {
+      items: ['補血小藥水', '小刀攻擊', '木盾防禦', '冰凍藤蔓'],
+      equipments: ['頭盔', '盾牌', '盔甲', '劍']
+    },
+    W3: {
+      items: ['時光沙漏', '館藏羽毛筆', '預言書頁', '時空鑰匙'],
+      equipments: ['頭盔', '盾牌', '盔甲', '劍']
+    },
+    W4: {
+      items: ['齒輪核心', '蒸汽手套', '機械咒語晶片', '傳動發條鑰匙'],
+      equipments: ['頭盔', '盾牌', '盔甲', '劍']
+    }
+  };
 
   const toast = (msg)=> {
     const el = document.getElementById('toast');
@@ -367,6 +406,42 @@ window.TeacherPage = (()=>{
     return mapped || String(level?.name || level?.levelName || levelId);
   }
 
+
+  function populateSelectOptions(selectId, options, selectedValue = ''){
+    const el = document.getElementById(selectId);
+    if(!el) return;
+    const normalizedSelected = String(selectedValue ?? '').trim();
+    el.innerHTML = options.map(option => {
+      const value = String(option.value ?? '');
+      const label = String(option.label ?? value);
+      return `<option value="${value}">${label}</option>`;
+    }).join('');
+    if(options.some(option => String(option.value ?? '') === normalizedSelected)){
+      el.value = normalizedSelected;
+    }else if(options[0]){
+      el.value = String(options[0].value ?? '');
+    }
+  }
+
+  function setupEditorDropdowns(levelData = null){
+    populateSelectOptions('editStartDir', START_DIR_OPTIONS, levelData?.startDir ?? 1);
+
+    const worldId = getToolWorld();
+    const rewardSet = WORLD_REWARD_OPTIONS[worldId] || { items: [], equipments: [] };
+
+    populateSelectOptions(
+      'editItemReward',
+      rewardSet.items.map(value => ({ value, label: value })),
+      levelData?.itemReward || rewardSet.items[0] || ''
+    );
+
+    populateSelectOptions(
+      'editEquipmentReward',
+      rewardSet.equipments.map(value => ({ value, label: value })),
+      levelData?.equipmentReward || rewardSet.equipments[0] || ''
+    );
+  }
+
   function getWorldList(){
     return getLevelsData().map(world => ({
       id: String(world.worldId),
@@ -435,6 +510,7 @@ window.TeacherPage = (()=>{
     if(worldSelect){
       worldSelect.onchange = ()=>{
         renderLevelOptions();
+        setupEditorDropdowns();
         loadSelectedLevelIntoEditor();
       };
     }
@@ -799,6 +875,7 @@ window.LEVELS = ${JSON.stringify(exported, null, 2)};
       const el = document.getElementById(id);
       if(el) el.value = value == null ? '' : String(value);
     };
+    setupEditorDropdowns(levelData);
     setValue('editLevelName', levelData.name || '');
     setValue('editTargetBlocks', levelData.targetBlocks || levelData.targetSteps || '');
     setValue('editMapSize', levelData.mapSize || '');
@@ -842,7 +919,13 @@ window.LEVELS = ${JSON.stringify(exported, null, 2)};
     if(countChar('S') !== 1) throw new Error('地圖必須剛好有 1 個起點 S。');
     if(countChar('K') !== 1) throw new Error('地圖必須剛好有 1 個鑰匙 K。');
     if(countChar('D') !== 1) throw new Error('地圖必須剛好有 1 個出口門 D。');
-    if(!/^[#\.SKDTPCG]+$/.test(joined)) throw new Error('地圖只能使用 # . S K D T P C G 這些符號。');
+    if(!/^[#\.SKDTPQRCGMNBXLOF]+$/.test(joined)) throw new Error('地圖只能使用 # . S K D T P Q R C G M N B X L O F 這些符號。');
+    ['P','Q','R'].forEach(portalSymbol => {
+      const count = countChar(portalSymbol);
+      if(count !== 0 && count < 2){
+        throw new Error(`傳送門 ${portalSymbol} 至少要放 2 個，學生才知道會傳送到哪裡。`);
+      }
+    });
     if(!(targetBlocks > 0)) throw new Error('最佳程式碼數必須大於 0。');
     const inferredMapSize = map.length;
     const finalMapSize = mapSize > 0 ? mapSize : inferredMapSize;
@@ -989,6 +1072,7 @@ window.LEVELS = ${JSON.stringify(exported, null, 2)};
 
   function init(){
     setupToolSelectors();
+    setupEditorDropdowns();
     renderMapPalette();
     bindMapEditorTextSync();
     renderMapEditorGrid();
