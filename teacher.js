@@ -319,6 +319,66 @@ window.TeacherPage = (()=>{
     return Object.keys(bestObj).reduce((sum, k)=> sum + (Number(bestObj[k]?.score) || 0), 0);
   }
 
+  function getAllDisplayLevels(){
+    const worlds = getLevelsData();
+    return worlds.flatMap(world => {
+      const worldId = normalizeWorldId(world.worldId);
+      const normalLevels = (Array.isArray(world.levels) ? world.levels : [])
+        .filter(level => !/boss/i.test(String(level.levelId || level.id || '')))
+        .slice(0, 4)
+        .map(level => ({
+          worldId,
+          levelId: normalizeLevelId(level.levelId || level.id, worldId),
+          worldName: getDisplayWorldName(world),
+          levelName: getDisplayLevelName(worldId, level),
+          isBoss: false
+        }));
+      normalLevels.push({
+        worldId,
+        levelId: 'boss',
+        worldName: getDisplayWorldName(world),
+        levelName: getDisplayLevelName(worldId, { id: 'boss', name: '第5關：Boss 戰' }),
+        isBoss: true
+      });
+      return normalLevels;
+    });
+  }
+
+  function getRecordStatus(record, levelMeta){
+    if(!record){
+      return {
+        statusClass: 'none',
+        main: '－',
+        sub: '',
+        title: '尚未通關'
+      };
+    }
+
+    const stars = Number(record.stars || 0);
+    const score = Number(record.score || 0);
+    const steps = Number(record.steps || 0);
+    const timeMs = Number(record.timeMs || 0);
+
+    let statusClass = 'hasScoreOnly';
+    if(levelMeta?.isBoss){
+      statusClass = 'boss';
+    }else if(stars >= 3){
+      statusClass = 'three';
+    }else if(stars === 2){
+      statusClass = 'two';
+    }else if(stars === 1){
+      statusClass = 'one';
+    }
+
+    const timeText = timeMs > 0 ? `｜${(timeMs / 1000).toFixed(1)}秒` : '';
+    return {
+      statusClass,
+      main: levelMeta?.isBoss ? 'B' : `${Math.max(stars, 1)}★`,
+      sub: score > 0 ? String(score) : '',
+      title: `${levelMeta.worldName} ${levelMeta.levelName}\n分數：${score || 0}\n星數：${stars || 0}\n步數：${steps || 0}${timeText}`
+    };
+  }
+
   function render(){
     const area = document.getElementById('tableArea');
     if(!area) return;
@@ -330,6 +390,7 @@ window.TeacherPage = (()=>{
 
     const filterClass = (document.getElementById('filterClass')?.value || '').trim();
     const progress = StorageAPI.getProgress();
+    const allLevels = getAllDisplayLevels();
 
     const students = Object.keys(progress)
       .filter(uid => uid !== 'teacher')
@@ -340,48 +401,115 @@ window.TeacherPage = (()=>{
         const best = progress[uid]?.best || {};
         const passed = Object.keys(best).length;
         const totalScore = calcTotalScore(best);
-        return { userId: uid, classId, seat, passed, totalScore };
+        return { userId: uid, classId, seat, best, passed, totalScore };
       })
       .filter(stu => !filterClass || stu.classId === filterClass)
       .sort((a,b)=> a.classId.localeCompare(b.classId) || a.seat.localeCompare(b.seat));
 
     if(students.length === 0){
-      area.textContent = '沒有資料（或篩選條件下無學生）。';
+      area.innerHTML = '<div class="teacherEmptyState">目前沒有符合條件的學生資料。</div>';
       return;
     }
 
-    const table = document.createElement('table');
-    table.className = 'table';
-    table.innerHTML = `
-      <thead>
-        <tr>
-          <th>班級</th>
-          <th>座號</th>
-          <th>通關數</th>
-          <th>總分</th>
-          <th>清除該生總分</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${students.map(stu=>`
-          <tr>
-            <td>${stu.classId}</td>
-            <td>${stu.seat}</td>
-            <td>${stu.passed}</td>
-            <td>${stu.totalScore}</td>
-            <td>
-              <button class="danger" data-uid="${stu.userId}">清除</button>
-            </td>
-          </tr>
-        `).join('')}
-      </tbody>
+    const totalStudents = students.length;
+    const totalPassRecords = students.reduce((sum, stu)=> sum + stu.passed, 0);
+    const totalCells = totalStudents * allLevels.length;
+    const completedRate = totalCells > 0 ? Math.round((totalPassRecords / totalCells) * 100) : 0;
+    const threeStarCount = students.reduce((sum, stu) => {
+      return sum + Object.values(stu.best || {}).filter(record => Number(record?.stars || 0) >= 3).length;
+    }, 0);
+
+    const worldGroups = [];
+    allLevels.forEach(level => {
+      const last = worldGroups[worldGroups.length - 1];
+      if(last && last.worldId === level.worldId){
+        last.count += 1;
+      }else{
+        worldGroups.push({ worldId: level.worldId, worldName: level.worldName, count: 1 });
+      }
+    });
+
+    const summaryHtml = `
+      <div class="teacherSummaryGrid">
+        <div class="teacherSummaryCard">
+          <div class="small">學生人數</div>
+          <div class="num">${totalStudents}</div>
+        </div>
+        <div class="teacherSummaryCard">
+          <div class="small">已通關紀錄總數</div>
+          <div class="num">${totalPassRecords}</div>
+        </div>
+        <div class="teacherSummaryCard">
+          <div class="small">三星紀錄總數</div>
+          <div class="num">${threeStarCount}</div>
+        </div>
+        <div class="teacherSummaryCard">
+          <div class="small">整體完成率</div>
+          <div class="num">${completedRate}%</div>
+        </div>
+      </div>
+      <div class="teacherLegend">
+        <span class="teacherLegendItem"><span class="teacherDot none"></span>尚未通關</span>
+        <span class="teacherLegendItem"><span class="teacherDot one"></span>1 星通關</span>
+        <span class="teacherLegendItem"><span class="teacherDot two"></span>2 星通關</span>
+        <span class="teacherLegendItem"><span class="teacherDot three"></span>3 星通關</span>
+        <span class="teacherLegendItem"><span class="teacherDot boss"></span>Boss 通關</span>
+      </div>
     `;
 
-    area.innerHTML = '';
-    area.appendChild(table);
+    const boardHtml = `
+      <div class="progressBoardWrap">
+        <table class="progressBoard">
+          <thead>
+            <tr>
+              <th class="studentCol" rowspan="2">學生</th>
+              ${worldGroups.map(group => `<th class="worldHead world-${group.worldId}" colspan="${group.count}">${group.worldName}</th>`).join('')}
+              <th class="actionCol" rowspan="2">操作</th>
+            </tr>
+            <tr>
+              ${allLevels.map(level => `<th class="levelHead" title="${level.worldName}｜${level.levelName}">${String(level.levelId).toLowerCase() === 'boss' ? 'Boss' : level.levelId}</th>`).join('')}
+            </tr>
+          </thead>
+          <tbody>
+            ${students.map(stu => {
+              const cells = allLevels.map(level => {
+                const key = `${level.worldId}-${level.levelId}`;
+                const record = stu.best?.[key] || null;
+                const view = getRecordStatus(record, level);
+                return `
+                  <td class="statusCell" title="${view.title}">
+                    <button class="statusBtn ${view.statusClass}" type="button" tabindex="-1">
+                      <span class="cellMain">${view.main}</span>
+                      <span class="cellSub">${view.sub}</span>
+                    </button>
+                  </td>
+                `;
+              }).join('');
 
-    area.querySelectorAll('button.danger').forEach(btn=>{
-      btn.onclick = ()=>{
+              return `
+                <tr>
+                  <td class="studentCol">
+                    <div class="studentMeta">
+                      <div class="studentName">${stu.classId}-${stu.seat}</div>
+                      <div class="studentSub">通關 ${stu.passed} 關｜總分 ${stu.totalScore}</div>
+                    </div>
+                  </td>
+                  ${cells}
+                  <td class="rowAction">
+                    <button class="danger" data-uid="${stu.userId}">清除</button>
+                  </td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+
+    area.innerHTML = summaryHtml + boardHtml;
+
+    area.querySelectorAll('button.danger[data-uid]').forEach(btn => {
+      btn.onclick = () => {
         if(!requireTeacherOrBlock('清除個別學生總分')) return;
 
         const uid = btn.getAttribute('data-uid');
