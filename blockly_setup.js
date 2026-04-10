@@ -17,12 +17,14 @@ window.BlocklySetup = (()=>{
   }
 
   const BLOCK_COLORS = {
-    START: "#f4b400",
-    SEQUENCE: "#34a853",
-    LOOP: "#ea4335",
-    CONDITION: "#4285f4",
-    FUNCTION: "#ab47bc",
-    NUMBER: "#f29900"
+    // 依照教師提供的 Blockly 參考圖調整：
+    // 起始＝橘黃、移動＝青藍、迴圈＝桃紅、條件＝深藍
+    START: "#F2A93B",
+    SEQUENCE: "#29C7D8",
+    LOOP: "#FF3AA7",
+    CONDITION: "#1E95D6",
+    FUNCTION: "#5AA51C",
+    NUMBER: "#F2A93B"
   };
 
   function getJavaScriptGenerator(){
@@ -87,7 +89,7 @@ window.BlocklySetup = (()=>{
           "tooltip":"程式會從這裡開始往下執行。",
           "helpUrl":""
         },
-        { "type":"mw_move_forward","message0":"向前走 1 格","previousStatement":null,"nextStatement":null,"colour":BLOCK_COLORS.SEQUENCE },
+        { "type":"mw_move_forward","message0":"移動-向前","previousStatement":null,"nextStatement":null,"colour":BLOCK_COLORS.SEQUENCE },
         {
           "type":"mw_turn",
           "message0":"轉向－%1",
@@ -118,7 +120,7 @@ window.BlocklySetup = (()=>{
         },
         {
           "type":"mw_repeat_until_goal",
-          "message0":"重複直到抵達目的地 %1 做 %2",
+          "message0":"重複直到抵達大門 %1 做 %2",
           "args0":[
             {"type":"input_dummy"},
             {"type":"input_statement","name":"DO"}

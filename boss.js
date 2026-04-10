@@ -18,7 +18,7 @@
     world1: {
       worldLabel: '世界1｜魔法學院',
       pageTitle: 'Boss 戰：教授',
-      intro: '完全獨立頁模式。若挑戰失敗會回到首頁，請先補齊未達三星關卡的神秘道具再回來挑戰。',
+      intro: '完全獨立頁模式。若挑戰失敗會顯示戰鬥結算，你可以選擇再次挑戰，或先返回關卡畫面整理道具後再回來。',
       bossName: '魔法教授',
       bossShortName: '教授',
       winText: '你成功擊敗魔法教授，第一世界正式通關！',
@@ -51,7 +51,7 @@
     world2: {
       worldLabel: '世界2｜符文森林',
       pageTitle: 'Boss 戰：狼王',
-      intro: '完全獨立頁模式。若挑戰失敗會回到首頁，請先補齊未達三星關卡的神秘道具再回來挑戰。',
+      intro: '完全獨立頁模式。若挑戰失敗會顯示戰鬥結算，你可以選擇再次挑戰，或先返回關卡畫面整理道具後再回來。',
       bossName: '森林狼王',
       bossShortName: '狼王',
       winText: '你成功擊敗森林狼王，第二世界正式通關！',
@@ -84,7 +84,7 @@
     world3: {
       worldLabel: '世界3｜時光圖書館',
       pageTitle: 'Boss 戰：館長',
-      intro: '完全獨立頁模式。若挑戰失敗會回到首頁，請先補齊未達三星關卡的神秘道具再回來挑戰。',
+      intro: '完全獨立頁模式。若挑戰失敗會顯示戰鬥結算，你可以選擇再次挑戰，或先返回關卡畫面整理道具後再回來。',
       bossName: '時光館長',
       bossShortName: '館長',
       winText: '你成功擊敗時光館長，第三世界正式通關！',
@@ -117,7 +117,7 @@
     world4: {
       worldLabel: '世界4｜機械城堡',
       pageTitle: 'Boss 戰：機械主宰',
-      intro: '完全獨立頁模式。這是最終世界 Boss 戰；若挑戰失敗會回到首頁，請重新整理前面世界的道具與節奏再來挑戰。',
+      intro: '完全獨立頁模式。這是最終世界 Boss 戰；若挑戰失敗會顯示戰鬥結算，你可以選擇再次挑戰，或先返回關卡畫面整理前面世界的道具與節奏再來挑戰。',
       bossName: '機械主宰',
       bossShortName: '主宰',
       winText: '你成功擊敗機械主宰，第四世界正式通關！',
@@ -606,8 +606,12 @@
     }
   }
 
-  function goHome(){
+  function goBackToLevelSelect(){
     location.href = 'index.html';
+  }
+
+  function goHome(){
+    goBackToLevelSelect();
   }
 
   function goToNextWorldFirstLevel(){
@@ -657,9 +661,15 @@
       resultEl.innerHTML = `
         <div class="result-inner">
           <h3>挑戰失敗</h3>
-          <p>這次被${config.bossShortName}擊退了。<br>系統將返回首頁，請先挑戰未達三星的關卡取得神秘道具，再回來挑戰。</p>
-          <div class="result-actions single">
-            <button type="button" class="back" id="resultBackHome">回首頁</button>
+          <p>這次被${config.bossShortName}擊退了。<br>請先整理策略、補齊前面關卡的星星與道具，再回來挑戰。</p>
+          <div class="result-badges">
+            <span>回合數：${turnsUsed}</span>
+            <span>Boss 剩餘生命：${Math.max(0, bossState.bossHp)}</span>
+            <span>你的剩餘生命：${Math.max(0, bossState.playerHp)}</span>
+          </div>
+          <div class="result-actions" style="margin-top:18px;">
+            <button type="button" class="retry" id="resultRetryLose">再次挑戰</button>
+            <button type="button" class="back" id="resultBackLevel">返回關卡畫面</button>
           </div>
         </div>
       `;
@@ -669,17 +679,15 @@
 
     const nextBtn = document.getElementById('resultNextWorld');
     const retryWinBtn = document.getElementById('resultRetryWin');
+    const retryLoseBtn = document.getElementById('resultRetryLose');
     const backHomeBtn = document.getElementById('resultBackHome');
+    const backLevelBtn = document.getElementById('resultBackLevel');
 
     if (nextBtn) nextBtn.onclick = goToNextWorldFirstLevel;
     if (retryWinBtn) retryWinBtn.onclick = goToRetryBoss;
-    if (backHomeBtn) backHomeBtn.onclick = goHome;
-
-    if (!win) {
-      setTimeout(() => {
-        if (bossState && bossState.finished) goHome();
-      }, 1200);
-    }
+    if (retryLoseBtn) retryLoseBtn.onclick = goToRetryBoss;
+    if (backHomeBtn) backHomeBtn.onclick = goBackToLevelSelect;
+    if (backLevelBtn) backLevelBtn.onclick = goBackToLevelSelect;
   }
 
   function playerBossAction(actionKey){
@@ -788,7 +796,7 @@
     document.getElementById('bossEndTurn').onclick = () => playerBossAction('skip');
     document.getElementById('btnRetry').onclick = () => goToRetryBoss();
     document.getElementById('btnExit').onclick = goHome;
-    document.getElementById('btnBackGame').onclick = goHome;
+    document.getElementById('btnBackGame').onclick = goBackToLevelSelect;
     document.querySelectorAll('#bossCards [data-card]').forEach(btn => {
       btn.onclick = () => playerBossAction(btn.dataset.card);
     });
