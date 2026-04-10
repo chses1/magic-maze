@@ -324,6 +324,9 @@ ${elseCode}}
   }
 
   function getWorld4AvailableSpellConfigs(levelId, opts = {}){
+    const hintCfg = getWorld4HintSpellConfig(levelId);
+    if(hintCfg) return [hintCfg];
+
     const symbolList = Array.isArray(opts.availableSpellSymbols) ? opts.availableSpellSymbols : [];
     const seen = new Set();
     const configs = [];
@@ -473,7 +476,7 @@ ${elseCode}}
     const loadDefaultBlocks = opts.loadDefaultBlocks !== false;
     const trashcan = readOnly ? false : (opts.trashcan !== false);
 
-    const toolbox = buildToolbox(worldId, opts.levelId || "");
+    const toolbox = buildToolbox(worldId, opts.levelId || "", opts);
 
     const workspace = Blockly.inject(containerId, {
       toolbox,
