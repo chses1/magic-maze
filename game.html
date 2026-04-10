@@ -93,8 +93,8 @@
   // ✅ 右上角顯示身分
   const badge = document.getElementById("sessionBadge");
   badge.textContent = (s.role === "teacher")
-    ? "👩‍🏫 教師模式（已解鎖全關 + 自動載入最佳解法）"
-    : `學生：${s.userId}`;
+    ? "👩‍🏫 教師模式（已解鎖全關；Ctrl+Shift+T 開啟快捷工具）"
+    : `學生：${s.userId}（Ctrl+Shift+T 可開啟開發快捷工具）`;
 
   window.GamePage.init();
 </script>

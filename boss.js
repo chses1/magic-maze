@@ -27,7 +27,7 @@
       bodyBg: "url('img/world1_bg_magic_academy.png') center/cover no-repeat fixed",
       arenaBg: "transparent",
       bossImg: 'img/world1_boss_professor.png',
-      stats: { playerMaxHp: 30, bossMaxHp: 28, basicDamage: 4, defendShield: 7, focusGain: 3 },
+      stats: { playerMaxHp: 24, bossMaxHp: 36, basicDamage: 4, defendShield: 7, focusGain: 3 },
       cards: {
         potion: { key: 'potion', title: '魔力水晶', desc: '回復 10 點生命，並獲得 1 點蓄力。', img: 'img/world1_item_01_mana_crystal.png', effect(state){ state.playerHp = Math.min(state.playerMaxHp, state.playerHp + 10); state.playerPower += 1; state.fxText = '🔷 魔力充能，恢復 10 點生命並蓄力 +1！'; return '恢復了 10 點生命，並獲得 1 點蓄力。'; } },
         dagger: { key: 'dagger', title: '新生魔杖', desc: '立刻造成 8 點魔法傷害。', img: 'img/world1_item_02_novice_wand.png', effect(state){ return { damage: 8, fxText: '✨ 新生魔杖命中，造成 8 點魔法傷害！', log: '新生魔杖造成 8 點傷害。' }; } },
@@ -60,7 +60,7 @@
       bodyBg: "url('img/world2_bg_runic_forest.png') center/cover no-repeat fixed",
       arenaBg: "transparent",
       bossImg: 'img/world2_boss_wolf_king.png',
-      stats: { playerMaxHp: 30, bossMaxHp: 26, basicDamage: 3, defendShield: 8, focusGain: 3 },
+      stats: { playerMaxHp: 24, bossMaxHp: 50, basicDamage: 5, defendShield: 8, focusGain: 3 },
       cards: {
         potion: { key: 'potion', title: '補血小藥水', desc: '立刻補滿生命值。', img: 'img/world2_item_01_healing_potion.png', effect(state){ state.playerHp = state.playerMaxHp; state.fxText = '💚 生命值完全恢復！'; return '讓生命值完全恢復。'; } },
         dagger: { key: 'dagger', title: '小刀攻擊', desc: '快速出手，造成 9 點傷害。', img: 'img/world2_item_02_dagger_attack.png', effect(state){ return { damage: 9, fxText: '🗡️ 小刀攻擊命中，造成 9 點傷害！', log: '小刀攻擊造成 9 點傷害。' }; } },
@@ -93,7 +93,7 @@
       bodyBg: "url('img/world3_bg_time_library.png') center/cover no-repeat fixed",
       arenaBg: "transparent",
       bossImg: 'img/world3_boss_librarian.png',
-      stats: { playerMaxHp: 32, bossMaxHp: 30, basicDamage: 4, defendShield: 7, focusGain: 2 },
+      stats: { playerMaxHp: 24, bossMaxHp: 66, basicDamage: 6, defendShield: 9, focusGain: 3 },
       cards: {
         potion: { key: 'potion', title: '時光沙漏', desc: '回復 9 點生命，並讓館長速度減慢。', img: 'img/world3_item_01_time_hourglass.png', effect(state){ state.playerHp = Math.min(state.playerMaxHp, state.playerHp + 9); state.bossFreezeTurns = Math.max(state.bossFreezeTurns, 1); state.fxText = '⏳ 時光沙漏逆轉，恢復 9 點生命並延遲館長行動！'; return '恢復 9 點生命，並讓館長下一回合無法行動。'; } },
         dagger: { key: 'dagger', title: '館藏羽毛筆', desc: '寫下反擊咒文，造成 8 點傷害並獲得 1 點蓄力。', img: 'img/world3_item_02_magic_quill.png', effect(state){ state.playerPower += 1; return { damage: 8, fxText: '🪶 羽毛筆寫下反擊咒文，造成 8 點傷害並蓄力 +1！', log: '館藏羽毛筆造成 8 點傷害，並獲得 1 點蓄力。' }; } },
@@ -126,7 +126,7 @@
       bodyBg: "url('img/world4_bg_mech_castle.png') center/cover no-repeat fixed",
       arenaBg: "transparent",
       bossImg: 'img/world4_boss_mech_overlord.png',
-      stats: { playerMaxHp: 34, bossMaxHp: 34, basicDamage: 5, defendShield: 8, focusGain: 2 },
+      stats: { playerMaxHp: 24, bossMaxHp: 86, basicDamage: 7, defendShield: 10, focusGain: 3 },
       cards: {
         potion: { key: 'potion', title: '齒輪核心', desc: '回復 8 點生命，並讓下次普通攻擊 +2。', img: 'img/world4_item_01_gear_core.png', effect(state){ state.playerHp = Math.min(state.playerMaxHp, state.playerHp + 8); state.playerPower += 2; state.fxText = '⚙️ 齒輪核心啟動，恢復 8 點生命並蓄力 +2！'; return '恢復 8 點生命，並獲得 2 點蓄力。'; } },
         dagger: { key: 'dagger', title: '蒸汽手套', desc: '重擊造成 10 點傷害。', img: 'img/world4_item_02_steam_gauntlet.png', effect(state){ return { damage: 10, fxText: '👊 蒸汽手套重擊，造成 10 點傷害！', log: '蒸汽手套造成 10 點傷害。' }; } },

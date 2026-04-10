@@ -2661,8 +2661,9 @@ window.GamePage = (()=>{
     });
 
     resetLevel();
-    const hasDraft = loadProgramDraft();
-    if (!hasDraft) loadEmbeddedBestSolution();
+    loadProgramDraft();
+    // 不再自動載入 levels.js 內嵌的最佳解法，避免學生一進關卡就看到答案。
+    // 若開發測試需要，請改用快捷工具手動載入。
     applyMainContrast();
   }
 

@@ -1,6 +1,25 @@
 (function(){
   const STORAGE_PREFIX = 'maze_best_solution::';
   const LEVEL_TARGET_BLOCK_OVERRIDE_KEY = 'mw_published_level_overrides_v1';
+  const PANEL_SHORTCUT_TOGGLE = 'Ctrl+Shift+T';
+  const PANEL_SHORTCUT_LOAD = 'Ctrl+Shift+L';
+
+  function getSession(){
+    try{
+      return window.StorageAPI?.getSession?.() || null;
+    }catch(_err){
+      return null;
+    }
+  }
+
+  function isTeacherMode(){
+    return getSession()?.role === 'teacher';
+  }
+
+  function canUseDeveloperTools(){
+    const role = getSession()?.role;
+    return role === 'teacher' || role === 'student';
+  }
 
   function qs(name){
     try { return new URL(location.href).searchParams.get(name); } catch(e){ return null; }
@@ -55,7 +74,7 @@
     return `${normalizeWorldId(world)}-${normalizeLevelId(level)}`;
   }
 
-    function getStoredTargetBlockOverrides(){
+  function getStoredTargetBlockOverrides(){
     try{
       const raw = localStorage.getItem(LEVEL_TARGET_BLOCK_OVERRIDE_KEY);
       const data = raw ? JSON.parse(raw) : {};
@@ -145,6 +164,7 @@
   }
 
   function saveBestSolution(){
+    if (!canUseDeveloperTools()) return false;
     const { world, level } = detectWorldLevel();
     if (!world || !level) return toast('找不到目前關卡，請先選擇世界與關卡。');
     if (isBossLevel(level)) return toast('Boss 戰不是積木關，不能儲存 Blockly 最佳解法。');
@@ -163,9 +183,11 @@
     toast(currentCodeBlocks > 0
       ? `已儲存 ${world} / ${level} 的最佳解法（最佳程式碼數：${currentCodeBlocks}）`
       : `已儲存 ${world} / ${level} 的最佳解法`);
+    return true;
   }
 
   function loadBestSolution(auto = false){
+    if (!canUseDeveloperTools()) return false;
     const { world, level } = detectWorldLevel();
     if (!world || !level || isBossLevel(level)) return false;
     const raw = localStorage.getItem(solutionKey(world, level));
@@ -191,6 +213,7 @@
   }
 
   function syncBestCode(){
+    if (!canUseDeveloperTools()) return false;
     const { world, level } = detectWorldLevel();
     if (!world || !level) return toast('找不到目前關卡。');
     if (isBossLevel(level)) return toast('Boss 戰沒有一般關卡的最佳程式碼數設定。');
@@ -224,37 +247,51 @@
       saveStoredStepOverrides(overrides);
       updatePageBestCode(world, level, targetBlocks);
       toast(`已同步 ${world} / ${level} 的最佳程式碼數為 ${targetBlocks}`);
+      return true;
     }catch(err){
       console.error('同步最佳程式碼數失敗', err);
       toast('同步最佳程式碼數失敗，請確認最佳解法資料是否正常。');
+      return false;
     }
   }
 
   function clearBestSolution(){
+    if (!canUseDeveloperTools()) return false;
     const { world, level } = detectWorldLevel();
     if (!world || !level) return toast('找不到目前關卡。');
     localStorage.removeItem(solutionKey(world, level));
     toast(`已清除 ${world} / ${level} 的最佳解法`);
+    return true;
   }
 
   function openBoss(){
+    if (!canUseDeveloperTools()) return false;
     const world = detectWorldLevel().world || 'world1';
     location.href = `boss.html?world=${encodeURIComponent(world)}`;
+    return true;
   }
 
   function injectPanel(){
-    if (document.getElementById('teacherPatchPanel')) return;
-    const panel = document.createElement('div');
+    if (!canUseDeveloperTools()) return null;
+    let panel = document.getElementById('teacherPatchPanel');
+    if (panel) return panel;
+
+    panel = document.createElement('div');
     panel.id = 'teacherPatchPanel';
+    panel.hidden = true;
+    panel.setAttribute('aria-hidden', 'true');
     panel.style.cssText = [
       'position:fixed','right:16px','top:16px','z-index:99998','width:min(320px,calc(100vw - 24px))',
       'background:#ffffff','border:2px solid #d1d5db','border-radius:18px','padding:14px',
       'box-shadow:0 10px 30px rgba(0,0,0,.16)','font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif'
     ].join(';');
     panel.innerHTML = `
-      <div style="font-size:18px;font-weight:900;color:#111827;margin-bottom:8px;">教師模式快捷工具</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;">
+        <div style="font-size:18px;font-weight:900;color:#111827;">開發／教師快捷工具</div>
+        <button id="tpCloseBtn" type="button" aria-label="關閉教師工具" style="width:34px;height:34px;border:none;border-radius:999px;background:#f3f4f6;color:#374151;font-weight:900;cursor:pointer;">✕</button>
+      </div>
       <div style="font-size:13px;line-height:1.6;color:#374151;margin-bottom:10px;">
-        一般關卡會自動載入已儲存的最佳解法；Boss 戰可用下方按鈕快速預覽。
+        登入後可開啟。<br>快捷鍵：<b>${PANEL_SHORTCUT_TOGGLE}</b> 顯示 / 隱藏，<b>${PANEL_SHORTCUT_LOAD}</b> 載入最佳解法。
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
         <button id="tpBossBtn" type="button" style="padding:10px 12px;border:none;border-radius:12px;background:#7c3aed;color:#fff;font-weight:800;cursor:pointer;">查看 Boss 戰</button>
@@ -267,44 +304,79 @@
       </div>
     `;
     document.body.appendChild(panel);
+    panel.querySelector('#tpCloseBtn').addEventListener('click', hidePanel);
     panel.querySelector('#tpBossBtn').addEventListener('click', openBoss);
     panel.querySelector('#tpSaveBtn').addEventListener('click', saveBestSolution);
     panel.querySelector('#tpLoadBtn').addEventListener('click', () => loadBestSolution(false));
     panel.querySelector('#tpClearBtn').addEventListener('click', syncBestCode);
+    return panel;
   }
 
-  function setupAutoLoad(){
-    let tries = 0;
-    const timer = setInterval(() => {
-      tries += 1;
-      const workspace = getBlocklyWorkspace();
-      const { level } = detectWorldLevel();
-      if (workspace && level && !isBossLevel(level)) {
-        loadBestSolution(true);
-        clearInterval(timer);
+  function showPanel(){
+    if (!canUseDeveloperTools()) return false;
+    const panel = injectPanel();
+    if (!panel) return false;
+    panel.hidden = false;
+    panel.setAttribute('aria-hidden', 'false');
+    return true;
+  }
+
+  function hidePanel(){
+    const panel = document.getElementById('teacherPatchPanel');
+    if (!panel) return false;
+    panel.hidden = true;
+    panel.setAttribute('aria-hidden', 'true');
+    return true;
+  }
+
+  function togglePanel(){
+    if (!canUseDeveloperTools()) return false;
+    const panel = injectPanel();
+    if (!panel) return false;
+    if (panel.hidden) {
+      showPanel();
+      toast(`已開啟快捷工具（${PANEL_SHORTCUT_TOGGLE}）`);
+    } else {
+      hidePanel();
+      toast('已隱藏快捷工具');
+    }
+    return true;
+  }
+
+  function setupKeyboardShortcut(){
+    document.addEventListener('keydown', (e) => {
+      if (!canUseDeveloperTools()) return;
+      const tag = String(e.target?.tagName || '').toLowerCase();
+      const isEditing = e.target?.isContentEditable || tag === 'input' || tag === 'textarea' || tag === 'select';
+      if (isEditing) return;
+      const key = String(e.key || '').toLowerCase();
+      if (!(e.ctrlKey && e.shiftKey)) return;
+
+      if (key === 't') {
+        e.preventDefault();
+        togglePanel();
+        return;
       }
-      if (tries > 40) clearInterval(timer);
-    }, 300);
-  }
 
-  function setupReloadOnSelectionChange(){
-    const selectors = ['#worldSelect', '#teacherWorld', '#world', '[name="world"]', '[name="worldId"]', '#levelSelect', '#teacherLevel', '#level', '[name="level"]', '[name="levelId"]'];
-    document.addEventListener('change', (e) => {
-      if (!selectors.some(sel => {
-        try { return e.target.matches(sel); } catch(_) { return false; }
-      })) return;
-      setTimeout(() => loadBestSolution(true), 250);
+      if (key === 'l') {
+        e.preventDefault();
+        const ok = loadBestSolution(false);
+        if (!ok) toast('目前無法載入最佳解法。');
+      }
     });
   }
 
   function init(){
+    if (!canUseDeveloperTools()) {
+      hidePanel();
+      return;
+    }
     injectPanel();
-    setupAutoLoad();
-    setupReloadOnSelectionChange();
+    setupKeyboardShortcut();
   }
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
+    document.addEventListener('DOMContentLoaded', init, { once:true });
   } else {
     init();
   }
@@ -315,6 +387,11 @@
     syncBestCode,
     clearBestSolution,
     detectWorldLevel,
-    solutionKey
+    solutionKey,
+    showPanel,
+    hidePanel,
+    togglePanel,
+    isTeacherMode,
+    canUseDeveloperTools
   };
 })();
