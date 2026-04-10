@@ -28,7 +28,15 @@ window.BlocklySetup = (()=>{
   };
 
   function getJavaScriptGenerator(){
-    return Blockly.JavaScript || Blockly.javascriptGenerator || null;
+    return Blockly.javascriptGenerator || Blockly.JavaScript || null;
+  }
+
+  function registerGenerator(js, blockType, fn){
+    if(!js || !blockType || typeof fn !== "function") return;
+    js.forBlock = js.forBlock || {};
+    js.forBlock[blockType] = fn;
+    // 相容不同 Blockly 版本：有些版本吃 forBlock，有些會直接讀 generator[blockType]
+    js[blockType] = fn;
   }
 
   function wrapSetColour(blockType, color){
@@ -182,37 +190,35 @@ window.BlocklySetup = (()=>{
 
     try{ js.STATEMENT_PREFIX = 'await api.__highlight(%1);\n'; }catch(_err){}
 
-    js.forBlock = js.forBlock || {};
-
-    js.forBlock["mw_start"] = function(block){
+    registerGenerator(js, "mw_start", function(block){
       const nextBlock = block.getNextBlock?.();
       return nextBlock ? js.blockToCode(nextBlock) : "";
-    };
+    });
 
-    js.forBlock["mw_move_forward"] = ()=> "await api.moveForward();\n";
-    js.forBlock["mw_turn"] = function(block){
+    registerGenerator(js, "mw_move_forward", ()=> "await api.moveForward();\n");
+    registerGenerator(js, "mw_turn", function(block){
       const dir = String(block.getFieldValue("DIR") || "left");
       return `await api.turnDirection(${JSON.stringify(dir)});\n`;
-    };
-    js.forBlock["mw_turn_left"]   = ()=> "await api.turnDirection(\"left\");\n";
-    js.forBlock["mw_turn_right"]  = ()=> "await api.turnDirection(\"right\");\n";
+    });
+    registerGenerator(js, "mw_turn_left", ()=> "await api.turnDirection(\"left\");\n");
+    registerGenerator(js, "mw_turn_right", ()=> "await api.turnDirection(\"right\");\n");
 
-    js.forBlock["mw_repeat_times"] = function(block){
+    registerGenerator(js, "mw_repeat_times", function(block){
       const times = Number(block.getFieldValue("TIMES") || 3);
       const body = js.statementToCode(block, "DO");
       return `for (let i = 0; i < ${times}; i++) {
 ${body}}
 `;
-    };
+    });
 
-    js.forBlock["mw_repeat_until_goal"] = function(block){
+    registerGenerator(js, "mw_repeat_until_goal", function(block){
       const body = js.statementToCode(block, "DO");
       return `while (!(await api.isAtGoal())) {
 ${body}}
 `;
-    };
+    });
 
-    js.forBlock["mw_if_path"] = function(block){
+    registerGenerator(js, "mw_if_path", function(block){
       const dir = String(block.getFieldValue("DIR") || "ahead");
       const doCode = js.statementToCode(block, "DO");
       const elseCode = js.statementToCode(block, "ELSE");
@@ -220,28 +226,52 @@ ${body}}
 ${doCode}} else {
 ${elseCode}}
 `;
-    };
+    });
 
     const orderNone = js.ORDER_NONE ?? 99;
-    js.forBlock["mw_path_ahead"] = ()=> ["await api.canMoveForward()", orderNone];
+    registerGenerator(js, "mw_path_ahead", ()=> ["await api.canMoveForward()", orderNone]);
 
-    js.forBlock["mw_if_path_ahead"] = function(block){
+    registerGenerator(js, "mw_if_path_ahead", function(block){
       const doCode = js.statementToCode(block, "DO");
       const elseCode = js.statementToCode(block, "ELSE");
       return `if (await api.canMoveForward()) {\n${doCode}} else {\n${elseCode}}\n`;
-    };
+    });
 
-    js.forBlock["mw_func_def_a"] = function(block){
+    registerGenerator(js, "mw_func_def_a", function(block){
       const body = js.statementToCode(block, "DO");
       return `async function spellA(){\n${body}}\n`;
-    };
-    js.forBlock["mw_func_call_a"] = ()=> "await spellA();\n";
+    });
+    registerGenerator(js, "mw_func_call_a", ()=> "await spellA();\n");
 
-    js.forBlock["mw_func_def_b"] = function(block){
+    registerGenerator(js, "mw_func_def_b", function(block){
       const body = js.statementToCode(block, "DO");
       return `async function spellB(){\n${body}}\n`;
-    };
-    js.forBlock["mw_func_call_b"] = ()=> "await spellB();\n";
+    });
+    registerGenerator(js, "mw_func_call_b", ()=> "await spellB();\n");
+
+    registerGenerator(js, "mw_func_def_fire", function(block){
+      const body = js.statementToCode(block, "DO");
+      return `async function mwSpell_fire(){\n  await api.__beginSpell("fire");\n  try {\n${body}  } finally {\n    await api.__endSpell("fire");\n  }\n}\n`;
+    });
+    registerGenerator(js, "mw_func_call_fire", ()=> "await mwSpell_fire();\n");
+
+    registerGenerator(js, "mw_func_def_rain", function(block){
+      const body = js.statementToCode(block, "DO");
+      return `async function mwSpell_rain(){\n  await api.__beginSpell("rain");\n  try {\n${body}  } finally {\n    await api.__endSpell("rain");\n  }\n}\n`;
+    });
+    registerGenerator(js, "mw_func_call_rain", ()=> "await mwSpell_rain();\n");
+
+    registerGenerator(js, "mw_func_def_purify", function(block){
+      const body = js.statementToCode(block, "DO");
+      return `async function mwSpell_purify(){\n  await api.__beginSpell("purify");\n  try {\n${body}  } finally {\n    await api.__endSpell("purify");\n  }\n}\n`;
+    });
+    registerGenerator(js, "mw_func_call_purify", ()=> "await mwSpell_purify();\n");
+
+    registerGenerator(js, "mw_func_def_fly", function(block){
+      const body = js.statementToCode(block, "DO");
+      return `async function mwSpell_fly(){\n  await api.__beginSpell("fly");\n  try {\n${body}  } finally {\n    await api.__endSpell("fly");\n  }\n}\n`;
+    });
+    registerGenerator(js, "mw_func_call_fly", ()=> "await mwSpell_fly();\n");
   }
 
   function ensureDefinitions(){
@@ -263,7 +293,26 @@ ${elseCode}}
     };
   }
 
-  function buildToolbox(worldId){
+  function normalizeLevelId(levelId){
+    const raw = String(levelId || '').trim();
+    if(!raw) return '';
+    if(/^boss$/i.test(raw)) return 'boss';
+    const m = raw.match(/^(?:level|l)\s*(\d+)$/i);
+    if(m) return `L${m[1]}`;
+    return raw.toUpperCase();
+  }
+
+  function getWorld4SpellConfig(levelId){
+    const map = {
+      L1: { name:'飛行咒語', defType:'mw_func_def_fly', callType:'mw_func_call_fly' },
+      L2: { name:'火焰咒語', defType:'mw_func_def_fire', callType:'mw_func_call_fire' },
+      L3: { name:'暴雨咒語', defType:'mw_func_def_rain', callType:'mw_func_call_rain' },
+      L4: { name:'驅邪咒語', defType:'mw_func_def_purify', callType:'mw_func_call_purify' }
+    };
+    return map[normalizeLevelId(levelId)] || null;
+  }
+
+  function buildToolbox(worldId, levelId = ''){
     ensureDefinitions();
     const contents = [];
 
@@ -304,24 +353,84 @@ ${elseCode}}
     }
 
     if(worldId === "W4"){
+      const functionContents = [
+        {kind:"block", type:"mw_func_def_fire"},
+        {kind:"block", type:"mw_func_call_fire"},
+        {kind:"block", type:"mw_func_def_rain"},
+        {kind:"block", type:"mw_func_call_rain"},
+        {kind:"block", type:"mw_func_def_purify"},
+        {kind:"block", type:"mw_func_call_purify"},
+        {kind:"block", type:"mw_func_def_fly"},
+        {kind:"block", type:"mw_func_call_fly"}
+      ];
       contents.push({
         kind:"category",
         name:"函式（咒語）",
         colour:BLOCK_COLORS.FUNCTION,
-        contents:[
-          {kind:"block", type:"mw_func_def_fire"},
-          {kind:"block", type:"mw_func_call_fire"},
-          {kind:"block", type:"mw_func_def_rain"},
-          {kind:"block", type:"mw_func_call_rain"},
-          {kind:"block", type:"mw_func_def_purify"},
-          {kind:"block", type:"mw_func_call_purify"},
-          {kind:"block", type:"mw_func_def_fly"},
-          {kind:"block", type:"mw_func_call_fly"}
-        ]
+        contents:functionContents
       });
     }
 
     return { kind:"categoryToolbox", contents };
+  }
+
+  function buildWorld4PresetXml(levelId){
+    const cfg = getWorld4SpellConfig(levelId);
+    if(!cfg) return '';
+    return `
+      <xml xmlns="https://developers.google.com/blockly/xml">
+        <block type="mw_start" x="20" y="20" deletable="false" movable="false"></block>
+        <block type="${cfg.defType}" x="380" y="36"></block>
+      </xml>
+    `;
+  }
+
+  function enforceWorld4SingleSpell(workspace, levelId, opts = {}){
+    if(!workspace) return false;
+    const cfg = getWorld4SpellConfig(levelId);
+    if(!cfg) return false;
+
+    const allBlocks = typeof workspace.getAllBlocks === 'function' ? workspace.getAllBlocks(false) : [];
+    allBlocks.forEach(block => {
+      const type = String(block?.type || '');
+      if(type.startsWith('mw_func_') && type !== cfg.defType && type !== cfg.callType){
+        try{ block.dispose(false); }catch(_err){}
+      }
+    });
+
+    let defs = (typeof workspace.getAllBlocks === 'function' ? workspace.getAllBlocks(false) : []).filter(block => block?.type === cfg.defType);
+    let defBlock = defs[0] || null;
+    defs.slice(1).forEach(block => { try{ block.dispose(false); }catch(_err){} });
+
+    if(!defBlock){
+      const xml = buildWorld4PresetXml(levelId);
+      if(xml) loadXmlText(workspace, xml);
+      defs = (typeof workspace.getAllBlocks === 'function' ? workspace.getAllBlocks(false) : []).filter(block => block?.type === cfg.defType);
+      defBlock = defs[0] || null;
+    }
+
+    if(defBlock){
+      defBlock.setMovable?.(false);
+      defBlock.setDeletable?.(false);
+      if(opts.reposition !== false){
+        try{
+          const xy = typeof defBlock.getRelativeToSurfaceXY === 'function' ? defBlock.getRelativeToSurfaceXY() : {x:0,y:0};
+          defBlock.moveBy?.(380 - Number(xy.x || 0), 36 - Number(xy.y || 0));
+        }catch(_err){}
+      }
+    }
+
+    ensureStartBlock(workspace);
+    lockStartBlocks(workspace);
+    return true;
+  }
+
+  function loadWorld4PresetSpell(workspace, levelId){
+    const xmlText = buildWorld4PresetXml(levelId);
+    if(!xmlText) return false;
+    const ok = loadXmlText(workspace, xmlText);
+    if(ok) enforceWorld4SingleSpell(workspace, levelId);
+    return ok;
   }
 
   function createWorkspace(containerId, worldId, opts = {}){
@@ -331,7 +440,7 @@ ${elseCode}}
     const loadDefaultBlocks = opts.loadDefaultBlocks !== false;
     const trashcan = readOnly ? false : (opts.trashcan !== false);
 
-    const toolbox = buildToolbox(worldId);
+    const toolbox = buildToolbox(worldId, opts.levelId || "");
 
     const workspace = Blockly.inject(containerId, {
       toolbox,
@@ -557,6 +666,9 @@ ${elseCode}}
     lockStartBlocks,
     ensureStartBlock,
     ensureDefinitions,
-    normalizeSerializedWorkspaceData
+    normalizeSerializedWorkspaceData,
+    getWorld4SpellConfig,
+    loadWorld4PresetSpell,
+    enforceWorld4SingleSpell
   };
 })();

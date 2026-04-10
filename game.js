@@ -2775,7 +2775,7 @@ window.GamePage = (()=>{
 
     applyStaticUIText();
     ensureInfoPanels();
-    workspace = BlocklySetup.createWorkspace("blocklyDiv", normalizeWorldId(worldId || pack.w?.worldId || "W1"));
+    workspace = BlocklySetup.createWorkspace("blocklyDiv", normalizeWorldId(worldId || pack.w?.worldId || "W1"), { levelId: normalizeLevelId(levelId || pack.lv?.levelId || "") });
     bindUI();
 
     function refreshVisibleTargetBlocksText(targetBlocks){
