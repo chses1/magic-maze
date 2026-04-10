@@ -278,6 +278,28 @@ window.StorageAPI = {
     purgeUserLocalStorageArtifacts(uid);
   },
 
+
+  // ✅ 清除某一班全部學生「總分」
+  clearClassTotal(classId){
+    const cid = String(classId || '').trim();
+    if(!/^\d{3}$/.test(cid)) return;
+
+    const progress = this.getProgress();
+    const userIds = Object.keys(progress).filter(uid => String(uid).startsWith(cid) && /^\d{5}$/.test(uid));
+
+    userIds.forEach(uid => {
+      if(progress[uid]){
+        delete progress[uid];
+      }
+      purgeUserLocalStorageArtifacts(uid);
+    });
+
+    this.saveProgress(progress);
+
+    const lb = this.getLeaderboard().filter(x => !String(x.userId || '').startsWith(cid));
+    this.saveLeaderboard(lb);
+  },
+
   // ✅ 清除全部學生「總分」＝清掉所有 progress + leaderboard + 所有遊戲程式/存檔 key（保留 session）
   clearAllStudentsTotal(){
     this.saveProgress({});

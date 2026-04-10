@@ -1256,6 +1256,7 @@ window.LEVELS = ${JSON.stringify(exported, null, 2)};
       toast('教師登入成功！');
       setBadge();
       render();
+      loadSelectedLevelIntoEditor();
     };
 
     document.getElementById('btnTeacherLogout').onclick = ()=>{
@@ -1277,18 +1278,51 @@ window.LEVELS = ${JSON.stringify(exported, null, 2)};
 
     const filterClassEl = document.getElementById('filterClass');
     const sortModeEl = document.getElementById('sortMode');
-    if(filterClassEl) filterClassEl.onchange = ()=>{ if(requireTeacherOrBlock('切換班級顯示')) render(); };
+    if(filterClassEl) filterClassEl.onchange = ()=>{
+      if(!requireTeacherOrBlock('切換班級顯示')) return;
+      render();
+      const btnClearAll = document.getElementById('btnClearAll');
+      if(btnClearAll){
+        const selected = String(filterClassEl.value || 'all').trim();
+        btnClearAll.textContent = (selected && selected !== 'all')
+          ? `清除 ${selected} 班學生總分`
+          : '清除全部學生總分';
+      }
+    };
     if(sortModeEl) sortModeEl.onchange = ()=>{ if(requireTeacherOrBlock('切換排序方式')) render(); };
 
+    const btnClearAll = document.getElementById('btnClearAll');
+    const updateClearButtonText = ()=>{
+      if(!btnClearAll) return;
+      const filterClass = String(document.getElementById('filterClass')?.value || 'all').trim();
+      btnClearAll.textContent = (filterClass && filterClass !== 'all')
+        ? `清除 ${filterClass} 班學生總分`
+        : '清除全部學生總分';
+    };
+
+    updateClearButtonText();
+
     document.getElementById('btnClearAll').onclick = ()=>{
-      if(!requireTeacherOrBlock('清除全部學生總分')) return;
+      if(!requireTeacherOrBlock('清除學生總分')) return;
 
-      const ok = confirm('⚠️ 確定要清除「全部學生」的總分嗎？（會清空所有學生的最佳紀錄與排行榜）');
-      if(!ok) return;
+      const filterClass = String(document.getElementById('filterClass')?.value || 'all').trim();
 
-      StorageAPI.clearAllStudentsTotal();
-      toast('✅ 已清除全部學生總分');
+      if(filterClass && filterClass !== 'all'){
+        const ok = confirm(`⚠️ 確定要清除「${filterClass} 班」全部學生的總分嗎？（會清空該班所有最佳紀錄、排行榜與積木存檔）`);
+        if(!ok) return;
+
+        StorageAPI.clearClassTotal(filterClass);
+        toast(`✅ 已清除 ${filterClass} 班全部學生總分`);
+      }else{
+        const ok = confirm('⚠️ 確定要清除「全部學生」的總分嗎？（會清空所有學生的最佳紀錄、排行榜與積木存檔）');
+        if(!ok) return;
+
+        StorageAPI.clearAllStudentsTotal();
+        toast('✅ 已清除全部學生總分');
+      }
+
       render();
+      updateClearButtonText();
     };
 
     const btnOpenBoss = document.getElementById('btnOpenBoss');

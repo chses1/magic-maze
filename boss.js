@@ -347,11 +347,28 @@
       'linear-gradient(rgba(248,252,255,.22), rgba(241,247,253,.26))'
     );
     config._resolvedBossImg = await findWorkingImagePath(config.bossImg);
+    const playerMeta = getPlayerCharacterMeta();
+    config._resolvedPlayerImg = await findWorkingImagePath(playerMeta.img);
 
     const cardEntries = Object.values(config.cards || {});
     await Promise.all(cardEntries.map(async (card) => {
       card.resolvedImg = await findWorkingImagePath(card.img);
     }));
+  }
+
+
+
+  function getPlayerCharacter(){
+    const session = getSessionSafe();
+    const chosen = String(session?.character || 'boy').trim().toLowerCase();
+    return chosen === 'girl' ? 'girl' : 'boy';
+  }
+
+  function getPlayerCharacterMeta(){
+    const key = getPlayerCharacter();
+    return key === 'girl'
+      ? { key, label: '精靈法師', hpLabel: '精靈法師 HP', img: 'img/girl.png' }
+      : { key, label: '冒險少年', hpLabel: '冒險少年 HP', img: 'img/boy.png' };
   }
 
   function scoreKey(){
@@ -394,6 +411,7 @@
       lastPlayerAction: '尚未行動',
       lastPlayerRoll: '尚未觸發',
       lastBossRoll: '尚未觸發',
+      playerCharacter: getPlayerCharacterMeta()
     };
   }
 
@@ -837,6 +855,28 @@
       arena.style.background = 'transparent';
     }
 
+    const playerMeta = getPlayerCharacterMeta();
+    const playerImg = document.getElementById('playerImg');
+    const playerName = document.getElementById('playerName');
+    const playerPortraitLabel = document.getElementById('playerPortraitLabel');
+    const bossPortraitLabel = document.getElementById('bossPortraitLabel');
+
+    if (playerName) playerName.textContent = playerMeta.hpLabel;
+    if (playerPortraitLabel) playerPortraitLabel.textContent = playerMeta.label;
+    if (bossPortraitLabel) bossPortraitLabel.textContent = config.bossName;
+
+    if (playerImg) {
+      if (config._resolvedPlayerImg) {
+        playerImg.src = config._resolvedPlayerImg;
+        playerImg.alt = playerMeta.label;
+        playerImg.style.display = 'block';
+      } else {
+        playerImg.removeAttribute('src');
+        playerImg.alt = `${playerMeta.label}（圖片未找到）`;
+        playerImg.style.display = 'none';
+      }
+    }
+
     if (bossImg) {
       if (config._resolvedBossImg) {
         bossImg.src = config._resolvedBossImg;
@@ -877,7 +917,9 @@
     document.getElementById('bossCards').innerHTML = bossCardsHtml();
     document.getElementById('battleLog').innerHTML = logPillsHtml();
     const fxEl = document.getElementById('fxText');
-    if (fxEl) fxEl.textContent = bossState.fxText || '';
+    if (fxEl) fxEl.textContent = bossState.fxText || `${bossState.lastPlayerAction}｜${bossState.lastBossAction}`;
+    const fxSubEl = document.getElementById('fxSubText');
+    if (fxSubEl) fxSubEl.textContent = `玩家：${bossState.lastPlayerAction}｜Boss：${bossState.lastBossAction}`;
 
     bindButtons();
 

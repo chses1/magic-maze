@@ -2,7 +2,7 @@
 window.Auth = {
   // ✅ 學生登入：支援五碼學號（例如 30105）
   // 也保留舊參數 classId/seat 的相容性
-  loginStudent({ studentId, classId, seat, name }){
+  loginStudent({ studentId, classId, seat, name, character }){
     let uid = "";
 
     if(studentId != null && String(studentId).trim() !== ""){
@@ -25,6 +25,7 @@ window.Auth = {
       classId: class3,   // ✅ 前 3 碼
       seat: seat2,       // ✅ 後 2 碼
       name: "",
+      character: ["boy","girl"].includes(String(character || "").trim()) ? String(character).trim() : "boy",
       loginAt: Date.now()
     };
     StorageAPI.setSession(session);
