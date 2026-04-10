@@ -2096,7 +2096,7 @@ window.GamePage = (()=>{
     if(ch === 'N') return '前方有樹木擋住，不能直接通過。';
     if(ch === 'B') return '前方有書櫃擋住，不能直接通過。';
     if(ch === 'X') return '前方有冰塊，需要破壞後才能通過。';
-    if(ch === 'L') return '前方是河流，需要先蓋橋。';
+    if(ch === 'L') return '前方是河流，需要先施放飛行咒語。';
     if(ch === 'O') return '前方有妖怪，需要用咒語擊退。';
     if(ch === 'F') return '前方有火焰，需要用咒語熄滅。';
     return UI.common.wall;
@@ -2175,6 +2175,72 @@ window.GamePage = (()=>{
 
   function sleep(ms){
     return new Promise(r=>setTimeout(r, ms));
+  }
+
+  const SPELL_RULES = {
+    fire: {
+      label: '火焰咒語',
+      sequence: ['left','right','right','left'],
+      target: 'X',
+      success: '🔥 火焰咒語成功！前方冰塊已融化。',
+      fail: '火焰咒語順序錯了，正確應為：左、右、右、左。',
+      wrongTarget: '火焰咒語只能消滅前方冰塊。'
+    },
+    rain: {
+      label: '暴雨咒語',
+      sequence: ['right','left','left','right'],
+      target: 'F',
+      success: '🌧️ 暴雨咒語成功！前方火焰已熄滅。',
+      fail: '暴雨咒語順序錯了，正確應為：右、左、左、右。',
+      wrongTarget: '暴雨咒語只能消滅前方火焰。'
+    },
+    purify: {
+      label: '驅邪咒語',
+      sequence: ['left','left','right','right'],
+      target: 'O',
+      success: '✨ 驅邪咒語成功！前方妖怪已被驅散。',
+      fail: '驅邪咒語順序錯了，正確應為：左、左、右、右。',
+      wrongTarget: '驅邪咒語只能消滅前方妖怪。'
+    },
+    fly: {
+      label: '飛行咒語',
+      sequence: ['right','right','left','left'],
+      target: 'L',
+      success: '🕊️ 飛行咒語成功！你已安全飛過前方河流。',
+      fail: '飛行咒語順序錯了，正確應為：右、右、左、左。',
+      wrongTarget: '飛行咒語只能穿過前方河流。'
+    }
+  };
+
+  function getForwardPosition(){
+    const d = DIRS[dir];
+    return { x: px + d.dx, y: py + d.dy };
+  }
+
+  function spellSequenceMatches(name, sequence){
+    const rule = SPELL_RULES[String(name || '').toLowerCase()];
+    if(!rule) return false;
+    if(!Array.isArray(sequence) || sequence.length !== rule.sequence.length) return false;
+    return rule.sequence.every((step, index) => step === sequence[index]);
+  }
+
+  function castSpellOnForwardTile(name){
+    const rule = SPELL_RULES[String(name || '').toLowerCase()];
+    if(!rule) return false;
+    const { x, y } = getForwardPosition();
+    if(!isInside(x, y)){
+      toast(`${rule.label}前方沒有可施放的目標。`);
+      return false;
+    }
+    const ch = String(grid[y]?.[x] || '');
+    if(ch !== rule.target){
+      toast(rule.wrongTarget);
+      return false;
+    }
+    grid[y][x] = '.';
+    toast(rule.success);
+    render();
+    return true;
   }
 
   async function ensureNotPaused(expectedGeneration = runGeneration){
@@ -2333,6 +2399,13 @@ window.GamePage = (()=>{
   }
 
   function makeAPI(expectedGeneration = runGeneration){
+    let spellContext = null;
+
+    function recordSpellTurn(turnDir){
+      if (!spellContext) return;
+      spellContext.turns.push(String(turnDir || '').toLowerCase());
+    }
+
     async function __highlight(blockId){
       try{
         if (workspace && typeof workspace.highlightBlock === "function") {
@@ -2375,6 +2448,10 @@ window.GamePage = (()=>{
       async moveForward(){
         await ensureNotPaused(expectedGeneration);
         if(abortRun || expectedGeneration !== runGeneration) throw new Error("aborted");
+
+        if (spellContext) {
+          spellContext.invalid = true;
+        }
 
         const d = DIRS[dir];
         const nx = px + d.dx;
@@ -2431,6 +2508,7 @@ window.GamePage = (()=>{
         await ensureNotPaused(expectedGeneration);
         if(abortRun || expectedGeneration !== runGeneration) throw new Error("aborted");
         const key = String(turnDir || "left").toLowerCase();
+        recordSpellTurn(key);
         dir = key === "right" ? (dir + 1) % 4 : (dir + 3) % 4;
         render();
         await sleep(120);
@@ -2456,6 +2534,30 @@ window.GamePage = (()=>{
         const nx = px + d.dx;
         const ny = py + d.dy;
         return !!canMoveTo(nx, ny);
+      },
+
+      async __beginSpell(name){
+        await ensureNotPaused(expectedGeneration);
+        if(abortRun || expectedGeneration !== runGeneration) throw new Error("aborted");
+        spellContext = { name: String(name || '').toLowerCase(), turns: [], invalid: false };
+      },
+
+      async __endSpell(name){
+        await ensureNotPaused(expectedGeneration);
+        if(abortRun || expectedGeneration !== runGeneration) throw new Error("aborted");
+        const spellName = String(name || '').toLowerCase();
+        const ctx = spellContext;
+        spellContext = null;
+        if (!ctx || ctx.name !== spellName) {
+          toast('咒語施放失敗，請重新整理函式積木。');
+          return false;
+        }
+        if (ctx.invalid || !spellSequenceMatches(spellName, ctx.turns)) {
+          const rule = SPELL_RULES[spellName];
+          toast(rule?.fail || '咒語順序不正確。');
+          return false;
+        }
+        return castSpellOnForwardTile(spellName);
       },
 
       async isAtGoal(){

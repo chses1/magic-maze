@@ -149,17 +149,29 @@ window.BlocklySetup = (()=>{
         },
         { "type":"mw_if_path_ahead","message0":"如果前方有路 %1 就 %2 否則 %3","args0":[{"type":"input_dummy"},{"type":"input_statement","name":"DO"},{"type":"input_statement","name":"ELSE"}],"previousStatement":null,"nextStatement":null,"colour":BLOCK_COLORS.CONDITION,"tooltip":"舊版相容積木。","helpUrl":"" },
         {
-          "type":"mw_func_def_a","message0":"定義咒語A 做 %1",
+          "type":"mw_func_def_fire","message0":"定義火焰咒語 做 %1",
           "args0":[{"type":"input_statement","name":"DO"}],
-          "colour":BLOCK_COLORS.FUNCTION,"tooltip":"把一段常用走法放進咒語A，之後可以重複施放。","helpUrl":""
+          "colour":BLOCK_COLORS.FUNCTION,"tooltip":"固定順序：左、右、右、左。可消滅前方冰塊。","helpUrl":""
         },
-        { "type":"mw_func_call_a","message0":"施放咒語A","previousStatement":null,"nextStatement":null,"colour":BLOCK_COLORS.FUNCTION },
+        { "type":"mw_func_call_fire","message0":"施放火焰咒語","previousStatement":null,"nextStatement":null,"colour":BLOCK_COLORS.FUNCTION },
         {
-          "type":"mw_func_def_b","message0":"定義咒語B 做 %1",
+          "type":"mw_func_def_rain","message0":"定義暴雨咒語 做 %1",
           "args0":[{"type":"input_statement","name":"DO"}],
-          "colour":BLOCK_COLORS.FUNCTION,"tooltip":"把另一段常用走法放進咒語B。","helpUrl":""
+          "colour":BLOCK_COLORS.FUNCTION,"tooltip":"固定順序：右、左、左、右。可消滅前方火焰。","helpUrl":""
         },
-        { "type":"mw_func_call_b","message0":"施放咒語B","previousStatement":null,"nextStatement":null,"colour":BLOCK_COLORS.FUNCTION }
+        { "type":"mw_func_call_rain","message0":"施放暴雨咒語","previousStatement":null,"nextStatement":null,"colour":BLOCK_COLORS.FUNCTION },
+        {
+          "type":"mw_func_def_purify","message0":"定義驅邪咒語 做 %1",
+          "args0":[{"type":"input_statement","name":"DO"}],
+          "colour":BLOCK_COLORS.FUNCTION,"tooltip":"固定順序：左、左、右、右。可消滅前方妖怪。","helpUrl":""
+        },
+        { "type":"mw_func_call_purify","message0":"施放驅邪咒語","previousStatement":null,"nextStatement":null,"colour":BLOCK_COLORS.FUNCTION },
+        {
+          "type":"mw_func_def_fly","message0":"定義飛行咒語 做 %1",
+          "args0":[{"type":"input_statement","name":"DO"}],
+          "colour":BLOCK_COLORS.FUNCTION,"tooltip":"固定順序：右、右、左、左。可穿過前方河流。","helpUrl":""
+        },
+        { "type":"mw_func_call_fly","message0":"施放飛行咒語","previousStatement":null,"nextStatement":null,"colour":BLOCK_COLORS.FUNCTION }
       ]);
     }
 
@@ -297,10 +309,14 @@ ${elseCode}}
         name:"函式（咒語）",
         colour:BLOCK_COLORS.FUNCTION,
         contents:[
-          {kind:"block", type:"mw_func_def_a"},
-          {kind:"block", type:"mw_func_call_a"},
-          {kind:"block", type:"mw_func_def_b"},
-          {kind:"block", type:"mw_func_call_b"}
+          {kind:"block", type:"mw_func_def_fire"},
+          {kind:"block", type:"mw_func_call_fire"},
+          {kind:"block", type:"mw_func_def_rain"},
+          {kind:"block", type:"mw_func_call_rain"},
+          {kind:"block", type:"mw_func_def_purify"},
+          {kind:"block", type:"mw_func_call_purify"},
+          {kind:"block", type:"mw_func_def_fly"},
+          {kind:"block", type:"mw_func_call_fly"}
         ]
       });
     }
