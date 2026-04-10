@@ -58,14 +58,14 @@ window.TeacherPage = (()=>{
     'R': { label:'傳送門（紅）', emoji:'🌀', className:'portal portal-red' },
 
     'C': { label:'道具寶箱', emoji:'🎁', className:'item' },
-    'G': { label:'裝備寶箱', emoji:'🧰', className:'equipment' },
+    'G': { label:'裝備寶箱', emoji:'', className:'equipment' },
 
     'M': { label:'齒輪牆', emoji:'⚙️', className:'gear' },
     'N': { label:'樹木', emoji:'🌲', className:'tree' },
     'B': { label:'書櫃', emoji:'📚', className:'bookshelf' },
 
     'X': { label:'冰塊', emoji:'🧊', className:'ice' },
-    'L': { label:'岩漿', emoji:'🌋', className:'lava' },
+    'L': { label:'河流', emoji:'🌊', className:'lava' },
     'O': { label:'妖怪', emoji:'👾', className:'monster' },
     'F': { label:'火焰', emoji:'🔥', className:'flame' }
   };
@@ -220,7 +220,7 @@ window.TeacherPage = (()=>{
     const isTeacher = isTeacherLoggedIn();
 
     const ids = [
-      'btnClearAll', 'btnRefresh', 'filterClass',
+      'btnClearAll', 'btnRefresh', 'filterClass', 'sortMode',
       'teacherWorld', 'teacherLevel',
       'btnOpenBoss', 'btnSaveBest', 'btnLoadBest', 'btnClearBest', 'btnExportBestCode',
       'btnLoadLevelData', 'btnSaveLevelEdit', 'btnPreviewLevelEdit', 'btnExportLevelJson', 'btnClearLevelEdit',
@@ -319,6 +319,24 @@ window.TeacherPage = (()=>{
     return Object.keys(bestObj).reduce((sum, k)=> sum + (Number(bestObj[k]?.score) || 0), 0);
   }
 
+  function normalizeLevelKey(value){
+    const raw = String(value || '').trim();
+    if(!raw) return '';
+    const parts = raw.split('-');
+    if(parts.length < 2) return raw;
+    const worldId = normalizeWorldId(parts[0]);
+    const levelId = normalizeLevelId(parts.slice(1).join('-'), worldId);
+    return `${worldId}-${levelId}`;
+  }
+
+  function getNormalizedBestMap(bestObj){
+    const out = {};
+    Object.entries(bestObj || {}).forEach(([key, record])=>{
+      out[normalizeLevelKey(key)] = record;
+    });
+    return out;
+  }
+
   function getAllDisplayLevels(){
     const worlds = getLevelsData();
     return worlds.flatMap(world => {
@@ -388,29 +406,57 @@ window.TeacherPage = (()=>{
       return;
     }
 
-    const filterClass = (document.getElementById('filterClass')?.value || '').trim();
+    const filterClass = String(document.getElementById('filterClass')?.value || '').trim();
+    const sortMode = String(document.getElementById('sortMode')?.value || 'seat');
     const progress = StorageAPI.getProgress();
     const allLevels = getAllDisplayLevels();
 
-    const students = Object.keys(progress)
+    const allClassIds = [...new Set(Object.keys(progress)
+      .filter(uid => uid !== 'teacher')
+      .filter(uid => /^\d{5}$/.test(uid))
+      .map(uid => uid.slice(0,3)))].sort((a,b)=> a.localeCompare(b));
+    const filterSelect = document.getElementById('filterClass');
+    if(filterSelect){
+      const currentValue = filterClass || 'all';
+      filterSelect.innerHTML = ['<option value="all">全部學生</option>']
+        .concat(allClassIds.map(classId => `<option value="${classId}">${classId} 班</option>`))
+        .join('');
+      filterSelect.value = allClassIds.includes(currentValue) || currentValue === 'all' ? currentValue : 'all';
+    }
+
+    const allStudents = Object.keys(progress)
       .filter(uid => uid !== 'teacher')
       .filter(uid => /^\d{5}$/.test(uid))
       .map(uid=>{
         const classId = uid.slice(0,3);
         const seat = uid.slice(3,5);
-        const best = progress[uid]?.best || {};
+        const bestRaw = progress[uid]?.best || {};
+        const best = getNormalizedBestMap(bestRaw);
         const passed = Object.keys(best).length;
         const totalScore = calcTotalScore(best);
         return { userId: uid, classId, seat, best, passed, totalScore };
       })
-      .filter(stu => !filterClass || stu.classId === filterClass)
-      .sort((a,b)=> a.classId.localeCompare(b.classId) || a.seat.localeCompare(b.seat));
+      .filter(stu => !filterClass || filterClass === 'all' || stu.classId === filterClass);
 
-    if(students.length === 0){
+    if(allStudents.length === 0){
       area.innerHTML = '<div class="teacherEmptyState">目前沒有符合條件的學生資料。</div>';
       return;
     }
 
+    const classOrder = [...new Set(allStudents.map(stu => stu.classId))].sort((a,b)=> a.localeCompare(b));
+    const groupedStudents = classOrder.map(classId => {
+      const list = allStudents
+        .filter(stu => stu.classId === classId)
+        .sort((a,b)=> {
+          if(sortMode === 'score'){
+            return (b.totalScore - a.totalScore) || a.seat.localeCompare(b.seat);
+          }
+          return a.seat.localeCompare(b.seat) || (b.totalScore - a.totalScore);
+        });
+      return { classId, students: list };
+    });
+
+    const students = groupedStudents.flatMap(group => group.students);
     const totalStudents = students.length;
     const totalPassRecords = students.reduce((sum, stu)=> sum + stu.passed, 0);
     const totalCells = totalStudents * allLevels.length;
@@ -430,7 +476,27 @@ window.TeacherPage = (()=>{
     });
 
     const summaryHtml = `
-      <div class="teacherSummaryGrid">
+      <div class="teacherToolbarRow">
+        <div class="teacherToolbarGroup">
+          <label for="filterClassInline">班級顯示</label>
+          <select id="filterClassInline">
+            <option value="all" ${(!filterClass || filterClass === 'all') ? 'selected' : ''}>全部學生</option>
+            ${classOrder.map(classId => `<option value="${classId}" ${filterClass === classId ? 'selected' : ''}>只顯示 ${classId} 班</option>`).join('')}
+          </select>
+        </div>
+        <div class="teacherToolbarGroup">
+          <label for="sortModeInline">排序方式</label>
+          <select id="sortModeInline">
+            <option value="seat" ${sortMode === 'seat' ? 'selected' : ''}>座號排序</option>
+            <option value="score" ${sortMode === 'score' ? 'selected' : ''}>總分排序</option>
+          </select>
+        </div>
+      </div>
+      <div class="teacherSummaryGrid teacherSummaryGridCompact">
+        <div class="teacherSummaryCard">
+          <div class="small">班級數</div>
+          <div class="num">${groupedStudents.length}</div>
+        </div>
         <div class="teacherSummaryCard">
           <div class="small">學生人數</div>
           <div class="num">${totalStudents}</div>
@@ -457,6 +523,53 @@ window.TeacherPage = (()=>{
       </div>
     `;
 
+    const bodyHtml = groupedStudents.map(group => {
+      const classTotalScore = group.students.reduce((sum, stu) => sum + Number(stu.totalScore || 0), 0);
+      const classPassed = group.students.reduce((sum, stu) => sum + Number(stu.passed || 0), 0);
+
+      const classHeaderRow = `
+        <tr>
+          <td colspan="${allLevels.length + 3}" style="padding:10px 14px;background:rgba(124,92,255,.16);color:#fff;font-weight:900;text-align:left;border-bottom:1px solid rgba(255,255,255,.10);">
+            班級 ${group.classId}｜${group.students.length} 人｜通關 ${classPassed} 關｜班級總分 ${classTotalScore}
+          </td>
+        </tr>
+      `;
+
+      const studentRows = group.students.map(stu => {
+        const cells = allLevels.map(level => {
+          const key = `${level.worldId}-${level.levelId}`;
+          const record = stu.best?.[key] || null;
+          const view = getRecordStatus(record, level);
+          return `
+            <td class="statusCell" title="${view.title}">
+              <button class="statusBtn ${view.statusClass}" type="button" tabindex="-1">
+                <span class="cellMain">${view.main}</span>
+                <span class="cellSub">${view.sub}</span>
+              </button>
+            </td>
+          `;
+        }).join('');
+
+        return `
+          <tr>
+            <td class="studentCol">
+              <div class="studentMeta">
+                <div class="studentName">${stu.classId}-${stu.seat}</div>
+                <div class="studentSub">通關 ${stu.passed} 關（含 Boss）｜${sortMode === 'score' ? '本班總分排序' : '本班座號排序'}</div>
+              </div>
+            </td>
+            ${cells}
+            <td class="rowAction">
+              <button class="danger" data-uid="${stu.userId}">清除</button>
+            </td>
+            <td class="actionCol" style="min-width:92px;background:#0f1730;color:#fff;font-weight:900;">${stu.totalScore}</td>
+          </tr>
+        `;
+      }).join('');
+
+      return classHeaderRow + studentRows;
+    }).join('');
+
     const boardHtml = `
       <div class="progressBoardWrap">
         <table class="progressBoard">
@@ -465,48 +578,36 @@ window.TeacherPage = (()=>{
               <th class="studentCol" rowspan="2">學生</th>
               ${worldGroups.map(group => `<th class="worldHead world-${group.worldId}" colspan="${group.count}">${group.worldName}</th>`).join('')}
               <th class="actionCol" rowspan="2">操作</th>
+              <th class="actionCol" rowspan="2">總分</th>
             </tr>
             <tr>
               ${allLevels.map(level => `<th class="levelHead" title="${level.worldName}｜${level.levelName}">${String(level.levelId).toLowerCase() === 'boss' ? 'Boss' : level.levelId}</th>`).join('')}
             </tr>
           </thead>
-          <tbody>
-            ${students.map(stu => {
-              const cells = allLevels.map(level => {
-                const key = `${level.worldId}-${level.levelId}`;
-                const record = stu.best?.[key] || null;
-                const view = getRecordStatus(record, level);
-                return `
-                  <td class="statusCell" title="${view.title}">
-                    <button class="statusBtn ${view.statusClass}" type="button" tabindex="-1">
-                      <span class="cellMain">${view.main}</span>
-                      <span class="cellSub">${view.sub}</span>
-                    </button>
-                  </td>
-                `;
-              }).join('');
-
-              return `
-                <tr>
-                  <td class="studentCol">
-                    <div class="studentMeta">
-                      <div class="studentName">${stu.classId}-${stu.seat}</div>
-                      <div class="studentSub">通關 ${stu.passed} 關｜總分 ${stu.totalScore}</div>
-                    </div>
-                  </td>
-                  ${cells}
-                  <td class="rowAction">
-                    <button class="danger" data-uid="${stu.userId}">清除</button>
-                  </td>
-                </tr>
-              `;
-            }).join('')}
-          </tbody>
+          <tbody>${bodyHtml}</tbody>
         </table>
       </div>
     `;
 
     area.innerHTML = summaryHtml + boardHtml;
+
+    const filterInline = area.querySelector('#filterClassInline');
+    if(filterInline){
+      filterInline.onchange = () => {
+        const topFilter = document.getElementById('filterClass');
+        if(topFilter) topFilter.value = filterInline.value;
+        render();
+      };
+    }
+
+    const sortInline = area.querySelector('#sortModeInline');
+    if(sortInline){
+      sortInline.onchange = () => {
+        const topSort = document.getElementById('sortMode');
+        if(topSort) topSort.value = sortInline.value;
+        render();
+      };
+    }
 
     area.querySelectorAll('button.danger[data-uid]').forEach(btn => {
       btn.onclick = () => {
@@ -941,7 +1042,7 @@ window.LEVELS = ${JSON.stringify(exported, null, 2)};
     if(s === 'P') return '<span class="mapSymbol symbol-portal symbol-portal-blue">🌀</span>';
     if(s === 'Q') return '<span class="mapSymbol symbol-portal symbol-portal-purple">🌀</span>';
     if(s === 'R') return '<span class="mapSymbol symbol-portal symbol-portal-red">🌀</span>';
-    if(s === 'G') return '<span class="mapSymbol symbol-gold-chest">🧰</span>';
+    if(s === 'G') return '<img class="mapSymbol mapSymbolImg symbol-gold-img" src="img/gold.png" alt="裝備寶箱">';
     const meta = MAP_SYMBOLS[s] || MAP_SYMBOLS['.'];
     return `<span class="mapSymbol">${meta.emoji}</span>`;
   }
@@ -1173,6 +1274,11 @@ window.LEVELS = ${JSON.stringify(exported, null, 2)};
       render();
       toast('已更新列表。');
     };
+
+    const filterClassEl = document.getElementById('filterClass');
+    const sortModeEl = document.getElementById('sortMode');
+    if(filterClassEl) filterClassEl.onchange = ()=>{ if(requireTeacherOrBlock('切換班級顯示')) render(); };
+    if(sortModeEl) sortModeEl.onchange = ()=>{ if(requireTeacherOrBlock('切換排序方式')) render(); };
 
     document.getElementById('btnClearAll').onclick = ()=>{
       if(!requireTeacherOrBlock('清除全部學生總分')) return;

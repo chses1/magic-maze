@@ -301,7 +301,7 @@ window.GamePage = (()=>{
     { icon: '🧰', title: '裝備寶箱', desc: '拿到裝備後，Boss 戰會提升攻擊或防禦。' },
     { icon: '🕳️', title: '陷阱', desc: '踩到陷阱會被懲罰，可能回起點或被傳送。' },
     { icon: '🌀', title: '同色傳送門', desc: '藍、紫、紅傳送門會把角色送到同顏色的另一個位置。' },
-    { icon: '🧊', title: '特殊地形', desc: '冰塊、岩漿、妖怪、火焰目前都會擋路，之後可再搭配對應咒語。' }
+    { icon: '🧊', title: '特殊地形', desc: '冰塊、河流、妖怪、火焰目前都會擋路，之後可再搭配對應咒語。' }
   ];
 
   function getSessionSafe(){
@@ -2020,7 +2020,7 @@ window.GamePage = (()=>{
     if(s === 'Q') return '<span class="cell-symbol symbol-portal symbol-portal-purple">🌀</span>';
     if(s === 'R') return '<span class="cell-symbol symbol-portal symbol-portal-red">🌀</span>';
     if(s === 'C') return '🎁';
-    if(s === 'G') return '<span class="cell-symbol symbol-gold-chest">🧰</span>';
+    if(s === 'G') return '<img class="cell-symbol symbol-gold-img" src="img/gold.png" alt="裝備寶箱">';
     if(s === 'I') return '✨';
     if(s === 'M') return '⚙️';
     if(s === 'N') return '🌲';
@@ -2096,7 +2096,7 @@ window.GamePage = (()=>{
     if(ch === 'N') return '前方有樹木擋住，不能直接通過。';
     if(ch === 'B') return '前方有書櫃擋住，不能直接通過。';
     if(ch === 'X') return '前方有冰塊，需要破壞後才能通過。';
-    if(ch === 'L') return '前方是岩漿，需要先蓋橋。';
+    if(ch === 'L') return '前方是河流，需要先蓋橋。';
     if(ch === 'O') return '前方有妖怪，需要用咒語擊退。';
     if(ch === 'F') return '前方有火焰，需要用咒語熄滅。';
     return UI.common.wall;

@@ -20,11 +20,11 @@
     .mapEditorCell.wall{background:rgba(35,28,85,.80);border-color:rgba(180,140,255,.22);}
 
     .mapSymbol{display:inline-flex;align-items:center;justify-content:center;line-height:1;}
-    .symbol-portal{display:inline-flex;transform:translateY(1px);}
-    .symbol-portal-blue{filter:hue-rotate(180deg) saturate(1.9) brightness(1.08) drop-shadow(0 0 4px rgba(49,208,255,.42));}
-    .symbol-portal-purple{filter:hue-rotate(255deg) saturate(1.95) brightness(1.02) drop-shadow(0 0 4px rgba(168,85,247,.42));}
-    .symbol-portal-red{filter:hue-rotate(315deg) saturate(2.05) brightness(1.02) drop-shadow(0 0 4px rgba(248,113,113,.42));}
-    .symbol-gold-chest{filter:hue-rotate(330deg) saturate(1.5) brightness(1.12) drop-shadow(0 0 4px rgba(255,210,110,.30));}
+    .symbol-portal{display:inline-flex;align-items:center;justify-content:center;transform:translateY(1px);font-size:22px;font-weight:900;}
+    .symbol-portal-blue{color:#38bdf8;text-shadow:0 0 6px rgba(56,189,248,.38);}
+    .symbol-portal-purple{color:#a855f7;text-shadow:0 0 6px rgba(168,85,247,.38);}
+    .symbol-portal-red{color:#f87171;text-shadow:0 0 6px rgba(248,113,113,.38);}
+    .mapSymbolImg,.symbol-gold-img{width:22px;height:22px;object-fit:contain;display:inline-block;vertical-align:middle;filter:drop-shadow(0 0 4px rgba(255,210,110,.22));}
     .mapEditorCell.path{background:rgba(255,255,255,.04);}
     .mapEditorCell.start{background:rgba(78,227,165,.16);border-color:rgba(78,227,165,.26);}
     .mapEditorCell.key{background:rgba(124,92,255,.14);border-color:rgba(124,92,255,.25);}
@@ -49,10 +49,15 @@
     .mapHintBox code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;}
     textarea#editMapText{min-height:240px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;line-height:1.5;resize:vertical;}
     
-    .teacherSummaryGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:12px;}
+    .teacherToolbarRow{display:flex;gap:12px;flex-wrap:wrap;align-items:end;margin-bottom:10px;}
+    .teacherToolbarGroup{display:flex;flex-direction:column;gap:6px;min-width:180px;}
+    .teacherToolbarGroup label{margin:0;font-size:12px;color:var(--muted);}
+    .teacherToolbarGroup select{padding:8px 10px;}
+    .teacherSummaryGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:10px;}
+    .teacherSummaryGridCompact .teacherSummaryCard{padding:12px 14px;}
     .teacherSummaryCard{padding:14px 16px;border-radius:16px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);}
-    .teacherSummaryCard .num{font-size:28px;font-weight:900;line-height:1.1;margin-top:6px;}
-    .teacherLegend{display:flex;flex-wrap:wrap;gap:10px;margin:10px 0 14px;}
+    .teacherSummaryCard .num{font-size:24px;font-weight:900;line-height:1.1;margin-top:4px;}
+    .teacherLegend{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 10px;}
     .teacherLegendItem{display:inline-flex;align-items:center;gap:8px;padding:8px 10px;border-radius:999px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);font-size:13px;}
     .teacherDot{width:14px;height:14px;border-radius:4px;display:inline-block;border:1px solid rgba(255,255,255,.14);}
     .teacherDot.none{background:rgba(255,255,255,.06);}
@@ -60,21 +65,21 @@
     .teacherDot.two{background:#10b981;}
     .teacherDot.three{background:#f59e0b;}
     .teacherDot.boss{background:#ef4444;}
-    .progressBoardWrap{overflow:auto;border-radius:18px;border:1px solid rgba(255,255,255,.10);background:rgba(7,12,28,.34);}
+    .progressBoardWrap{overflow:auto;border-radius:18px;border:1px solid rgba(255,255,255,.10);background:rgba(7,12,28,.34);max-height:calc(100vh - 280px);}
     .progressBoard{width:max-content;min-width:100%;border-collapse:separate;border-spacing:0;}
     .progressBoard th,.progressBoard td{border-right:1px solid rgba(255,255,255,.08);border-bottom:1px solid rgba(255,255,255,.08);padding:0;text-align:center;vertical-align:middle;}
     .progressBoard thead th{position:sticky;top:0;z-index:3;background:#17203f;}
-    .progressBoard .studentCol{position:sticky;left:0;z-index:2;min-width:210px;max-width:210px;text-align:left;background:#111a33;}
+    .progressBoard .studentCol{position:sticky;left:0;z-index:2;min-width:170px;max-width:170px;text-align:left;background:#111a33;}
     .progressBoard thead .studentCol{z-index:4;background:#1a2347;}
-    .progressBoard .actionCol{min-width:108px;background:#0f1730;}
+    .progressBoard .actionCol{min-width:76px;background:#0f1730;}
     .progressBoard thead .actionCol{z-index:3;background:#1a2347;}
     .progressBoard .worldHead{font-size:13px;font-weight:900;color:#fff;padding:12px 8px;}
-    .progressBoard .levelHead{padding:10px 6px;font-size:12px;line-height:1.3;color:#dbe5ff;min-width:64px;background:#162142;}
-    .progressBoard .studentMeta{padding:10px 12px;display:flex;flex-direction:column;gap:4px;}
-    .progressBoard .studentName{font-weight:900;color:#fff;font-size:15px;line-height:1.2;}
-    .progressBoard .studentSub{font-size:12px;color:var(--muted);}
-    .progressBoard .statusCell{width:64px;height:56px;position:relative;}
-    .progressBoard .statusBtn{width:100%;height:100%;border:none;border-radius:0;background:transparent;color:#fff;font-weight:900;font-size:12px;padding:0;}
+    .progressBoard .levelHead{padding:8px 4px;font-size:11px;line-height:1.2;color:#dbe5ff;min-width:48px;background:#162142;}
+    .progressBoard .studentMeta{padding:8px 10px;display:flex;flex-direction:column;gap:3px;}
+    .progressBoard .studentName{font-weight:900;color:#fff;font-size:13px;line-height:1.15;}
+    .progressBoard .studentSub{font-size:11px;color:var(--muted);line-height:1.25;}
+    .progressBoard .statusCell{width:48px;height:42px;position:relative;}
+    .progressBoard .statusBtn{width:100%;height:100%;border:none;border-radius:0;background:transparent;color:#fff;font-weight:900;font-size:11px;padding:0;}
     .progressBoard .statusBtn:hover{transform:none;filter:brightness(1.08);}
     .progressBoard .statusBtn.none{background:rgba(255,255,255,.04);color:#7d89b8;}
     .progressBoard .statusBtn.one{background:#2563eb;}
@@ -82,10 +87,10 @@
     .progressBoard .statusBtn.three{background:#d97706;}
     .progressBoard .statusBtn.boss{background:#dc2626;}
     .progressBoard .statusBtn.hasScoreOnly{background:#7c3aed;}
-    .progressBoard .cellMain{display:block;font-size:16px;line-height:1;}
-    .progressBoard .cellSub{display:block;font-size:11px;opacity:.92;margin-top:3px;}
-    .progressBoard .rowAction{padding:0 8px;background:#0f1730;}
-    .progressBoard .rowAction button{margin:0;font-size:12px;padding:8px 10px;}
+    .progressBoard .cellMain{display:block;font-size:13px;line-height:1;}
+    .progressBoard .cellSub{display:block;font-size:9px;opacity:.92;margin-top:2px;}
+    .progressBoard .rowAction{padding:0 4px;background:#0f1730;}
+    .progressBoard .rowAction button{margin:0;font-size:11px;padding:6px 6px;}
     .progressBoard .world-W1{background:#334155 !important;}
     .progressBoard .world-W2{background:#065f46 !important;}
     .progressBoard .world-W3{background:#92400e !important;}
@@ -125,14 +130,23 @@
 
       <div class="card">
         <h2 style="margin:0 0 10px 0;">快速操作</h2>
-        <label>篩選班級（3位數，例如 301）</label>
-        <input id="filterClass" placeholder="301" inputmode="numeric" />
+        <label>班級顯示</label>
+        <select id="filterClass">
+          <option value="all">全部學生</option>
+        </select>
+
+        <label style="margin-top:10px;">排序方式</label>
+        <select id="sortMode">
+          <option value="seat">班級內依座號排序</option>
+          <option value="score">班級內依總分排序</option>
+        </select>
+
         <div class="btnbar">
           <button id="btnRefresh">更新列表</button>
           <button class="danger" id="btnClearAll">清除全部學生總分</button>
         </div>
         <div class="small" style="margin-top:8px;">
-          說明：清除「總分」會清空該生（或全部學生）的所有關卡最佳紀錄與排行榜紀錄。
+          說明：可切換全部學生或單一班級；每個班級內可切換成「座號排序」或「總分排序」。總分會顯示在表格最後一欄，通關數包含 Boss 關。
         </div>
       </div>
     </div>
