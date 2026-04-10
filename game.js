@@ -273,6 +273,7 @@ window.GamePage = (()=>{
   let runGeneration = 0;
 
   const PROGRAM_STORE_KEY = "maze_saved_programs_v1";
+  const WORLD4_HINT_ONCE_KEY = "mw_world4_hint_seen_v1";
   const LEVEL_TARGET_BLOCK_OVERRIDE_KEY = "mw_published_level_overrides_v1";
   const LEVEL_EDIT_OVERRIDE_KEY = 'mw_teacher_level_edits_v1';
 
@@ -601,6 +602,17 @@ window.GamePage = (()=>{
     return LEVEL_COPY[levelKeyRaw(worldId, levelId)] || DEFAULT_COPY;
   }
 
+  function getSpellObstacleSymbolsFromMap(mapRows){
+    const rows = Array.isArray(mapRows) ? mapRows : [];
+    const found = new Set();
+    rows.forEach(row => {
+      String(row || '').split('').forEach(ch => {
+        if(['X','F','O','L'].includes(ch)) found.add(ch);
+      });
+    });
+    return Array.from(found);
+  }
+
 
   function draftRecordKey(userId, worldId, levelId){
     return `${String(userId || '').trim()}::${normalizeWorldId(worldId)}-${normalizeLevelId(levelId)}`;
@@ -728,6 +740,63 @@ window.GamePage = (()=>{
       return saveProgramStore(store);
     }catch(err){
       console.warn('clearProgramDraft failed', err);
+      return false;
+    }
+  }
+
+  function getWorld4HintSeenStore(){
+    try{
+      const raw = localStorage.getItem(WORLD4_HINT_ONCE_KEY);
+      const parsed = raw ? JSON.parse(raw) : {};
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    }catch(err){
+      console.warn('讀取世界4提示狀態失敗', err);
+      return {};
+    }
+  }
+
+  function saveWorld4HintSeenStore(store){
+    try{
+      if (!store || typeof store !== 'object' || Object.keys(store).length === 0) {
+        localStorage.removeItem(WORLD4_HINT_ONCE_KEY);
+        return true;
+      }
+      localStorage.setItem(WORLD4_HINT_ONCE_KEY, JSON.stringify(store));
+      return true;
+    }catch(err){
+      console.warn('儲存世界4提示狀態失敗', err);
+      return false;
+    }
+  }
+
+  function world4HintRecordKey(userId, worldId, levelId){
+    return `${String(userId || '').trim()}::${normalizeWorldId(worldId)}-${normalizeLevelId(levelId)}`;
+  }
+
+  function hasSeenWorld4Hint(userId, worldId, levelId){
+    if (!userId || !worldId || !levelId) return false;
+    const store = getWorld4HintSeenStore();
+    return !!store[world4HintRecordKey(userId, worldId, levelId)];
+  }
+
+  function markWorld4HintSeen(userId, worldId, levelId){
+    if (!userId || !worldId || !levelId) return false;
+    const store = getWorld4HintSeenStore();
+    store[world4HintRecordKey(userId, worldId, levelId)] = Date.now();
+    return saveWorld4HintSeenStore(store);
+  }
+
+  function maybeShowWorld4HintSpell(){
+    try{
+      const session = StorageAPI.getSession?.();
+      if (!session?.userId || !workspace || !world || !level) return false;
+      if (normalizeWorldId(world.worldId) !== 'W4') return false;
+      if (hasSeenWorld4Hint(session.userId, world.worldId, level.levelId)) return false;
+      const ok = BlocklySetup?.enforceWorld4SingleSpell?.(workspace, normalizeLevelId(level.levelId || ''), { reposition:false });
+      if (ok) markWorld4HintSeen(session.userId, world.worldId, level.levelId);
+      return !!ok;
+    }catch(err){
+      console.warn('maybeShowWorld4HintSpell failed', err);
       return false;
     }
   }
@@ -2775,7 +2844,7 @@ window.GamePage = (()=>{
 
     applyStaticUIText();
     ensureInfoPanels();
-    workspace = BlocklySetup.createWorkspace("blocklyDiv", normalizeWorldId(worldId || pack.w?.worldId || "W1"), { levelId: normalizeLevelId(levelId || pack.lv?.levelId || "") });
+    workspace = BlocklySetup.createWorkspace("blocklyDiv", normalizeWorldId(worldId || pack.w?.worldId || "W1"), { levelId: normalizeLevelId(levelId || pack.lv?.levelId || ""), availableSpellSymbols: getSpellObstacleSymbolsFromMap(pack.lv?.map) });
     bindUI();
 
     function refreshVisibleTargetBlocksText(targetBlocks){
@@ -2808,7 +2877,10 @@ window.GamePage = (()=>{
     });
 
     resetLevel();
-    loadProgramDraft();
+    const hasDraft = loadProgramDraft();
+    if (!hasDraft) {
+      maybeShowWorld4HintSpell();
+    }
     // 不再自動載入 levels.js 內嵌的最佳解法，避免學生一進關卡就看到答案。
     // 若開發測試需要，請改用快捷工具手動載入。
     applyMainContrast();

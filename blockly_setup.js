@@ -304,15 +304,55 @@ ${elseCode}}
 
   function getWorld4SpellConfig(levelId){
     const map = {
-      L1: { name:'飛行咒語', defType:'mw_func_def_fly', callType:'mw_func_call_fly' },
-      L2: { name:'火焰咒語', defType:'mw_func_def_fire', callType:'mw_func_call_fire' },
-      L3: { name:'暴雨咒語', defType:'mw_func_def_rain', callType:'mw_func_call_rain' },
-      L4: { name:'驅邪咒語', defType:'mw_func_def_purify', callType:'mw_func_call_purify' }
+      L1: { name:'飛行咒語', defType:'mw_func_def_fly', callType:'mw_func_call_fly', target:'L' },
+      L2: { name:'火焰咒語', defType:'mw_func_def_fire', callType:'mw_func_call_fire', target:'X' },
+      L3: { name:'暴雨咒語', defType:'mw_func_def_rain', callType:'mw_func_call_rain', target:'F' },
+      L4: { name:'驅邪咒語', defType:'mw_func_def_purify', callType:'mw_func_call_purify', target:'O' }
     };
     return map[normalizeLevelId(levelId)] || null;
   }
 
-  function buildToolbox(worldId, levelId = ''){
+  function getSpellConfigByObstacle(symbol){
+    const key = String(symbol || '').trim().toUpperCase();
+    const map = {
+      X: { name:'火焰咒語', defType:'mw_func_def_fire', callType:'mw_func_call_fire', target:'X' },
+      F: { name:'暴雨咒語', defType:'mw_func_def_rain', callType:'mw_func_call_rain', target:'F' },
+      O: { name:'驅邪咒語', defType:'mw_func_def_purify', callType:'mw_func_call_purify', target:'O' },
+      L: { name:'飛行咒語', defType:'mw_func_def_fly', callType:'mw_func_call_fly', target:'L' }
+    };
+    return map[key] || null;
+  }
+
+  function getWorld4AvailableSpellConfigs(levelId, opts = {}){
+    const symbolList = Array.isArray(opts.availableSpellSymbols) ? opts.availableSpellSymbols : [];
+    const seen = new Set();
+    const configs = [];
+
+    symbolList.forEach(symbol => {
+      const cfg = getSpellConfigByObstacle(symbol);
+      if(!cfg || seen.has(cfg.defType)) return;
+      seen.add(cfg.defType);
+      configs.push(cfg);
+    });
+
+    if(configs.length > 0) return configs;
+
+    const fallback = getWorld4SpellConfig(levelId);
+    return fallback ? [fallback] : [];
+  }
+
+  function getWorld4HintSpellConfig(levelId = ''){
+    const map = {
+      L1: 'L',
+      L2: 'F',
+      L3: 'X',
+      L4: 'O'
+    };
+    const symbol = map[normalizeLevelId(levelId)] || 'L';
+    return getSpellConfigByObstacle(symbol);
+  }
+
+  function buildToolbox(worldId, levelId = '', opts = {}){
     ensureDefinitions();
     const contents = [];
 
@@ -353,16 +393,11 @@ ${elseCode}}
     }
 
     if(worldId === "W4"){
-      const functionContents = [
-        {kind:"block", type:"mw_func_def_fire"},
-        {kind:"block", type:"mw_func_call_fire"},
-        {kind:"block", type:"mw_func_def_rain"},
-        {kind:"block", type:"mw_func_call_rain"},
-        {kind:"block", type:"mw_func_def_purify"},
-        {kind:"block", type:"mw_func_call_purify"},
-        {kind:"block", type:"mw_func_def_fly"},
-        {kind:"block", type:"mw_func_call_fly"}
-      ];
+      const spellConfigs = getWorld4AvailableSpellConfigs(levelId, opts);
+      const functionContents = spellConfigs.flatMap(cfg => ([
+        {kind:"block", type:cfg.defType},
+        {kind:"block", type:cfg.callType}
+      ]));
       contents.push({
         kind:"category",
         name:"函式（咒語）",
@@ -375,7 +410,7 @@ ${elseCode}}
   }
 
   function buildWorld4PresetXml(levelId){
-    const cfg = getWorld4SpellConfig(levelId);
+    const cfg = getWorld4HintSpellConfig(levelId) || getWorld4SpellConfig(levelId);
     if(!cfg) return '';
     return `
       <xml xmlns="https://developers.google.com/blockly/xml">
@@ -387,31 +422,29 @@ ${elseCode}}
 
   function enforceWorld4SingleSpell(workspace, levelId, opts = {}){
     if(!workspace) return false;
-    const cfg = getWorld4SpellConfig(levelId);
+    const cfg = getWorld4HintSpellConfig(levelId) || getWorld4SpellConfig(levelId);
     if(!cfg) return false;
-
-    const allBlocks = typeof workspace.getAllBlocks === 'function' ? workspace.getAllBlocks(false) : [];
-    allBlocks.forEach(block => {
-      const type = String(block?.type || '');
-      if(type.startsWith('mw_func_') && type !== cfg.defType && type !== cfg.callType){
-        try{ block.dispose(false); }catch(_err){}
-      }
-    });
 
     let defs = (typeof workspace.getAllBlocks === 'function' ? workspace.getAllBlocks(false) : []).filter(block => block?.type === cfg.defType);
     let defBlock = defs[0] || null;
     defs.slice(1).forEach(block => { try{ block.dispose(false); }catch(_err){} });
 
     if(!defBlock){
-      const xml = buildWorld4PresetXml(levelId);
-      if(xml) loadXmlText(workspace, xml);
-      defs = (typeof workspace.getAllBlocks === 'function' ? workspace.getAllBlocks(false) : []).filter(block => block?.type === cfg.defType);
-      defBlock = defs[0] || null;
+      try{
+        const block = workspace.newBlock?.(cfg.defType);
+        if(block){
+          block.initSvg?.();
+          block.render?.();
+          block.moveBy?.(380, 36);
+          defBlock = block;
+        }
+      }catch(_err){}
     }
 
     if(defBlock){
-      defBlock.setMovable?.(false);
+      defBlock.setMovable?.(true);
       defBlock.setDeletable?.(false);
+      defBlock.setEditable?.(true);
       if(opts.reposition !== false){
         try{
           const xy = typeof defBlock.getRelativeToSurfaceXY === 'function' ? defBlock.getRelativeToSurfaceXY() : {x:0,y:0};
@@ -459,6 +492,9 @@ ${elseCode}}
       const xml = xmlTextToDom(xmlText);
       domToWorkspace(xml, workspace);
       lockStartBlocks(workspace);
+      if(worldId === "W4"){
+        enforceWorld4SingleSpell(workspace, opts.levelId || "", { reposition:true });
+      }
     }
 
     return workspace;
@@ -668,6 +704,8 @@ ${elseCode}}
     ensureDefinitions,
     normalizeSerializedWorkspaceData,
     getWorld4SpellConfig,
+    getWorld4AvailableSpellConfigs,
+    getWorld4HintSpellConfig,
     loadWorld4PresetSpell,
     enforceWorld4SingleSpell
   };
