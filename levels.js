@@ -389,23 +389,23 @@ window.LEVELS = [
         "startDir": 1,
         "map": [
           "MMMMMMMMMMMMMMM",
-          "MS....LK......M",
+          "MS....LK..L...M",
           "M.MMM.L.MMMMMDM",
           "M...M.L.....M.M",
           "MMM.M.MMMMM.M.M",
           "M...M...M...M.M",
-          "M.MMMMM.M.MMM.M",
+          "M.MMMMM.M.MMMLM",
           "M.M...M.M..PM.M",
           "M.M.M.MPMMM.M.M",
-          "M.C.M.M...M.LLM",
-          "MLMMM.MMM.M.LLM",
-          "MLLLMG..M.M.LLM",
-          "MLLLMMM.M.M.LLM",
-          "MLLLLLL...M...M",
+          "M.C.M.M...M.MLM",
+          "MLMMM.MMM.M.MLM",
+          "M...MG..M.M.MLM",
+          "M...MMM.M.M.MLM",
+          "M.....L...M...M",
           "MMMMMMMMMMMMMMM"
         ],
-        "bestXml": "{\"blocks\":{\"languageVersion\":0,\"blocks\":[{\"type\":\"mw_start\",\"id\":\"ctayl60m!C*{Xs8}2^6(\",\"x\":20,\"y\":20,\"deletable\":false,\"movable\":false,\"editable\":false,\"next\":{\"block\":{\"type\":\"mw_repeat_until_goal\",\"id\":\"~1ImvTVE?zp~OE%lu3_*\",\"inputs\":{\"DO\":{\"block\":{\"type\":\"mw_repeat_until_obstacle\",\"id\":\"l2pf/Wq(Bvj7P`]P;Ui-\",\"inputs\":{\"DO\":{\"block\":{\"type\":\"mw_if_path\",\"id\":\"!kfzXI{i6ah#tp?|,;Dx\",\"fields\":{\"DIR\":\"right\"},\"inputs\":{\"DO\":{\"block\":{\"type\":\"mw_turn\",\"id\":\"BJL(J)R8!^;!7{ydMlzY\",\"fields\":{\"DIR\":\"right\"},\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"-R],$Oz8vQd!),)yH=$.\"}}}},\"ELSE\":{\"block\":{\"type\":\"mw_if_path\",\"id\":\"UBubfT!/IHsi53]f[un=\",\"fields\":{\"DIR\":\"left\"},\"inputs\":{\"DO\":{\"block\":{\"type\":\"mw_turn\",\"id\":\"zb9bTNJqw;2(vQd4T^`=\",\"fields\":{\"DIR\":\"left\"},\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"6|mT%6a^,9!*l=@(e(`V\"}}}},\"ELSE\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"=pJ(iGB^:SjBEPK6-J*O\"}}}}}}}}},\"next\":{\"block\":{\"type\":\"mw_func_call_fly\",\"id\":\"8t^{2G=*Xnn?luhNk58p\"}}}}}}}},{\"type\":\"mw_func_def_fly\",\"id\":\"XlIcKB_E)zhK`D/Kaz|E\",\"x\":380,\"y\":36,\"deletable\":false,\"inputs\":{\"DO\":{\"block\":{\"type\":\"mw_turn\",\"id\":\"$w%HB]VFvOab)8]K_Nj6\",\"fields\":{\"DIR\":\"right\"},\"next\":{\"block\":{\"type\":\"mw_turn\",\"id\":\"y.Sq)Lk_S@-.2ZV1.{P;\",\"fields\":{\"DIR\":\"right\"},\"next\":{\"block\":{\"type\":\"mw_turn\",\"id\":\"^#cSD[{2fPIS[l[VP@f;\",\"fields\":{\"DIR\":\"left\"},\"next\":{\"block\":{\"type\":\"mw_turn\",\"id\":\"=d_Uh7izfUS0,o.Rxv`6\",\"fields\":{\"DIR\":\"left\"}}}}}}}}}}}]}}",
-        "targetBlocks": 10
+        "bestXml": "{\"blocks\":{\"languageVersion\":0,\"blocks\":[{\"type\":\"mw_start\",\"id\":\"ctayl60m!C*{Xs8}2^6(\",\"x\":20,\"y\":20,\"deletable\":false,\"movable\":false,\"editable\":false,\"next\":{\"block\":{\"type\":\"mw_repeat_until_goal\",\"id\":\"*Qfs4UGo!%sPrzZU41n~\",\"inputs\":{\"DO\":{\"block\":{\"type\":\"mw_if_path\",\"id\":\")m81ind)jhW[%wD{`T{*\",\"fields\":{\"DIR\":\"right\"},\"inputs\":{\"DO\":{\"block\":{\"type\":\"mw_turn\",\"id\":\"R9g+Y33{S;5sU1go.pLR\",\"fields\":{\"DIR\":\"right\"},\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"i|#8DF[`Z,oPYAc8u;8)\"}}}},\"ELSE\":{\"block\":{\"type\":\"mw_if_path\",\"id\":\"J66tc:l!9+VQZNJ@QkP9\",\"fields\":{\"DIR\":\"left\"},\"inputs\":{\"DO\":{\"block\":{\"type\":\"mw_turn\",\"id\":\"8|(bA{EcF!!}j5P$Qe!3\",\"fields\":{\"DIR\":\"left\"},\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"dTyPjFrsXV*,6yi`a,*Z\"}}}},\"ELSE\":{\"block\":{\"type\":\"mw_func_call_fly\",\"id\":\"w![-ppb;|JC;+cjd;)?5\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"M1hrTn.t=|s#|P0w4~Ey\"}}}}}}}}}}}}}},{\"type\":\"mw_func_def_fly\",\"id\":\"XVTUXXz@^/i`-c_A0~ns\",\"x\":270,\"y\":30,\"deletable\":false,\"inputs\":{\"DO\":{\"block\":{\"type\":\"mw_turn\",\"id\":\"!d8V_#j!+kE~csH`A3{F\",\"fields\":{\"DIR\":\"right\"},\"next\":{\"block\":{\"type\":\"mw_turn\",\"id\":\")luaUU7X{xV!o^IMKoKq\",\"fields\":{\"DIR\":\"right\"},\"next\":{\"block\":{\"type\":\"mw_turn\",\"id\":\"/fVU}_F.,[O/!fCM:fVX\",\"fields\":{\"DIR\":\"left\"},\"next\":{\"block\":{\"type\":\"mw_turn\",\"id\":\"X]KyQpWKoV5?R)~9Eqi?\",\"fields\":{\"DIR\":\"left\"}}}}}}}}}}}]}}",
+        "targetBlocks": 9
       },
       {
         "levelId": "L2",
@@ -460,7 +460,8 @@ window.LEVELS = [
           "#P..T....P..T.#",
           "###############"
         ],
-        "bestXml": ""
+        "bestXml": "",
+        "targetBlocks": 47
       },
       {
         "levelId": "L4",
