@@ -2085,9 +2085,9 @@ window.GamePage = (()=>{
       ? '<span class="cell-symbol-stack"><span class="door-icon">🚪</span></span>'
       : '<span class="cell-symbol-stack"><span class="door-icon">🚪</span><span class="lock-icon">🔒</span></span>';
     if(s === 'T') return '🕳️';
-    if(s === 'P') return '<span class="cell-symbol symbol-portal symbol-portal-blue">🌀</span>';
-    if(s === 'Q') return '<span class="cell-symbol symbol-portal symbol-portal-purple">🌀</span>';
-    if(s === 'R') return '<span class="cell-symbol symbol-portal symbol-portal-red">🌀</span>';
+    if(s === 'P') return '<span class="cell-symbol portal-glyph portal-glyph-blue" aria-label="藍色傳送門"></span>';
+    if(s === 'Q') return '<span class="cell-symbol portal-glyph portal-glyph-purple" aria-label="紫色傳送門"></span>';
+    if(s === 'R') return '<span class="cell-symbol portal-glyph portal-glyph-red" aria-label="紅色傳送門"></span>';
     if(s === 'C') return '🎁';
     if(s === 'G') return '<img class="cell-symbol symbol-gold-img" src="img/gold.png" alt="裝備寶箱">';
     if(s === 'I') return '✨';

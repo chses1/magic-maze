@@ -869,3 +869,54 @@ button.danger{
     height:100% !important;
   }
 }
+
+
+.portal-glyph{
+  display:inline-block;
+  width:22px;
+  height:22px;
+  background-repeat:no-repeat;
+  background-position:center;
+  background-size:contain;
+  filter:drop-shadow(0 0 6px rgba(255,255,255,.10));
+}
+.portal-glyph-blue{
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><defs><radialGradient id='g' cx='50%25' cy='50%25' r='50%25'><stop offset='0%25' stop-color='%23ffffff'/><stop offset='18%25' stop-color='%23d9f4ff'/><stop offset='36%25' stop-color='%2398e7ff'/><stop offset='62%25' stop-color='%2338bdf8'/><stop offset='100%25' stop-color='%230ea5e9'/></radialGradient></defs><rect width='64' height='64' fill='none'/><path d='M33 6c9 1 17 8 18 17 1 6-1 11-5 15-3 3-7 5-10 8-4 3-5 8-3 12-5-2-8-7-7-12 1-6 6-8 10-11 4-2 7-5 8-10 1-7-4-14-11-19Z' fill='url(%23g)' opacity='.96'/><path d='M28 12c-9 2-15 10-14 19 1 5 4 9 8 12 4 3 9 4 13 7 4 3 6 8 5 13 4-3 6-8 5-13-1-6-6-9-11-12-4-2-7-4-8-8-2-7 1-13 6-18 2-2 4-3 6-4-3 1-6 2-10 4Z' fill='%2322d3ee' opacity='.88'/><path d='M36 24c5 1 9 5 9 10s-4 9-9 10c-5 1-10-2-12-7-1-4 0-8 3-10 2-2 5-3 9-3Z' fill='%2302567f' opacity='.35'/><path d='M37 27c3 1 5 4 5 7s-2 6-5 7c-3 1-7 0-9-3-2-3-2-6 0-8 2-3 5-4 9-3Z' fill='none' stroke='%23ffffff' stroke-width='2.8' stroke-linecap='round' opacity='.85'/></svg>");
+}
+.portal-glyph-purple{
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><defs><radialGradient id='g' cx='50%25' cy='50%25' r='50%25'><stop offset='0%25' stop-color='%23ffffff'/><stop offset='18%25' stop-color='%23f3e8ff'/><stop offset='36%25' stop-color='%23d8b4fe'/><stop offset='62%25' stop-color='%23a855f7'/><stop offset='100%25' stop-color='%237e22ce'/></radialGradient></defs><rect width='64' height='64' fill='none'/><path d='M33 6c9 1 17 8 18 17 1 6-1 11-5 15-3 3-7 5-10 8-4 3-5 8-3 12-5-2-8-7-7-12 1-6 6-8 10-11 4-2 7-5 8-10 1-7-4-14-11-19Z' fill='url(%23g)' opacity='.96'/><path d='M28 12c-9 2-15 10-14 19 1 5 4 9 8 12 4 3 9 4 13 7 4 3 6 8 5 13 4-3 6-8 5-13-1-6-6-9-11-12-4-2-7-4-8-8-2-7 1-13 6-18 2-2 4-3 6-4-3 1-6 2-10 4Z' fill='%23c084fc' opacity='.9'/><path d='M36 24c5 1 9 5 9 10s-4 9-9 10c-5 1-10-2-12-7-1-4 0-8 3-10 2-2 5-3 9-3Z' fill='%234b1369' opacity='.35'/><path d='M37 27c3 1 5 4 5 7s-2 6-5 7c-3 1-7 0-9-3-2-3-2-6 0-8 2-3 5-4 9-3Z' fill='none' stroke='%23ffffff' stroke-width='2.8' stroke-linecap='round' opacity='.85'/></svg>");
+}
+.portal-glyph-red{
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><defs><radialGradient id='g' cx='50%25' cy='50%25' r='50%25'><stop offset='0%25' stop-color='%23ffffff'/><stop offset='18%25' stop-color='%23fee2e2'/><stop offset='36%25' stop-color='%23fca5a5'/><stop offset='62%25' stop-color='%23f87171'/><stop offset='100%25' stop-color='%23ef4444'/></radialGradient></defs><rect width='64' height='64' fill='none'/><path d='M33 6c9 1 17 8 18 17 1 6-1 11-5 15-3 3-7 5-10 8-4 3-5 8-3 12-5-2-8-7-7-12 1-6 6-8 10-11 4-2 7-5 8-10 1-7-4-14-11-19Z' fill='url(%23g)' opacity='.96'/><path d='M28 12c-9 2-15 10-14 19 1 5 4 9 8 12 4 3 9 4 13 7 4 3 6 8 5 13 4-3 6-8 5-13-1-6-6-9-11-12-4-2-7-4-8-8-2-7 1-13 6-18 2-2 4-3 6-4-3 1-6 2-10 4Z' fill='%23fb7185' opacity='.88'/><path d='M36 24c5 1 9 5 9 10s-4 9-9 10c-5 1-10-2-12-7-1-4 0-8 3-10 2-2 5-3 9-3Z' fill='%237f1d1d' opacity='.33'/><path d='M37 27c3 1 5 4 5 7s-2 6-5 7c-3 1-7 0-9-3-2-3-2-6 0-8 2-3 5-4 9-3Z' fill='none' stroke='%23ffffff' stroke-width='2.8' stroke-linecap='round' opacity='.85'/></svg>");
+}
+.symbol-portal{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  transform:none;
+  font-size:0;
+  font-weight:900;
+}
+.symbol-portal-blue,
+.symbol-portal-purple,
+.symbol-portal-red{
+  color:transparent;
+  text-shadow:none;
+}
+.cell.portal{
+  background: rgba(255,255,255,.04);
+  border-color: rgba(255,255,255,.08);
+}
+.cell.portal.portal-blue{
+  background: rgba(255,255,255,.04);
+  border-color: rgba(49,208,255,.24);
+}
+.cell.portal.portal-purple{
+  background: rgba(255,255,255,.04);
+  border-color: rgba(168,85,247,.28);
+}
+.cell.portal.portal-red{
+  background: rgba(255,255,255,.04);
+  border-color: rgba(248,113,113,.28);
+}
+
