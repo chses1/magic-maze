@@ -33,17 +33,12 @@
     <div class="gameLayout">
       <div class="card stage">
         <div class="stageTop">
-          <div class="kpi">
-                        <span class="badge" id="codeBadge">目前程式碼數／目標程式碼數：<strong id="codeCount">0</strong>/<strong id="targetCodeCount">0</strong></span>
-            <span class="badge">撞牆：<strong id="bumps">0</strong></span>
-            <span class="badge">鑰匙：<strong id="hasKey">否</strong></span>
-          </div>
           <div class="btnbar" style="margin:0;">
             <button class="primary" id="btnRun">▶ 執行</button>
             <button id="btnStep">⏭ 步進</button>
             <button id="btnPause">⏸ 暫停</button>
             <button id="btnReset">↩ 重來</button>
-            <button class="danger" id="btnExit">⛔ 結束</button>
+            <button class="danger" id="btnExit">⛔ 離開關卡</button>
           </div>
         </div>
 
@@ -51,28 +46,25 @@
           <div class="gridWrap" id="gridWrap">
             <div id="grid" class="grid"></div>
           </div>
-          <div class="mazeResultWrap" id="mazeResultWrap" hidden></div>
-        </div>
-
-        <div class="stageFooter mergedFooter">
-          <div class="footerBox">
-            <div class="footerMain">
-              <div class="footerToast" id="toast"></div>
-              <div class="footerInfo infoPanel legendTicker" id="info" aria-live="polite"></div>
-              <div class="footerResult small" id="result"></div>
-            </div>
-            <div class="footerZoomBar" aria-label="迷宮大小調整">
-              <span class="footerZoomLabel">迷宮大小</span>
-              <button id="btnZoomOut" title="縮小迷宮" aria-label="縮小迷宮">－</button>
-              <button id="btnZoomReset" title="恢復預設大小" aria-label="恢復迷宮大小">◎</button>
-              <button id="btnZoomIn" title="放大迷宮" aria-label="放大迷宮">＋</button>
-            </div>
+          <div class="mazeZoomControls" aria-label="迷宮大小調整">
+            <button id="btnZoomOut" title="縮小迷宮" aria-label="縮小迷宮">－</button>
+            <button id="btnZoomReset" title="恢復預設大小" aria-label="恢復迷宮大小">◎</button>
+            <button id="btnZoomIn" title="放大迷宮" aria-label="放大迷宮">＋</button>
           </div>
+          <div class="mazeHud" aria-hidden="true">
+            <div class="footerToast" id="toast"></div>
+            <div class="footerInfo infoPanel legendTicker" id="info" aria-live="polite"></div>
+            <div class="footerResult small" id="result"></div>
+          </div>
+          <div class="mazeResultWrap" id="mazeResultWrap" hidden></div>
         </div>
       </div>
 
       <div class="card editorCard">
-        <h2 class="editorTitle">積木程式區</h2>
+        <div class="editorHead">
+          <h2 class="editorTitle">積木工作區</h2>
+          <span class="badge editorCodeBadge" id="codeBadge">目前程式碼數／目標程式碼數：<strong id="codeCount">0</strong>/<strong id="targetCodeCount">0</strong></span>
+        </div>
         <div class="blocklyWrap">
           <div id="blocklyDiv"></div>
         </div>

@@ -975,112 +975,168 @@ button.danger{
   }
 }
 
-
-
-/* === iPad 介面位置修正：依截圖調整 === */
-body:has(.gameLayout) .stageTop{
-  display:grid;
-  grid-template-columns:1fr;
-  align-items:start;
-  gap:8px;
+/* === iPad 迷宮 / 積木工作區 版面修正 === */
+html, body{
+  touch-action: manipulation;
+  overscroll-behavior: none;
 }
 
-body:has(.gameLayout) .stageTop .kpi{
-  order:1;
-  display:flex;
-  flex-wrap:wrap;
-  gap:8px;
+body{
+  -webkit-text-size-adjust: 100%;
 }
 
-body:has(.gameLayout) .stageTop .btnbar{
-  order:2;
-  margin:0;
-  display:flex;
-  flex-wrap:wrap;
-  gap:10px;
+.stage{
+  grid-template-rows: auto minmax(0,1fr) !important;
 }
 
-/* 上方只保留程式碼數，移除撞牆／鑰匙 */
-body:has(.gameLayout) .kpi .badge:has(#bumps),
-body:has(.gameLayout) .kpi .badge:has(#hasKey){
-  display:none !important;
+.stageTop{
+  align-items: flex-start;
+  justify-content: flex-start;
 }
 
-/* 拿掉底部資訊後，迷宮與積木區往上、往下撐滿 */
-body:has(.gameLayout) .stage{
-  grid-template-rows:auto minmax(0,1fr);
+.stageTop .btnbar{
+  width: 100%;
 }
 
-body:has(.gameLayout) .editorCard{
-  grid-template-rows:auto minmax(0,1fr);
+.kpi{
+  display: none !important;
 }
 
-body:has(.gameLayout) .editorHint{
-  display:none !important;
+.stageMiddle{
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
 }
 
-body:has(.gameLayout) .gridWrap{
-  padding:10px;
+.gridWrap{
+  padding: 14px 14px 58px 14px;
 }
 
-body:has(.gameLayout) .blocklyWrap{
-  min-height:0;
-  height:100%;
+.mazeZoomControls{
+  position: absolute;
+  left: 18px;
+  bottom: 16px;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
-body:has(.gameLayout) #blocklyDiv{
-  min-height:0 !important;
-  height:100% !important;
+.mazeZoomControls button{
+  min-width: 38px;
+  height: 38px;
+  padding: 0 8px;
+  border-radius: 11px;
+  background: rgba(17,26,51,.88);
+  border: 1px solid rgba(255,255,255,.14);
+  color: #fff;
+  font-size: 20px;
+  font-weight: 900;
+  box-shadow: 0 8px 20px rgba(0,0,0,.22);
 }
 
-/* Blockly 垃圾桶固定到右下角 */
-body:has(.gameLayout) .blocklyTrash,
-body:has(.gameLayout) .blocklyTrashcan{
-  transform:translate(-16px,-18px) scale(0.95) !important;
-  transform-origin:right bottom !important;
+.mazeHud{
+  display: none !important;
 }
 
-@media (min-width: 981px){
-  body:has(.gameLayout) .stageTop .btnbar{
-    flex-wrap:nowrap;
+.stageFooter,
+.stageFooter.mergedFooter{
+  display: none !important;
+}
+
+.editorCard{
+  grid-template-rows: auto minmax(0,1fr) auto;
+}
+
+.editorHead{
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.editorTitle{
+  margin: 0;
+}
+
+.editorCodeBadge{
+  white-space: normal;
+  line-height: 1.3;
+}
+
+.editorHint{
+  display: none !important;
+}
+
+#blocklyDiv{
+  touch-action: none;
+}
+
+/* Blockly 右下角工具定位 */
+#blocklyDiv .blocklyZoom,
+.blocklyZoom{
+  right: 18px !important;
+  bottom: 84px !important;
+  left: auto !important;
+  top: auto !important;
+}
+
+#blocklyDiv .blocklyTrash,
+.blocklyTrash{
+  right: 18px !important;
+  bottom: 18px !important;
+  left: auto !important;
+  top: auto !important;
+}
+
+#blocklyDiv .blocklyTrash image,
+.blocklyTrash image{
+  opacity: 1 !important;
+}
+
+@media (max-width: 980px){
+  .gameLayout{
+    grid-template-columns: minmax(0, 1.2fr) minmax(320px, .8fr) !important;
+    min-height: min(76vh, 860px);
+  }
+
+  .stage{
+    min-height: 0;
+  }
+
+  .editorCard{
+    min-height: 0 !important;
   }
 }
 
-@media (pointer:coarse) and (min-width: 981px){
-  body:has(.gameLayout) .stage{
-    padding:12px;
-    gap:8px;
+@media (pointer:coarse){
+  html, body{
+    touch-action: manipulation;
   }
 
-  body:has(.gameLayout) .editorCard{
-    padding:12px;
-    gap:8px;
+  .gameLayout{
+    grid-template-columns: minmax(0, 1.2fr) minmax(320px, .8fr) !important;
+    align-items: stretch;
   }
 
-  body:has(.gameLayout) .stageTop{
-    gap:6px;
+  .stageTop .btnbar button{
+    min-height: 48px;
+    padding: 10px 14px;
+    font-size: 14px;
   }
 
-  body:has(.gameLayout) .stageTop .kpi .badge{
-    padding:6px 12px;
-    font-size:12px;
+  .mazeZoomControls{
+    left: 14px;
+    bottom: 14px;
   }
 
-  body:has(.gameLayout) .stageTop .btnbar button{
-    padding:10px 12px;
-    font-size:14px;
+  .mazeZoomControls button{
+    min-width: 40px;
+    height: 40px;
+    font-size: 20px;
   }
 
-  body:has(.gameLayout) .editorTitle{
-    margin-bottom:0;
-  }
-
-  body:has(.gameLayout) .gridWrap{
-    padding:8px;
-  }
-
-  body:has(.gameLayout) .blocklyTrash,
-  body:has(.gameLayout) .blocklyTrashcan{
-    transform:translate(-10px,-12px) scale(0.9) !important;
+  .editorCodeBadge{
+    font-size: 13px;
   }
 }

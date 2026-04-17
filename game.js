@@ -495,6 +495,35 @@ window.GamePage = (()=>{
     applyMazeScale();
   }
 
+  function lockTouchZoomGestures(){
+    try{
+      let lastTouchEnd = 0;
+      const preventGesture = (e)=>{
+        if (e && typeof e.preventDefault === 'function') e.preventDefault();
+      };
+
+      ['gesturestart','gesturechange','gestureend'].forEach(type=>{
+        document.addEventListener(type, preventGesture, { passive:false });
+      });
+
+      document.addEventListener('touchmove', (e)=>{
+        if (e.touches && e.touches.length > 1) {
+          preventGesture(e);
+        }
+      }, { passive:false });
+
+      document.addEventListener('touchend', (e)=>{
+        const now = Date.now();
+        if (now - lastTouchEnd <= 320) {
+          preventGesture(e);
+        }
+        lastTouchEnd = now;
+      }, { passive:false });
+    }catch(err){
+      console.warn('lockTouchZoomGestures failed', err);
+    }
+  }
+
   function bindMazeAutoFit(){
     const rerenderFit = ()=>{
       applyMazeScale();
@@ -2896,6 +2925,7 @@ window.GamePage = (()=>{
     workspace = BlocklySetup.createWorkspace("blocklyDiv", normalizeWorldId(worldId || pack.w?.worldId || "W1"), { levelId: normalizeLevelId(levelId || pack.lv?.levelId || ""), availableSpellSymbols: getSpellObstacleSymbolsFromMap(pack.lv?.map) });
     bindUI();
     bindMazeAutoFit();
+    lockTouchZoomGestures();
 
     function refreshVisibleTargetBlocksText(targetBlocks){
       const resultWrap = document.getElementById("mazeResultWrap");
