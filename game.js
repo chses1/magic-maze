@@ -2768,17 +2768,14 @@ window.GamePage = (()=>{
         const copy = getLevelCopy(world.worldId, level.levelId);
 
         const starDesc = stars === 3
-          ? '三星通關！你同時拿到道具寶箱與裝備寶箱，而且程式碼數達到三星標準，本關會提升玩家生命上限。'
+          ? '三星通關！'
           : stars === 2
-            ? '二星通關！你同時拿到道具寶箱與裝備寶箱，因此道具／裝備會帶進 Boss 戰。'
-            : '一星通關！你有成功走到出口，但還沒有同時拿到兩個寶箱。';
+            ? '二星通關！'
+            : '一星通關！';
 
-        const itemRow = openedItemChest
-          ? `<div>🎁 道具寶箱：<b>${collectedItemName}</b></div>`
-          : `<div>🎁 道具寶箱：未取得</div>`;
-        const equipRow = openedEquipmentChest
-          ? `<div>🛡️ 裝備寶箱：<b>${collectedEquipmentName}</b></div>`
-          : `<div>🛡️ 裝備寶箱：未取得</div>`;
+        const rewardSummary = [];
+        if (openedItemChest && collectedItemName) rewardSummary.push(`🎁 道具：<b>${collectedItemName}</b>`);
+        if (openedEquipmentChest && collectedEquipmentName) rewardSummary.push(`🛡️ 裝備：<b>${collectedEquipmentName}</b>`);
 
         clearProgramDraft(world.worldId, level.levelId);
 
@@ -2787,19 +2784,13 @@ window.GamePage = (()=>{
           "通關成功！",
           `${copy.success}<br>${starDesc}`,
           `<div class="result-stats">
+            <span class="result-badge">★${stars}</span>
             <span class="result-badge">分數：${score}</span>
-            <span class="result-badge">星等：★${stars}</span>
-            <span class="result-badge">程式碼數：${codeBlocks}/${targetBlocks || "—"}</span>
-            <span class="result-badge">撞牆：${bumps}</span>
+            <span class="result-badge">程式碼：${codeBlocks}/${targetBlocks || "—"}</span>
             <span class="result-badge">時間：${Math.round(timeMs/1000)} 秒</span>
           </div>
-          <div class="stage-current-reward" style="margin-top:12px;display:block;">
-            ${itemRow}
-            ${equipRow}
-            <div style="margin-top:8px;color:#34523b;">目前程式碼數／目標程式碼數：${codeBlocks}/${targetBlocks || "—"}｜本次拿到寶箱數：${rewardCount}/2</div>
-          </div>
-          ${formatWorldInventory(world.worldId, updatedBuild)}
-          <div style="margin-top:8px;">${improved ? "🎉 這是你的最佳紀錄，已存檔！" : "已完成本關，紀錄已更新。"}</div>`
+          ${rewardSummary.length ? `<div class="stage-current-reward" style="margin-top:12px;display:block;">${rewardSummary.join('<br>')}</div>` : ''}
+          <div style="margin-top:8px;">${improved ? "🎉 已刷新最佳紀錄！" : "紀錄已更新。"}</div>`
         ));
 
         toast(UI.common.winToast);
