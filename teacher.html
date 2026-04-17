@@ -98,6 +98,55 @@
     .teacherEmptyState{padding:18px;border-radius:16px;background:rgba(255,255,255,.04);border:1px dashed rgba(255,255,255,.10);}
 
 
+    body.teacher-backstage-page{
+      min-height:100vh;
+      background:
+        radial-gradient(1200px 700px at 20% 10%, #1a1d4d 0%, #0b1020 60%),
+        linear-gradient(180deg, #0b1020 0%, #121933 100%);
+      background-attachment:fixed;
+    }
+    .teacherShell{padding-top:18px;padding-bottom:24px;}
+    .teacherHeader{align-items:flex-start;margin-bottom:16px;}
+    .teacherBrand h1{color:#fff1c7;}
+    .teacherBrand p{margin-top:6px;color:rgba(248,244,234,.82);font-size:14px;}
+    .teacherTopActions{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap;}
+    .teacherTopActions .badge,
+    .teacherTopActions button{
+      background:rgba(255,255,255,.08);
+      border:1px solid rgba(255,231,173,.18);
+      box-shadow:0 10px 24px rgba(0,0,0,.22);
+    }
+    .teacherTopActions button:hover{filter:brightness(1.05);}
+    .teacherTopGrid{display:grid;grid-template-columns:minmax(320px,.9fr) minmax(0,1.25fr);gap:14px;align-items:start;}
+    .teacherLoginInlineCard,.teacherQuickCard,.teacherCompactCard{
+      background:linear-gradient(180deg, rgba(10,16,28,.52), rgba(10,16,28,.38));
+      border:1px solid rgba(255,255,255,.16);
+      box-shadow:0 20px 50px rgba(0,0,0,.38);
+      backdrop-filter:blur(10px);
+      -webkit-backdrop-filter:blur(10px);
+    }
+    .teacherInlineRow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:end;}
+    .teacherInlineField label{margin-top:0;}
+    .teacherLoginBtn{min-width:96px;height:44px;}
+    .teacherToastLine{min-height:22px;margin-top:10px;font-size:13px;font-weight:800;color:#ffe39a;}
+    .teacherCardHead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;}
+    .teacherCardHead h2{margin:0;font-size:20px;line-height:1.2;}
+    .teacherCompactGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
+    .teacherActionBar{margin-top:12px;}
+    .teacherToolsGridCompact{grid-template-columns:repeat(2,minmax(220px,1fr));}
+    .teacherEditorSection{margin-top:16px;padding-top:16px;}
+    .teacherCompactCard .small{color:rgba(248,244,234,.78);}    
+    .teacherHiddenAuth{display:none !important;}
+    .teacherToastLine{color:#ffe39a;text-shadow:0 2px 8px rgba(0,0,0,.28);}
+    .teacherCardHead h2{color:#fff0c8;}
+    .teacherPanelTools{display:grid;grid-template-columns:minmax(180px,220px) minmax(180px,220px) auto;gap:12px;align-items:end;margin-bottom:12px;}
+    .teacherPanelTools label{margin-top:0;color:rgba(248,244,234,.78);}
+    .teacherPanelTools .btnbar{margin-top:0;justify-content:flex-start;}
+    .teacherPanelTools button.primary{background:linear-gradient(180deg,#ffd677 0%,#d79a38 100%) !important;color:#3d2508 !important;border:1px solid rgba(143,88,25,.38) !important;}
+    .teacherPanelTools button.danger{background:rgba(255,92,124,.18);}
+    @media (max-width: 980px){.teacherPanelTools{grid-template-columns:1fr;}}
+
+
     .portal-glyph{display:inline-block;width:22px;height:22px;background-repeat:no-repeat;background-position:center;background-size:contain;filter:drop-shadow(0 0 6px rgba(255,255,255,.10));}
     .portal-glyph-blue{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><defs><radialGradient id='g' cx='50%25' cy='50%25' r='50%25'><stop offset='0%25' stop-color='%23ffffff'/><stop offset='18%25' stop-color='%23d9f4ff'/><stop offset='36%25' stop-color='%2398e7ff'/><stop offset='62%25' stop-color='%2338bdf8'/><stop offset='100%25' stop-color='%230ea5e9'/></radialGradient></defs><path d='M33 6c9 1 17 8 18 17 1 6-1 11-5 15-3 3-7 5-10 8-4 3-5 8-3 12-5-2-8-7-7-12 1-6 6-8 10-11 4-2 7-5 8-10 1-7-4-14-11-19Z' fill='url(%23g)' opacity='.96'/><path d='M28 12c-9 2-15 10-14 19 1 5 4 9 8 12 4 3 9 4 13 7 4 3 6 8 5 13 4-3 6-8 5-13-1-6-6-9-11-12-4-2-7-4-8-8-2-7 1-13 6-18 2-2 4-3 6-4-3 1-6 2-10 4Z' fill='%2322d3ee' opacity='.88'/><path d='M36 24c5 1 9 5 9 10s-4 9-9 10c-5 1-10-2-12-7-1-4 0-8 3-10 2-2 5-3 9-3Z' fill='%2302567f' opacity='.35'/><path d='M37 27c3 1 5 4 5 7s-2 6-5 7c-3 1-7 0-9-3-2-3-2-6 0-8 2-3 5-4 9-3Z' fill='none' stroke='%23ffffff' stroke-width='2.8' stroke-linecap='round' opacity='.85'/></svg>");}
     .portal-glyph-purple{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><defs><radialGradient id='g' cx='50%25' cy='50%25' r='50%25'><stop offset='0%25' stop-color='%23ffffff'/><stop offset='18%25' stop-color='%23f3e8ff'/><stop offset='36%25' stop-color='%23d8b4fe'/><stop offset='62%25' stop-color='%23a855f7'/><stop offset='100%25' stop-color='%237e22ce'/></radialGradient></defs><path d='M33 6c9 1 17 8 18 17 1 6-1 11-5 15-3 3-7 5-10 8-4 3-5 8-3 12-5-2-8-7-7-12 1-6 6-8 10-11 4-2 7-5 8-10 1-7-4-14-11-19Z' fill='url(%23g)' opacity='.96'/><path d='M28 12c-9 2-15 10-14 19 1 5 4 9 8 12 4 3 9 4 13 7 4 3 6 8 5 13 4-3 6-8 5-13-1-6-6-9-11-12-4-2-7-4-8-8-2-7 1-13 6-18 2-2 4-3 6-4-3 1-6 2-10 4Z' fill='%23c084fc' opacity='.9'/><path d='M36 24c5 1 9 5 9 10s-4 9-9 10c-5 1-10-2-12-7-1-4 0-8 3-10 2-2 5-3 9-3Z' fill='%234b1369' opacity='.35'/><path d='M37 27c3 1 5 4 5 7s-2 6-5 7c-3 1-7 0-9-3-2-3-2-6 0-8 2-3 5-4 9-3Z' fill='none' stroke='%23ffffff' stroke-width='2.8' stroke-linecap='round' opacity='.85'/></svg>");}
@@ -110,67 +159,42 @@
     .mapEditorCell.portal-red{background:rgba(255,255,255,.05);border-color:rgba(248,113,113,.30);}
 
 
+    @media (max-width: 980px){.teacherTopGrid{grid-template-columns:1fr;}.teacherCompactGrid{grid-template-columns:1fr;}.teacherInlineRow{grid-template-columns:1fr;}.teacherTopActions{justify-content:flex-start;}}
     @media (max-width: 900px){.editorTwoCol{grid-template-columns:1fr;}}
   </style>
 
 </head>
 
-<body>
-  <div class="container">
-    <div class="header">
-      <div class="brand">
+<body class="teacher-backstage-page">
+  <div class="container teacherShell">
+    <div class="header teacherHeader">
+      <div class="brand teacherBrand">
         <div class="logo"></div>
         <div>
           <h1>教師後台</h1>
-          <p>僅保留：清除全部學生總分／清除個別學生總分</p>
+          <p>班級進度、關卡管理</p>
         </div>
       </div>
-      <div class="badge" id="sessionBadge">教師未登入</div>
-    </div>
-
-    <div class="row">
-      <div class="card">
-        <h2 style="margin:0 0 10px 0;">教師登入</h2>
-        <label>教師密碼：1070</label>
-        <input id="teacherCode" placeholder="1070" inputmode="numeric" />
-        <div class="btnbar">
-          <button class="primary" id="btnTeacherLogin">登入</button>
-          <button id="btnTeacherLogout">登出</button>
-          <button id="btnBack">回首頁</button>
-        </div>
-        <div class="toast" id="toast"></div>
-      </div>
-
-      <div class="card">
-        <h2 style="margin:0 0 10px 0;">快速操作</h2>
-        <label>班級顯示</label>
-        <select id="filterClass">
-          <option value="all">全部學生</option>
-        </select>
-
-        <label style="margin-top:10px;">排序方式</label>
-        <select id="sortMode">
-          <option value="seat">班級內依座號排序</option>
-          <option value="score">班級內依總分排序</option>
-        </select>
-
-        <div class="btnbar">
-          <button id="btnRefresh">更新列表</button>
-          <button class="danger" id="btnClearAll">清除學生總分</button>
-        </div>
-        <div class="small" style="margin-top:8px;">
-          說明：可切換全部學生或單一班級；每個班級內可切換成「座號排序」或「總分排序」。總分會顯示在表格最後一欄，通關數包含 Boss 關。
-        </div>
+      <div class="teacherTopActions">
+        <div class="badge" id="sessionBadge">教師未登入</div>
+        <button id="btnTeacherLogout">登出</button>
+        <button id="btnBack">回首頁</button>
       </div>
     </div>
 
-    <div class="card" id="teacherToolsCard" style="margin-top:14px; display:none;">
-      <h2 style="margin:0 0 10px 0;">教師模式快捷工具</h2>
-      <div class="small" style="margin-bottom:10px; line-height:1.7;">
-        登入教師模式後，才能使用下列快捷功能。可直接前往指定關卡，或管理各關卡最佳解法。
+    <div class="teacherHiddenAuth" aria-hidden="true">
+      <input id="teacherCode" type="hidden" value="1070" inputmode="numeric" />
+      <button id="btnTeacherLogin" type="button" tabindex="-1">登入</button>
+    </div>
+
+    <div class="teacherToastLine" id="toast"></div>
+
+    <div class="card teacherCompactCard" id="teacherToolsCard" style="margin-top:14px; display:none;">
+      <div class="teacherCardHead">
+        <h2>教師模式快捷工具</h2>
       </div>
 
-      <div class="teacherToolsGrid">
+      <div class="teacherToolsGrid teacherToolsGridCompact">
         <div>
           <label>世界選擇</label>
           <select id="teacherWorld"></select>
@@ -181,7 +205,7 @@
         </div>
       </div>
 
-      <div class="btnbar" style="margin-top:12px; flex-wrap:wrap;">
+      <div class="btnbar teacherActionBar" style="margin-top:12px; flex-wrap:wrap;">
         <button id="btnOpenBoss">前往關卡</button>
         <button class="primary" id="btnSaveBest">儲存最佳解法</button>
         <button id="btnLoadBest">載入最佳解法</button>
@@ -189,19 +213,10 @@
         <button id="btnExportBestCode">匯出到 levels.js</button>
       </div>
 
-      <div class="small" style="margin-top:10px; line-height:1.7;">
-        儲存位置：本機瀏覽器 localStorage。<br>
-        鍵名格式：maze_best_solution::世界::關卡<br>
-        例：maze_best_solution::world1::level1<br>
-        匯出功能會把目前瀏覽器已儲存的最佳解法、最佳程式碼數、以及關卡編輯內容，直接寫進一份可覆蓋的 <b>levels.js</b>。
-      </div>
-      <div class="editorSection">
-        <h3 style="margin:0 0 10px 0;">關卡編輯模式（點格子）</h3>
-        <div class="small" style="margin-bottom:10px; line-height:1.7;">
-          先按「載入目前關卡資料」，再用左側工具直接點格子編輯。右側會同步顯示原始地圖文字，可手動微調後再儲存。
-        </div>
+      <div class="editorSection teacherEditorSection">
+        <h3 style="margin:0 0 10px 0;">關卡編輯模式</h3>
 
-        <div class="btnbar" style="margin-bottom:12px; flex-wrap:wrap;">
+        <div class="btnbar teacherActionBar" style="margin-bottom:12px; flex-wrap:wrap;">
           <button id="btnLoadLevelData">載入目前關卡資料</button>
           <button class="primary" id="btnSaveLevelEdit">儲存關卡修改</button>
           <button id="btnPreviewLevelEdit">前往此關預覽</button>
@@ -215,11 +230,10 @@
             <div class="mapPalette" id="mapPalette"></div>
 
             <div class="mapHintBox small">
-              目前筆刷：<b id="currentPaintLabel">牆壁 #</b><br>
-              小技巧：按住滑鼠左鍵可連續塗格。放置 <code>S</code> / <code>K</code> / <code>D</code> 時，舊的同類型格子會自動移除；傳送門請用同顏色成對放置。
+              目前筆刷：<b id="currentPaintLabel">牆壁 #</b>
             </div>
 
-            <label style="margin-top:12px;">點格子地圖編輯區</label>
+            <label style="margin-top:12px;">地圖編輯區</label>
             <div class="mapEditorWrap">
               <div id="mapEditorGrid" class="mapEditorGrid"></div>
             </div>
@@ -253,7 +267,7 @@
               </div>
             </div>
 
-            <label style="margin-top:12px;">地圖文字（會與點格子同步）</label>
+            <label style="margin-top:12px;">地圖文字</label>
             <textarea id="editMapText" spellcheck="false" placeholder="#########
 #S..#..D#
 #.#.#.#.#
@@ -265,15 +279,32 @@
 
     </div>
 
-    <div class="card" id="tableCard" style="margin-top:14px; display:none;">
-      <h2 style="margin:0 0 10px 0;">學生關卡進度總覽</h2>
-      <div class="small" style="margin-bottom:10px;line-height:1.7;">
-        參考 code.org 的班級檢視方式：每一格代表一位學生在一個關卡的狀態。現在先以顏色顯示通關狀態；下一步再把成績排名加進來。
+    <div class="card teacherCompactCard" id="tableCard" style="margin-top:14px; display:none;">
+      <div class="teacherCardHead">
+        <h2>學生關卡進度總覽</h2>
+      </div>
+      <div class="teacherPanelTools">
+        <div>
+          <label for="filterClass">班級顯示</label>
+          <select id="filterClass">
+            <option value="all">全部學生</option>
+          </select>
+        </div>
+        <div>
+          <label for="sortMode">排序方式</label>
+          <select id="sortMode">
+            <option value="seat">班級內依座號排序</option>
+            <option value="score">班級內依總分排序</option>
+          </select>
+        </div>
+        <div class="btnbar teacherActionBar">
+          <button id="btnRefresh">更新列表</button>
+          <button class="danger" id="btnClearAll">清除學生總分</button>
+        </div>
       </div>
       <div id="tableArea" class="small">請先登入教師帳號。</div>
     </div>
   </div>
-
   <script src="storage.js"></script>
   <script src="auth.js"></script>
   <script src="levels.js"></script>

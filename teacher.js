@@ -476,22 +476,6 @@ window.TeacherPage = (()=>{
     });
 
     const summaryHtml = `
-      <div class="teacherToolbarRow">
-        <div class="teacherToolbarGroup">
-          <label for="filterClassInline">班級顯示</label>
-          <select id="filterClassInline">
-            <option value="all" ${(!filterClass || filterClass === 'all') ? 'selected' : ''}>全部學生</option>
-            ${classOrder.map(classId => `<option value="${classId}" ${filterClass === classId ? 'selected' : ''}>只顯示 ${classId} 班</option>`).join('')}
-          </select>
-        </div>
-        <div class="teacherToolbarGroup">
-          <label for="sortModeInline">排序方式</label>
-          <select id="sortModeInline">
-            <option value="seat" ${sortMode === 'seat' ? 'selected' : ''}>座號排序</option>
-            <option value="score" ${sortMode === 'score' ? 'selected' : ''}>總分排序</option>
-          </select>
-        </div>
-      </div>
       <div class="teacherSummaryGrid teacherSummaryGridCompact">
         <div class="teacherSummaryCard">
           <div class="small">班級數</div>
@@ -590,24 +574,6 @@ window.TeacherPage = (()=>{
     `;
 
     area.innerHTML = summaryHtml + boardHtml;
-
-    const filterInline = area.querySelector('#filterClassInline');
-    if(filterInline){
-      filterInline.onchange = () => {
-        const topFilter = document.getElementById('filterClass');
-        if(topFilter) topFilter.value = filterInline.value;
-        render();
-      };
-    }
-
-    const sortInline = area.querySelector('#sortModeInline');
-    if(sortInline){
-      sortInline.onchange = () => {
-        const topSort = document.getElementById('sortMode');
-        if(topSort) topSort.value = sortInline.value;
-        render();
-      };
-    }
 
     area.querySelectorAll('button.danger[data-uid]').forEach(btn => {
       btn.onclick = () => {
@@ -765,11 +731,12 @@ window.TeacherPage = (()=>{
   }
 
   async function openSelectedLevel(picked){
+    const teacherSource = 'from=teacher';
     if(isBossLevel(picked.level)){
-      await goToAppPage('boss.html', `world=${encodeURIComponent(picked.world)}&level=boss`);
+      await goToAppPage('boss.html', `world=${encodeURIComponent(picked.world)}&level=boss&${teacherSource}`);
       return;
     }
-    await goToAppPage('game.html', `world=${encodeURIComponent(picked.world)}&level=${encodeURIComponent(picked.level)}`);
+    await goToAppPage('game.html', `world=${encodeURIComponent(picked.world)}&level=${encodeURIComponent(picked.level)}&${teacherSource}`);
   }
 
   async function openBoss(){
@@ -1010,6 +977,81 @@ window.LEVELS = ${JSON.stringify(exported, null, 2)};
     el.value = Array.isArray(rows) ? rows.join('\n') : '';
   }
 
+  function clampMapSize(value){
+    const size = Number(value || 0);
+    if(!Number.isFinite(size)) return 0;
+    return Math.max(3, Math.min(15, Math.round(size)));
+  }
+
+  function buildEmptyMapRows(size){
+    const finalSize = clampMapSize(size);
+    if(!(finalSize > 0)) return [];
+    const rows = [];
+    for(let y=0; y<finalSize; y++) {
+      if(y === 0 || y === finalSize - 1){
+        rows.push('#'.repeat(finalSize));
+      }else{
+        rows.push('#' + '.'.repeat(Math.max(0, finalSize - 2)) + '#');
+      }
+    }
+    return rows;
+  }
+
+  function resizeEditorMapRows(rows, size){
+    const finalSize = clampMapSize(size);
+    if(!(finalSize > 0)) return Array.isArray(rows) ? rows : [];
+    const source = Array.isArray(rows) && rows.length ? rows : buildEmptyMapRows(finalSize);
+    const oldHeight = source.length;
+    const oldWidth = source[0]?.length || 0;
+    const next = [];
+    for(let y=0; y<finalSize; y++) {
+      const row = [];
+      for(let x=0; x<finalSize; x++) {
+        let ch = '.';
+        if(y < oldHeight && x < oldWidth){
+          ch = source[y][x] || '.';
+        }
+        if(y === 0 || x === 0 || y === finalSize - 1 || x === finalSize - 1){
+          ch = '#';
+        }
+        row.push(ch);
+      }
+      next.push(row.join(''));
+    }
+
+    const symbols = ['S','K','D'];
+    symbols.forEach(symbol => {
+      let found = null;
+      next.forEach((row, y)=>{
+        row.split('').forEach((cell, x)=>{
+          if(cell === symbol && !found) found = {x,y};
+        });
+      });
+      if(found) return;
+      const fallback = symbol === 'S' ? {x:1,y:1} : (symbol === 'K' ? {x:Math.max(1, finalSize - 2), y:1} : {x:Math.max(1, finalSize - 2), y:Math.max(1, finalSize - 2)});
+      const chars = next.map(r=>r.split(''));
+      chars[fallback.y][fallback.x] = symbol;
+      for(let y=0; y<chars.length; y++) {
+        for(let x=0; x<chars[y].length; x++) {
+          if((x !== fallback.x || y !== fallback.y) && chars[y][x] === symbol) chars[y][x] = '.';
+        }
+      }
+      for(let y=0; y<chars.length; y++) next[y] = chars[y].join('');
+    });
+
+    return next;
+  }
+
+  function syncEditorMapSize(forceSize = null){
+    const sizeEl = document.getElementById('editMapSize');
+    if(!sizeEl) return;
+    const targetSize = clampMapSize(forceSize ?? sizeEl.value);
+    if(!(targetSize > 0)) return;
+    sizeEl.value = String(targetSize);
+    const nextRows = resizeEditorMapRows(getEditorMapRows(), targetSize);
+    setEditorMapRows(nextRows);
+  }
+
   function updateCurrentPaintLabel(){
     const el = document.getElementById('currentPaintLabel');
     const meta = MAP_SYMBOLS[currentPaintSymbol] || MAP_SYMBOLS['#'];
@@ -1170,6 +1212,7 @@ window.LEVELS = ${JSON.stringify(exported, null, 2)};
     const inferredMapSize = map.length;
     const finalMapSize = mapSize > 0 ? mapSize : inferredMapSize;
     if(!(finalMapSize > 0)) throw new Error('地圖大小必須大於 0。');
+    if(map.length !== finalMapSize || width !== finalMapSize) throw new Error('地圖大小與地圖文字不一致，請先調整地圖大小後再儲存。');
     if(!(startDir >= 0 && startDir <= 3)) throw new Error('起始方向只能是 0、1、2、3。');
 
     return {
@@ -1335,6 +1378,7 @@ window.LEVELS = ${JSON.stringify(exported, null, 2)};
     const btnPreviewLevelEdit = document.getElementById('btnPreviewLevelEdit');
     const btnExportLevelJson = document.getElementById('btnExportLevelJson');
     const btnClearLevelEdit = document.getElementById('btnClearLevelEdit');
+    const editMapSizeEl = document.getElementById('editMapSize');
     if (btnClearBest) btnClearBest.textContent = '同步最佳程式碼數';
 
     if(btnOpenBoss) btnOpenBoss.onclick = ()=> openBoss();
@@ -1342,6 +1386,13 @@ window.LEVELS = ${JSON.stringify(exported, null, 2)};
     if(btnLoadBest) btnLoadBest.onclick = ()=> loadBestSolution();
     if(btnClearBest) btnClearBest.onclick = syncBestCode;
     if(btnExportBestCode) btnExportBestCode.onclick = exportBestSolutionsToLevels;
+    if(editMapSizeEl){
+      editMapSizeEl.addEventListener('change', ()=>{
+        syncEditorMapSize();
+        renderMapEditorGrid();
+      });
+    }
+
     if(btnLoadLevelData) btnLoadLevelData.onclick = loadSelectedLevelIntoEditor;
     if(btnSaveLevelEdit) btnSaveLevelEdit.onclick = saveEditedLevel;
     if(btnPreviewLevelEdit) btnPreviewLevelEdit.onclick = previewEditedLevel;

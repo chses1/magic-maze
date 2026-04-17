@@ -974,3 +974,113 @@ button.danger{
     grid-template-rows:auto minmax(0,1fr) !important;
   }
 }
+
+
+
+/* === iPad 介面位置修正：依截圖調整 === */
+body:has(.gameLayout) .stageTop{
+  display:grid;
+  grid-template-columns:1fr;
+  align-items:start;
+  gap:8px;
+}
+
+body:has(.gameLayout) .stageTop .kpi{
+  order:1;
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
+
+body:has(.gameLayout) .stageTop .btnbar{
+  order:2;
+  margin:0;
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+}
+
+/* 上方只保留程式碼數，移除撞牆／鑰匙 */
+body:has(.gameLayout) .kpi .badge:has(#bumps),
+body:has(.gameLayout) .kpi .badge:has(#hasKey){
+  display:none !important;
+}
+
+/* 拿掉底部資訊後，迷宮與積木區往上、往下撐滿 */
+body:has(.gameLayout) .stage{
+  grid-template-rows:auto minmax(0,1fr);
+}
+
+body:has(.gameLayout) .editorCard{
+  grid-template-rows:auto minmax(0,1fr);
+}
+
+body:has(.gameLayout) .editorHint{
+  display:none !important;
+}
+
+body:has(.gameLayout) .gridWrap{
+  padding:10px;
+}
+
+body:has(.gameLayout) .blocklyWrap{
+  min-height:0;
+  height:100%;
+}
+
+body:has(.gameLayout) #blocklyDiv{
+  min-height:0 !important;
+  height:100% !important;
+}
+
+/* Blockly 垃圾桶固定到右下角 */
+body:has(.gameLayout) .blocklyTrash,
+body:has(.gameLayout) .blocklyTrashcan{
+  transform:translate(-16px,-18px) scale(0.95) !important;
+  transform-origin:right bottom !important;
+}
+
+@media (min-width: 981px){
+  body:has(.gameLayout) .stageTop .btnbar{
+    flex-wrap:nowrap;
+  }
+}
+
+@media (pointer:coarse) and (min-width: 981px){
+  body:has(.gameLayout) .stage{
+    padding:12px;
+    gap:8px;
+  }
+
+  body:has(.gameLayout) .editorCard{
+    padding:12px;
+    gap:8px;
+  }
+
+  body:has(.gameLayout) .stageTop{
+    gap:6px;
+  }
+
+  body:has(.gameLayout) .stageTop .kpi .badge{
+    padding:6px 12px;
+    font-size:12px;
+  }
+
+  body:has(.gameLayout) .stageTop .btnbar button{
+    padding:10px 12px;
+    font-size:14px;
+  }
+
+  body:has(.gameLayout) .editorTitle{
+    margin-bottom:0;
+  }
+
+  body:has(.gameLayout) .gridWrap{
+    padding:8px;
+  }
+
+  body:has(.gameLayout) .blocklyTrash,
+  body:has(.gameLayout) .blocklyTrashcan{
+    transform:translate(-10px,-12px) scale(0.9) !important;
+  }
+}

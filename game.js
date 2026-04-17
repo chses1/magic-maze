@@ -553,6 +553,15 @@ window.GamePage = (()=>{
     return url.searchParams.get(name);
   }
 
+  function cameFromTeacherPage(){
+    const from = String(qs("from") || qs("source") || "").trim().toLowerCase();
+    return from === "teacher" || from === "teacherpage" || from === "teacher_mode";
+  }
+
+  function getExitTargetPage(){
+    return cameFromTeacherPage() ? "teacher.html" : "index.html";
+  }
+
   function levelKeyRaw(worldId, levelId){
     return `${normalizeWorldId(worldId)}-${normalizeLevelId(levelId)}`;
   }
@@ -2855,10 +2864,14 @@ window.GamePage = (()=>{
       if(!confirm("確定要離開這一關嗎？系統會先保存你目前的積木進度。")) return;
       const saved = saveProgramDraft();
       forceStopCurrentRun();
+      const exitTarget = getExitTargetPage();
+      const exitLabel = exitTarget === "teacher.html" ? "教師介面" : "遊戲大廳";
       if (!isBossLevel()) {
-        toast(saved ? '已保存目前積木進度，返回首頁中…' : '這一關目前沒有可保存的積木，直接返回首頁。');
+        toast(saved
+          ? `已保存目前積木進度，返回${exitLabel}中…`
+          : `這一關目前沒有可保存的積木，直接返回${exitLabel}。`);
       }
-      location.href = "index.html";
+      location.href = exitTarget;
     };
   }
 
@@ -2866,7 +2879,9 @@ window.GamePage = (()=>{
     const worldId = qs("world");
     const levelId = qs("level");
     if (/^boss$/i.test(String(levelId || ''))) {
-      location.replace(`boss.html?world=${encodeURIComponent(worldId || 'world1')}`);
+      const from = qs("from");
+      const extra = from ? `&from=${encodeURIComponent(from)}` : "";
+      location.replace(`boss.html?world=${encodeURIComponent(worldId || 'world1')}${extra}`);
       return;
     }
     const pack = findLevel(worldId, levelId);
