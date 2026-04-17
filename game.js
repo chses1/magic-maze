@@ -524,6 +524,49 @@ window.GamePage = (()=>{
     }
   }
 
+  function bindMazeGestureZoom(){
+    const wrap = document.getElementById('gridWrap');
+    if (!wrap) return;
+
+    wrap.addEventListener('wheel', (e)=>{
+      e.preventDefault();
+      const delta = Number(e.deltaY || 0);
+      if (!Number.isFinite(delta) || delta === 0) return;
+      zoomMaze(delta < 0 ? 0.08 : -0.08);
+    }, { passive:false });
+
+    let pinchStartDistance = 0;
+    let pinchStartScale = 1;
+
+    const getTouchDistance = (touches)=>{
+      if (!touches || touches.length < 2) return 0;
+      const [a, b] = [touches[0], touches[1]];
+      const dx = a.clientX - b.clientX;
+      const dy = a.clientY - b.clientY;
+      return Math.hypot(dx, dy);
+    };
+
+    wrap.addEventListener('touchstart', (e)=>{
+      if (e.touches && e.touches.length === 2) {
+        pinchStartDistance = getTouchDistance(e.touches);
+        pinchStartScale = mazeManualScale;
+      }
+    }, { passive:false });
+
+    wrap.addEventListener('touchmove', (e)=>{
+      if (!(e.touches && e.touches.length === 2)) return;
+      e.preventDefault();
+      const currentDistance = getTouchDistance(e.touches);
+      if (!pinchStartDistance || !currentDistance) return;
+      const ratio = currentDistance / pinchStartDistance;
+      setMazeScale(pinchStartScale * ratio);
+    }, { passive:false });
+
+    wrap.addEventListener('touchend', ()=>{
+      pinchStartDistance = 0;
+    }, { passive:true });
+  }
+
   function bindMazeAutoFit(){
     const rerenderFit = ()=>{
       applyMazeScale();
@@ -675,8 +718,8 @@ window.GamePage = (()=>{
     const subtitleEl = document.getElementById("subtitle");
     if (!subtitleEl || !level) return;
     subtitleEl.textContent = isBossLevel()
-      ? `卡牌回合戰（擊敗森林狼王）`
-      : `目標程式碼數：${level.targetBlocks || level.targetSteps || 0}｜先拿鑰匙，再走到出口門｜一星=過關、二星=拿到2個寶箱、三星=拿到2個寶箱且達成目標程式碼數`;
+      ? `Boss 戰過關標準：擊敗 Boss`
+      : `過關標準：一星=過關、二星=拿到2個寶箱、三星=拿到2個寶箱且達成目標程式碼數`;
   }
 
   function getLevelCopy(worldId, levelId){
@@ -2882,13 +2925,6 @@ window.GamePage = (()=>{
       resetLevel();
     };
 
-    const btnZoomIn = document.getElementById("btnZoomIn");
-    const btnZoomOut = document.getElementById("btnZoomOut");
-    const btnZoomReset = document.getElementById("btnZoomReset");
-    if (btnZoomIn) btnZoomIn.onclick = ()=> zoomMaze(0.12);
-    if (btnZoomOut) btnZoomOut.onclick = ()=> zoomMaze(-0.12);
-    if (btnZoomReset) btnZoomReset.onclick = ()=> resetMazeScale();
-
     document.getElementById("btnExit").onclick = ()=>{
       if(!confirm("確定要離開這一關嗎？系統會先保存你目前的積木進度。")) return;
       const saved = saveProgramDraft();
@@ -2925,6 +2961,7 @@ window.GamePage = (()=>{
     workspace = BlocklySetup.createWorkspace("blocklyDiv", normalizeWorldId(worldId || pack.w?.worldId || "W1"), { levelId: normalizeLevelId(levelId || pack.lv?.levelId || ""), availableSpellSymbols: getSpellObstacleSymbolsFromMap(pack.lv?.map) });
     bindUI();
     bindMazeAutoFit();
+    bindMazeGestureZoom();
     lockTouchZoomGestures();
 
     function refreshVisibleTargetBlocksText(targetBlocks){
