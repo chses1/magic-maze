@@ -2,13 +2,175 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>魔法迷宮｜登入與選關</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>程式迷宮大冒險｜首頁登入</title>
   <link rel="stylesheet" href="styles.css" />
   <script src="levels.js"></script>
   <script src="storage.js"></script>
   <script src="auth.js"></script>
   <style>
+    :root{
+      --home-panel-bg:rgba(18,24,38,.82);
+      --home-panel-line:rgba(255,255,255,.14);
+      --home-gold:#f7d27a;
+      --home-gold-2:#eab84c;
+      --home-text:#f8f4ea;
+      --home-muted:rgba(248,244,234,.78);
+      --home-shadow:0 20px 50px rgba(0,0,0,.38);
+    }
+
+    html,body{
+      width:100%;
+      min-height:100%;
+    }
+
+    body.home-page{
+      margin:0;
+      color:var(--home-text);
+      background:
+        linear-gradient(180deg, rgba(7,10,18,.16) 0%, rgba(7,10,18,.34) 100%),
+        url('img/index.png') center center / cover no-repeat fixed;
+      overflow-x:hidden;
+    }
+
+    .home-shell{
+      min-height:100vh;
+      position:relative;
+      padding:18px;
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+      gap:18px;
+    }
+
+    .home-topbar{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:12px;
+      position:relative;
+      z-index:2;
+    }
+
+    .home-brand,
+    .home-status{
+      backdrop-filter:blur(10px);
+      background:rgba(17,22,34,.54);
+      border:1px solid rgba(255,255,255,.14);
+      box-shadow:var(--home-shadow);
+    }
+
+    .home-brand{
+      padding:12px 16px;
+      border-radius:18px;
+      max-width:min(560px, 82vw);
+    }
+
+    .home-brand h1{
+      margin:0;
+      font-size:clamp(22px, 2.1vw, 34px);
+      line-height:1.15;
+      color:#fff6dc;
+      text-shadow:0 3px 12px rgba(0,0,0,.35);
+    }
+
+    .home-brand p{
+      margin:6px 0 0;
+      color:var(--home-muted);
+      font-size:clamp(13px, 1vw, 15px);
+      line-height:1.6;
+    }
+
+    .home-status{
+      padding:10px 14px;
+      border-radius:999px;
+      font-weight:900;
+      white-space:nowrap;
+      font-size:14px;
+    }
+
+    .home-stage{
+      flex:1;
+      min-height:300px;
+      display:flex;
+      align-items:flex-end;
+      justify-content:center;
+      position:relative;
+      z-index:1;
+    }
+
+    .home-start-wrap{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:10px;
+      margin-bottom:4vh;
+    }
+
+    .home-start-btn{
+      min-width:min(320px, 82vw);
+      padding:18px 28px;
+      border:none;
+      border-radius:24px;
+      color:#fff6dc;
+      font-size:clamp(24px, 2.3vw, 34px);
+      font-weight:900;
+      letter-spacing:.08em;
+      background:linear-gradient(180deg, rgba(96,54,18,.95) 0%, rgba(52,29,9,.95) 100%);
+      border:3px solid rgba(255,214,120,.86);
+      box-shadow:0 0 0 4px rgba(122,70,22,.42) inset, 0 18px 40px rgba(0,0,0,.38), 0 0 18px rgba(255,196,84,.28);
+      text-shadow:0 2px 8px rgba(0,0,0,.4);
+      transition:transform .18s ease, box-shadow .18s ease, filter .18s ease;
+      cursor:pointer;
+    }
+
+    .home-start-btn:hover{
+      transform:translateY(-2px) scale(1.02);
+      filter:brightness(1.04);
+      box-shadow:0 0 0 4px rgba(122,70,22,.42) inset, 0 22px 48px rgba(0,0,0,.44), 0 0 24px rgba(255,196,84,.35);
+    }
+
+    .home-start-tip{
+      padding:8px 14px;
+      border-radius:999px;
+      background:rgba(17,22,34,.6);
+      border:1px solid rgba(255,255,255,.14);
+      backdrop-filter:blur(8px);
+      font-size:14px;
+      color:var(--home-muted);
+      box-shadow:var(--home-shadow);
+      text-align:center;
+    }
+
+    .home-panels{
+      position:relative;
+      z-index:2;
+      display:grid;
+      grid-template-columns:1.05fr .95fr;
+      gap:16px;
+      align-items:start;
+    }
+
+    .home-panels[hidden]{display:none !important;}
+
+    .home-card{
+      background:var(--home-panel-bg);
+      border:1px solid var(--home-panel-line);
+      border-radius:24px;
+      box-shadow:var(--home-shadow);
+      backdrop-filter:blur(12px);
+      padding:16px;
+      color:var(--home-text);
+    }
+
+    .home-card h2{
+      margin:0 0 12px;
+      font-size:22px;
+      color:#fff0c8;
+    }
+
+    .home-card .small{ color:var(--home-muted); }
+
     #worldList .level-grid{
       margin-top:10px;
       display:grid;
@@ -27,84 +189,357 @@
       opacity:.7;
       filter:grayscale(.08);
     }
+
+    .home-modal-mask{
+      position:fixed;
+      inset:0;
+      background:rgba(5,8,14,.6);
+      backdrop-filter:blur(6px);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+      z-index:20;
+    }
+
+    .home-modal-mask[hidden]{display:none !important;}
+
+    .home-modal{
+      width:min(760px, 100%);
+      max-height:min(92vh, 920px);
+      overflow:auto;
+      border-radius:28px;
+      background:linear-gradient(180deg, rgba(30,20,12,.94) 0%, rgba(17,22,34,.96) 100%);
+      border:1px solid rgba(255,231,173,.24);
+      box-shadow:0 28px 60px rgba(0,0,0,.5);
+      color:var(--home-text);
+      padding:22px;
+    }
+
+    .home-modal-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:12px;
+      margin-bottom:14px;
+    }
+
+    .home-modal-head h3{
+      margin:0;
+      font-size:28px;
+      color:#fff1c7;
+    }
+
+    .home-modal-head p{
+      margin:6px 0 0;
+      color:var(--home-muted);
+      line-height:1.6;
+    }
+
+    .home-close{
+      width:44px;
+      height:44px;
+      border-radius:14px;
+      font-size:22px;
+      font-weight:900;
+      padding:0;
+      background:rgba(255,255,255,.08);
+      border:1px solid rgba(255,255,255,.14);
+      color:#fff;
+    }
+
+    .home-login-tabs{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+      margin-bottom:14px;
+    }
+
+    .home-tab{
+      padding:12px 14px;
+      border-radius:16px;
+      background:rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.12);
+      color:var(--home-text);
+      font-weight:900;
+      text-align:center;
+    }
+
+    .home-tab.active{
+      background:linear-gradient(180deg, rgba(255,220,136,.22) 0%, rgba(145,97,32,.22) 100%);
+      border-color:rgba(255,214,120,.58);
+      box-shadow:0 0 0 2px rgba(255,214,120,.14) inset;
+    }
+
+    .login-panel[hidden]{display:none !important;}
+
+    .login-grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:16px;
+      align-items:start;
+    }
+
+    .login-box{
+      padding:16px;
+      border-radius:20px;
+      background:rgba(255,255,255,.05);
+      border:1px solid rgba(255,255,255,.1);
+    }
+
+    .login-box h4{
+      margin:0 0 10px;
+      font-size:18px;
+      color:#fff1c7;
+    }
+
+    .login-box label{
+      color:var(--home-muted);
+      font-size:13px;
+      margin:8px 0 6px;
+    }
+
+    .login-box input{
+      width:100%;
+      padding:12px 14px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(0,0,0,.26);
+      color:#fff;
+      font-size:16px;
+      outline:none;
+    }
+
+    .login-box input:focus{
+      border-color:rgba(255,214,120,.58);
+      box-shadow:0 0 0 3px rgba(255,214,120,.12);
+    }
+
     .character-picker{margin-top:12px;}
     .character-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;}
     .character-option{position:relative;border:2px solid rgba(255,255,255,.10);border-radius:16px;padding:10px;background:rgba(255,255,255,.04);cursor:pointer;transition:.2s ease;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;}
-    .character-option:hover{transform:translateY(-1px);border-color:rgba(124,92,255,.45);}
-    .character-option.active{border-color:#7c5cff;background:rgba(124,92,255,.16);box-shadow:0 0 0 3px rgba(124,92,255,.14) inset;}
+    .character-option:hover{transform:translateY(-1px);border-color:rgba(255,214,120,.45);}
+    .character-option.active{border-color:#ffd678;background:rgba(255,214,120,.12);box-shadow:0 0 0 3px rgba(255,214,120,.12) inset;}
     .character-option img{width:110px;height:110px;object-fit:contain;display:block;border-radius:14px;background:rgba(255,255,255,.06);padding:6px;}
-    .character-option .character-name{font-weight:900;color:var(--text);}
-    .character-option .character-desc{font-size:12px;color:var(--muted);line-height:1.4;}
+    .character-option .character-name{font-weight:900;color:var(--home-text);}
+    .character-option .character-desc{font-size:12px;color:var(--home-muted);line-height:1.4;}
+
+    .home-actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:12px;
+    }
+
+    .home-actions button,
+    .login-box button{
+      min-height:46px;
+      padding:12px 16px;
+      border-radius:14px;
+      font-size:15px;
+      font-weight:900;
+    }
+
+    .home-primary-btn{
+      background:linear-gradient(180deg,#ffd677 0%,#d79a38 100%) !important;
+      color:#3d2508 !important;
+      border:1px solid rgba(143,88,25,.38) !important;
+    }
+
+    .home-toast{
+      min-height:24px;
+      margin-top:8px;
+      font-size:14px;
+      font-weight:800;
+      color:#ffe39a;
+    }
+
+    .home-sub-actions{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      margin-top:12px;
+      flex-wrap:wrap;
+    }
+
+    .home-helper{
+      color:var(--home-muted);
+      font-size:13px;
+      line-height:1.6;
+    }
+
+    .home-logout-row{
+      display:flex;
+      justify-content:flex-end;
+      gap:10px;
+      margin-bottom:10px;
+    }
+
+    .home-empty{
+      padding:14px;
+      border-radius:16px;
+      background:rgba(255,255,255,.04);
+      border:1px dashed rgba(255,255,255,.14);
+      color:var(--home-muted);
+    }
+
+    .table{
+      width:100%;
+      border-collapse:collapse;
+      overflow:hidden;
+      border-radius:14px;
+      background:rgba(255,255,255,.04);
+    }
+
+    .table th,.table td{
+      padding:10px 8px;
+      text-align:center;
+      border-bottom:1px solid rgba(255,255,255,.08);
+      color:var(--home-text);
+    }
+
+    .table thead th{
+      background:rgba(255,255,255,.08);
+      color:#fff0c8;
+    }
+
+    @media (max-width: 980px){
+      .home-panels,
+      .login-grid{grid-template-columns:1fr;}
+      .home-shell{padding:14px;}
+      .home-brand{max-width:100%;}
+      .home-modal{padding:18px;}
+    }
+
+    @media (max-width: 640px){
+      .home-topbar{flex-direction:column;align-items:stretch;}
+      .home-status{align-self:flex-end;}
+      .home-start-btn{min-width:88vw;}
+      .home-modal-head h3{font-size:24px;}
+      .character-option img{width:84px;height:84px;}
+      #worldList .level-grid{grid-template-columns:1fr;}
+      .home-login-tabs{grid-template-columns:1fr;}
+    }
   </style>
 </head>
-<body>
-  <div class="container">
-    <div class="header">
-      <div class="brand">
-        <div class="logo"></div>
-        <div>
-          <h1>魔法迷宮｜積木程式逃出迷宮</h1>
-          <p>用積木寫程式，讓角色逃出迷宮，收集道具解鎖新世界 ✨</p>
-        </div>
+<body class="home-page">
+  <div class="home-shell">
+    <div class="home-topbar">
+      <div class="home-brand">
+        <h1>程式迷宮大冒險</h1>
+        <p>點擊開始遊戲後，輸入班級座號五碼數字，選擇角色，進入迷宮挑戰。</p>
       </div>
-      <div class="badge" id="sessionBadge">尚未登入</div>
+      <div class="home-status" id="sessionBadge">尚未登入</div>
     </div>
 
-    <div class="row">
-      <div class="stack">
-        <div class="card">
-          <h2 style="margin:0 0 10px 0;">學生登入</h2>
-          <label>五碼學號（前三碼班級＋後兩碼座號，例如 30105）</label>
-          <input id="studentId" placeholder="30105" inputmode="numeric" maxlength="5" />
+    <div class="home-stage">
+      <div class="home-start-wrap">
+        <button class="home-start-btn" id="btnOpenLogin">開始遊戲</button>
+        <div class="home-start-tip">點擊畫面中央按鈕，開啟登入視窗</div>
+      </div>
+    </div>
 
-          <div class="character-picker">
-            <label>選擇角色</label>
-            <div class="character-grid" id="characterGrid">
-              <button type="button" class="character-option active" data-character="boy">
-                <img src="img/boy.png" alt="男角色">
-                <div class="character-name">冒險少年</div>
-                <div class="character-desc">劍士造型，適合勇者冒險感。</div>
-              </button>
-              <button type="button" class="character-option" data-character="girl">
-                <img src="img/girl.png" alt="女角色">
-                <div class="character-name">精靈法師</div>
-                <div class="character-desc">法杖造型，適合法術冒險感。</div>
-              </button>
-            </div>
-            <input type="hidden" id="selectedCharacter" value="boy" />
-          </div>
-
-          <div class="btnbar">
-            <button class="primary" id="btnStudentLogin">登入並選關</button>
-            <button id="btnLogout">登出</button>
-          </div>
-
-          <div class="small" style="margin-top:8px;">
-            教師測試帳號：teacher.html（教師碼：<b>1070</b>）
-          </div>
-
-          <div class="hr"></div>
-
-          <div class="btnbar">
-            <button id="btnTeacher">進入教師後台</button>
-            <button id="btnClassRank">更新本班總分排行榜</button>
-          </div>
-
-          <div class="toast" id="toast"></div>
+    <div class="home-panels" id="homePanels" hidden>
+      <div class="home-card">
+        <div class="home-logout-row">
+          <button id="btnLogout">登出</button>
+          <button id="btnReopenLogin">切換登入</button>
         </div>
+        <h2>本班排行榜</h2>
+        <div id="rankArea" class="small">請先以學生登入後再查看。</div>
+      </div>
 
-        <div class="card">
-          <h2 style="margin:0 0 10px 0;">本班排行榜（總分：所有已通關關卡的最佳分數加總）</h2>
-          <div id="rankArea" class="small">請先以學生登入後再查看。</div>
+      <div class="home-card">
+        <h2>世界與關卡</h2>
+        <div id="worldList"></div>
+        <div class="small" style="margin-top:10px;">小提醒：先用「向前走」與「左／右轉」，進階再用「重複」減少積木數量。</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="home-modal-mask" id="loginModal" hidden>
+    <div class="home-modal" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
+      <div class="home-modal-head">
+        <div>
+          <h3 id="loginTitle">登入冒險大廳</h3>
+          <p>學生可輸入五碼班級座號並選擇角色，教師可輸入預設密碼進入教師視窗。</p>
+        </div>
+        <button class="home-close" id="btnCloseLogin" aria-label="關閉登入視窗">×</button>
+      </div>
+
+      <div class="home-login-tabs">
+        <button type="button" class="home-tab active" id="tabStudent">學生登入</button>
+        <button type="button" class="home-tab" id="tabTeacher">教師登入</button>
+      </div>
+
+      <div class="login-panel" id="studentPanel">
+        <div class="login-grid">
+          <div class="login-box">
+            <h4>學生登入</h4>
+            <label for="studentId">班級座號五碼數字</label>
+            <input id="studentId" placeholder="例如 30105" inputmode="numeric" maxlength="5" />
+
+            <div class="character-picker">
+              <label>選擇角色</label>
+              <div class="character-grid" id="characterGrid">
+                <button type="button" class="character-option active" data-character="boy">
+                  <img src="img/boy.png" alt="男角色">
+                  <div class="character-name">冒險少年</div>
+                  <div class="character-desc">劍士造型，適合勇者冒險感。</div>
+                </button>
+                <button type="button" class="character-option" data-character="girl">
+                  <img src="img/girl.png" alt="女角色">
+                  <div class="character-name">精靈法師</div>
+                  <div class="character-desc">法杖造型，適合法術冒險感。</div>
+                </button>
+              </div>
+              <input type="hidden" id="selectedCharacter" value="boy" />
+            </div>
+
+            <div class="home-actions">
+              <button class="home-primary-btn" id="btnStudentLogin">登入並選關</button>
+            </div>
+            <div class="home-toast" id="toast"></div>
+          </div>
+
+          <div class="login-box">
+            <h4>操作說明</h4>
+            <div class="home-helper">
+              1. 輸入前三碼班級＋後兩碼座號。<br>
+              2. 選擇男角色或女角色。<br>
+              3. 登入成功後，下方會出現世界與關卡。<br>
+              4. 點選關卡後即可進入遊戲。
+            </div>
+          </div>
         </div>
       </div>
 
-      <div class="card">
-        <h2 style="margin:0 0 10px 0;">世界與關卡</h2>
-        <div id="worldList"></div>
-        <div class="small" style="margin-top:10px;">
-          小提醒：先用「向前走」與「左/右轉」，進階再用「重複」減少積木數量。
+      <div class="login-panel" id="teacherPanel" hidden>
+        <div class="login-grid">
+          <div class="login-box">
+            <h4>教師登入</h4>
+            <label for="teacherCode">教師密碼</label>
+            <input id="teacherCode" type="password" placeholder="請輸入教師密碼" />
+            <div class="home-actions">
+              <button class="home-primary-btn" id="btnTeacherLogin">登入教師視窗</button>
+            </div>
+            <div class="home-toast" id="teacherToast"></div>
+          </div>
+
+          <div class="login-box">
+            <h4>教師功能</h4>
+            <div class="home-helper">
+              教師登入後會進入教師後台，可查看全班成績、管理關卡、開啟教師工具與編輯地圖。<br><br>
+              預設教師密碼：<b>1070</b>
+            </div>
+          </div>
         </div>
+      </div>
+
+      <div class="home-sub-actions">
+        <div class="home-helper">登入視窗風格已與首頁背景一致，可直接作為首頁使用。</div>
+        <button id="btnClassRank">更新本班總分排行榜</button>
       </div>
     </div>
   </div>
@@ -163,8 +598,30 @@
     }
   };
 
-  const toast = (msg)=> document.getElementById('toast').textContent = msg;
+  const toast = (msg)=> document.getElementById('toast').textContent = msg || '';
+  const teacherToast = (msg)=> document.getElementById('teacherToast').textContent = msg || '';
 
+  function openLoginModal(defaultTab = 'student'){
+    document.getElementById('loginModal').hidden = false;
+    switchLoginTab(defaultTab);
+    if(defaultTab === 'teacher'){
+      document.getElementById('teacherCode').focus();
+    }else{
+      document.getElementById('studentId').focus();
+    }
+  }
+
+  function closeLoginModal(){
+    document.getElementById('loginModal').hidden = true;
+  }
+
+  function switchLoginTab(tab){
+    const isTeacher = tab === 'teacher';
+    document.getElementById('tabStudent').classList.toggle('active', !isTeacher);
+    document.getElementById('tabTeacher').classList.toggle('active', isTeacher);
+    document.getElementById('studentPanel').hidden = isTeacher;
+    document.getElementById('teacherPanel').hidden = !isTeacher;
+  }
 
   function bindCharacterPicker(){
     const hidden = document.getElementById('selectedCharacter');
@@ -180,14 +637,20 @@
   function renderSession(){
     const s = StorageAPI.getSession();
     const el = document.getElementById('sessionBadge');
+    const panels = document.getElementById('homePanels');
+
     if(!s){
       el.textContent = '尚未登入';
+      panels.hidden = true;
       return null;
     }
+
     if(s.role === 'student'){
-      el.textContent = `學生：${s.userId}`;
+      el.textContent = `學生：${s.userId}｜角色：${s.character === 'girl' ? '女角色' : '男角色'}`;
+      panels.hidden = false;
     }else{
       el.textContent = '教師模式';
+      panels.hidden = true;
     }
     return s;
   }
@@ -272,6 +735,11 @@
     const wrap = document.getElementById('worldList');
     wrap.innerHTML = '';
 
+    if(!s || (!isTeacher && !userId)){
+      wrap.innerHTML = '<div class="home-empty">請先登入學生帳號後再選關。</div>';
+      return;
+    }
+
     LEVELS.forEach(world => {
       const worldUnlocked = isTeacher ? true : (userId ? getWorldUnlocked(world, progress, userId) : false);
       const normalLevels = getHomeNormalLevels(world);
@@ -292,6 +760,7 @@
       title.style.display = 'flex';
       title.style.justifyContent = 'space-between';
       title.style.alignItems = 'center';
+      title.style.gap = '8px';
       title.innerHTML = `<div style="color:${theme.title};"><b>${getDisplayWorldName(world)}</b></div>
                          <div class="badge" style="background:${theme.badgeBg};border:${theme.badgeBd};color:${theme.title};">${isTeacher ? '教師可進入' : (worldUnlocked ? '已解鎖' : '未解鎖')}</div>`;
       wCard.appendChild(title);
@@ -426,7 +895,7 @@
     area.appendChild(small);
   }
 
-  document.getElementById('btnStudentLogin').onclick = ()=>{
+  function handleStudentLogin(){
     const studentId = document.getElementById('studentId').value.trim();
     if(!/^\d{5}$/.test(studentId)){
       toast('學號請輸入 5 位數，例如 30105');
@@ -444,24 +913,51 @@
     renderSession();
     renderWorlds();
     renderClassRank();
+    closeLoginModal();
+  }
+
+  function handleTeacherLogin(){
+    const teacherCode = document.getElementById('teacherCode').value.trim();
+    const s = Auth.loginTeacher({ teacherCode });
+    if(!s){
+      teacherToast('教師密碼錯誤，請重新輸入。');
+      return;
+    }
+    teacherToast('登入成功，正在前往教師視窗…');
+    location.href = 'teacher.html';
+  }
+
+  document.getElementById('btnOpenLogin').onclick = ()=> openLoginModal('student');
+  document.getElementById('btnReopenLogin').onclick = ()=> openLoginModal('student');
+  document.getElementById('btnCloseLogin').onclick = closeLoginModal;
+  document.getElementById('tabStudent').onclick = ()=> switchLoginTab('student');
+  document.getElementById('tabTeacher').onclick = ()=> switchLoginTab('teacher');
+  document.getElementById('btnStudentLogin').onclick = handleStudentLogin;
+  document.getElementById('btnTeacherLogin').onclick = handleTeacherLogin;
+  document.getElementById('btnClassRank').onclick = ()=>{
+    renderClassRank();
+    toast('已更新本班排行榜（總分）。');
   };
 
   document.getElementById('btnLogout').onclick = ()=>{
     Auth.logout();
     toast('已登出。');
+    teacherToast('');
+    document.getElementById('teacherCode').value = '';
     renderSession();
     renderWorlds();
     renderClassRank();
   };
 
-  document.getElementById('btnTeacher').onclick = ()=>{
-    location.href = 'teacher.html';
-  };
-
-  document.getElementById('btnClassRank').onclick = ()=>{
-    renderClassRank();
-    toast('已更新本班排行榜（總分）。');
-  };
+  document.getElementById('studentId').addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter') handleStudentLogin();
+  });
+  document.getElementById('teacherCode').addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter') handleTeacherLogin();
+  });
+  document.getElementById('loginModal').addEventListener('click', (e)=>{
+    if(e.target.id === 'loginModal') closeLoginModal();
+  });
 
   bindCharacterPicker();
   renderSession();
