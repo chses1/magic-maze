@@ -254,7 +254,37 @@
     .result-actions .retry{background:linear-gradient(180deg,var(--blue1),var(--blue2));color:#fff}
     .result-actions .back{background:#fff;color:#36533f;border:1px solid var(--line)}
     .result-actions.single{grid-template-columns:1fr}
-    @media (max-width: 1100px){
+    @media (max-width: 1100px) and (orientation: landscape){
+      body{padding:8px}
+      .page{width:min(100vw - 16px, 1500px);aspect-ratio:16 / 9;min-height:0;padding:10px;gap:8px}
+      .top-actions{gap:10px}
+      .title-wrap{padding:10px 12px}
+      .toolbar button{padding:10px 13px}
+      .stage{padding:6px;gap:8px;grid-template-rows:auto minmax(320px,1fr) auto}
+      .stage-top{grid-template-columns:minmax(0,1fr) minmax(220px,320px) minmax(0,1fr);gap:8px}
+      .stage-bottom{grid-template-columns:1.45fr .95fr;gap:8px}
+      .arena{
+        min-height:320px;
+        margin-top:0;
+        padding:8px 8px 0;
+        grid-template-columns:minmax(0,1fr) minmax(220px,320px) minmax(0,1fr);
+        gap:8px;
+        overflow:visible;
+      }
+      .portrait{padding:12px 0 4px;transform:translateY(0)}
+      .portrait img{max-height:100%;transform:scale(1.04)}
+      .portrait.player-portrait img{max-height:250px}
+      .portrait.boss-portrait img{max-height:280px}
+      .arena-center{padding-bottom:32px}
+      .battle-banner{padding:16px 18px}
+      .cards{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+      .boss-card{padding:7px;gap:4px}
+      .boss-card-art{min-height:92px}
+      .boss-card img{width:88px;height:88px}
+      .action-buttons button{min-height:46px}
+      .boss-floating-name{display:none !important}
+    }
+    @media (max-width: 900px){
       body{padding:8px}
       .page{width:min(100vw - 16px, 1500px);aspect-ratio:auto;min-height:calc(100vh - 16px)}
       .stage-top,.stage-bottom{grid-template-columns:1fr}
@@ -273,9 +303,9 @@
         max-height:100%;
         transform:scale(1.22);
       }
-    .boss-floating-name{
-      display:none !important;
-    }
+      .boss-floating-name{
+        display:none !important;
+      }
     }
     @media (max-width: 640px){
       body{display:block;padding:0}
