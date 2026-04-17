@@ -49,56 +49,57 @@
       display:none !important;
     }
 
-    .home-stage{
-      flex:1;
-      min-height:300px;
-      display:flex;
-      align-items:flex-end;
-      justify-content:center;
-      position:relative;
-      z-index:1;
-    }
-
     .home-start-wrap{
+      position:absolute;
+      left:50%;
+      bottom:32px;
+      transform:translateX(-50%);
+      z-index:3;
       display:flex;
-      flex-direction:column;
-      align-items:center;
-      gap:10px;
-      margin-bottom:4vh;
+      justify-content:center;
+      width:min(100%, 360px);
+      pointer-events:none;
     }
 
     .home-start-btn{
-      min-width:min(320px, 82vw);
-      padding:18px 28px;
-      border:none;
-      border-radius:24px;
-      color:#fff6dc;
-      font-size:clamp(24px, 2.3vw, 34px);
+      pointer-events:auto;
+      min-width:280px;
+      min-height:78px;
+      padding:18px 34px;
+      border-radius:26px;
+      border:3px solid rgba(255,226,150,.88);
+      background:linear-gradient(180deg,#7a4a1a 0%, #5b3210 100%);
+      color:#fff7e6;
+      font-size:26px;
       font-weight:900;
       letter-spacing:.08em;
-      background:linear-gradient(180deg, rgba(96,54,18,.95) 0%, rgba(52,29,9,.95) 100%);
-      border:3px solid rgba(255,214,120,.86);
-      box-shadow:0 0 0 4px rgba(122,70,22,.42) inset, 0 18px 40px rgba(0,0,0,.38), 0 0 18px rgba(255,196,84,.28);
-      text-shadow:0 2px 8px rgba(0,0,0,.4);
-      transition:transform .18s ease, box-shadow .18s ease, filter .18s ease;
-      cursor:pointer;
+      box-shadow:0 18px 32px rgba(0,0,0,.34), inset 0 2px 0 rgba(255,255,255,.14);
+      text-shadow:0 2px 6px rgba(0,0,0,.28);
     }
 
     .home-start-btn:hover{
-      transform:translateY(-2px) scale(1.02);
+      transform:translateY(-2px);
       filter:brightness(1.04);
-      box-shadow:0 0 0 4px rgba(122,70,22,.42) inset, 0 22px 48px rgba(0,0,0,.44), 0 0 24px rgba(255,196,84,.35);
     }
 
-    .home-start-tip{
-      display:none !important;
+    .home-start-btn:active{
+      transform:translateY(0);
     }
+
+    .home-stage{
+      flex:1;
+      min-height:300px;
+      position:relative;
+      z-index:1;
+      cursor:pointer;
+    }
+
 
     .home-panels{
       position:relative;
       z-index:2;
       display:grid;
-      grid-template-columns:1.05fr .95fr;
+      grid-template-columns:minmax(0,1fr);
       gap:16px;
       align-items:start;
     }
@@ -115,6 +116,18 @@
       color:var(--home-text);
     }
 
+    .home-worlds-card,
+    .home-rank-card{
+      width:100%;
+    }
+
+    .home-worlds-grid{
+      display:grid;
+      grid-template-columns:repeat(2, minmax(0,1fr));
+      gap:14px;
+      align-items:stretch;
+    }
+
     .home-card h2{
       margin:0 0 12px;
       font-size:22px;
@@ -123,8 +136,22 @@
 
     .home-card .small{ color:var(--home-muted); }
 
+    #worldList{
+      display:grid;
+      grid-template-columns:repeat(2, minmax(0,1fr));
+      gap:14px;
+    }
+
+    #worldList .home-world-card{
+      height:100%;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      margin-bottom:0 !important;
+    }
+
     #worldList .level-grid{
-      margin-top:10px;
+      margin-top:0;
       display:grid;
       grid-template-columns:1fr 1fr;
       gap:8px;
@@ -356,8 +383,177 @@
       color:#fff0c8;
     }
 
+    .class-progress-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-end;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-bottom:12px;
+    }
+
+    .class-progress-sub{
+      color:var(--home-muted);
+      font-size:13px;
+      line-height:1.6;
+    }
+
+    .class-progress-legend{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin:10px 0 12px;
+    }
+
+    .class-legend-item{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 10px;
+      border-radius:999px;
+      background:rgba(255,255,255,.05);
+      border:1px solid rgba(255,255,255,.08);
+      font-size:12px;
+      color:var(--home-text);
+    }
+
+    .class-dot{
+      width:12px;
+      height:12px;
+      border-radius:4px;
+      border:1px solid rgba(255,255,255,.16);
+      display:inline-block;
+    }
+    .class-dot.none{background:rgba(255,255,255,.08);}
+    .class-dot.one{background:#86efac;}
+    .class-dot.two{background:#22c55e;}
+    .class-dot.three{background:#fbbf24;}
+    .class-dot.boss{background:#ef4444;}
+
+    .class-progress-wrap{
+      overflow:auto;
+      border-radius:18px;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(7,12,28,.34);
+    }
+
+    .class-progress-board{
+      width:max-content;
+      min-width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+    }
+
+    .class-progress-board th,
+    .class-progress-board td{
+      border-right:1px solid rgba(255,255,255,.08);
+      border-bottom:1px solid rgba(255,255,255,.08);
+      padding:0;
+      text-align:center;
+      vertical-align:middle;
+    }
+
+    .class-progress-board thead th{
+      position:sticky;
+      top:0;
+      z-index:2;
+      background:#17203f;
+    }
+
+    .class-progress-board .student-col{
+      position:sticky;
+      left:0;
+      z-index:1;
+      min-width:132px;
+      max-width:132px;
+      background:#111a33;
+      text-align:left;
+    }
+
+    .class-progress-board thead .student-col{
+      z-index:3;
+      background:#1a2347;
+    }
+
+    .class-progress-board .total-col{
+      min-width:84px;
+      background:#0f1730;
+      font-weight:900;
+      color:#fff0c8;
+    }
+
+    .class-progress-board .world-head{
+      font-size:13px;
+      font-weight:900;
+      color:#fff;
+      padding:12px 8px;
+    }
+
+    .class-progress-board .level-head{
+      min-width:44px;
+      padding:8px 4px;
+      font-size:11px;
+      line-height:1.2;
+      color:#dbe5ff;
+      background:#162142;
+    }
+
+    .class-progress-board .student-meta{
+      padding:8px 10px;
+      display:flex;
+      flex-direction:column;
+      gap:3px;
+    }
+
+    .class-progress-board .student-name{
+      font-weight:900;
+      color:#fff;
+      font-size:13px;
+      line-height:1.15;
+    }
+
+    .class-progress-board .student-sub{
+      font-size:11px;
+      color:var(--home-muted);
+      line-height:1.25;
+    }
+
+    .class-progress-board .status-cell{
+      width:44px;
+      height:42px;
+      position:relative;
+    }
+
+    .class-progress-board .status-btn{
+      width:100%;
+      height:100%;
+      border:none;
+      border-radius:0;
+      background:transparent;
+      color:#fff;
+      font-weight:900;
+      font-size:11px;
+      padding:0;
+      min-height:0;
+    }
+
+    .class-progress-board .status-btn:hover{transform:none;filter:brightness(1.08);}
+    .class-progress-board .status-btn.none{background:rgba(255,255,255,.04);color:#7d89b8;}
+    .class-progress-board .status-btn.one{background:#86efac;color:#14532d;}
+    .class-progress-board .status-btn.two{background:#22c55e;color:#0b1b10;}
+    .class-progress-board .status-btn.three{background:#fbbf24;color:#2b1b00;}
+    .class-progress-board .status-btn.boss{background:#dc2626;color:#fff;}
+    .class-progress-board .cell-main{display:block;font-size:13px;line-height:1;}
+    .class-progress-board .cell-sub{display:block;font-size:9px;opacity:.92;margin-top:2px;}
+    .class-progress-board .world-W1{background:#334155 !important;}
+    .class-progress-board .world-W2{background:#065f46 !important;}
+    .class-progress-board .world-W3{background:#92400e !important;}
+    .class-progress-board .world-W4{background:#1d4ed8 !important;}
+    .home-current-student .student-col{box-shadow:inset 4px 0 0 #ffd677;}
+
     @media (max-width: 980px){
-      .home-panels,
+      .home-worlds-grid,
+      #worldList,
       .login-grid{grid-template-columns:1fr;}
       .home-shell{padding:14px;}
       .home-brand{max-width:100%;}
@@ -369,6 +565,8 @@
       .character-option img{width:84px;height:84px;}
       #worldList .level-grid{grid-template-columns:1fr;}
       .home-login-tabs{grid-template-columns:1fr;}
+      .home-start-wrap{bottom:20px;width:min(100%, 300px);}
+      .home-start-btn{min-width:220px;min-height:64px;padding:14px 24px;font-size:22px;border-radius:22px;}
     }
   </style>
 </head>
@@ -376,27 +574,39 @@
   <div class="home-shell">
     <div class="home-status" id="sessionBadge" hidden>尚未登入</div>
 
-    <div class="home-stage">
+    <div class="home-stage" id="homeStage" tabindex="0" aria-label="點擊開啟登入視窗">
       <div class="home-start-wrap">
-        <button class="home-start-btn" id="btnOpenLogin" type="button">開始遊戲</button>
-        <div class="home-start-tip">點擊畫面中央按鈕，開啟登入視窗</div>
+        <button type="button" class="home-start-btn" id="btnStartGame">開始遊戲</button>
       </div>
     </div>
 
     <div class="home-panels" id="homePanels" hidden>
-      <div class="home-card">
+      <div class="home-card home-worlds-card">
         <div class="home-logout-row">
           <button id="btnLogout">登出</button>
           <button id="btnReopenLogin">切換登入</button>
         </div>
-        <h2>本班排行榜</h2>
-        <div id="rankArea" class="small">請先以學生登入後再查看。</div>
-      </div>
-
-      <div class="home-card">
         <h2>世界與關卡</h2>
         <div id="worldList"></div>
-        <div class="small" style="margin-top:10px;">小提醒：先用「向前走」與「左／右轉」，進階再用「重複」減少積木數量。</div>
+        <div class="small" style="margin-top:10px;">小提醒：世界區改為 2 × 2 排列；先完成同世界前一關，再挑戰下一關。</div>
+      </div>
+
+      <div class="home-card home-rank-card">
+        <div class="class-progress-head">
+          <div>
+            <h2 style="margin-bottom:6px;">本班闖關總覽</h2>
+            <div class="class-progress-sub">依照目前登入學生的班級顯示全班進度，風格延續首頁介面，但呈現方式參考 code.org 教師總覽。</div>
+          </div>
+          <button id="btnClassRank">更新本班進度</button>
+        </div>
+        <div class="class-progress-legend">
+          <span class="class-legend-item"><span class="class-dot none"></span>未通關</span>
+          <span class="class-legend-item"><span class="class-dot one"></span>1 星</span>
+          <span class="class-legend-item"><span class="class-dot two"></span>2 星</span>
+          <span class="class-legend-item"><span class="class-dot three"></span>3 星</span>
+          <span class="class-legend-item"><span class="class-dot boss"></span>Boss</span>
+        </div>
+        <div id="rankArea" class="small">請先以學生登入後再查看。</div>
       </div>
     </div>
   </div>
@@ -482,7 +692,6 @@
 
       <div class="home-sub-actions">
         <div class="home-helper">登入視窗風格已與首頁背景一致，可直接作為首頁使用。</div>
-        <button id="btnClassRank">更新本班總分排行榜</button>
       </div>
     </div>
   </div>
@@ -688,7 +897,7 @@
       const theme = WORLD_THEME[worldId] || WORLD_THEME.W1;
 
       const wCard = document.createElement('div');
-      wCard.className = 'card';
+      wCard.className = 'card home-world-card';
       wCard.style.marginBottom = '10px';
       wCard.style.padding = '12px';
       wCard.style.background = theme.cardBg;
@@ -775,63 +984,140 @@
     });
   }
 
+  function getAllDisplayLevels(){
+    return LEVELS.flatMap(world => {
+      const worldId = normalizeWorldId(world.worldId);
+      const normalLevels = getHomeNormalLevels(world).map(level => ({
+        worldId,
+        levelId: normalizeLevelId(level.levelId),
+        label: String(level.levelId || '').replace(/^L/i, 'L'),
+        isBoss: false
+      }));
+      return normalLevels;
+    });
+  }
+
+  function getNormalizedBestMap(bestObj){
+    const out = {};
+    Object.entries(bestObj || {}).forEach(([key, record]) => {
+      const [worldId, levelId] = String(key).split('-');
+      out[`${normalizeWorldId(worldId)}-${normalizeLevelId(levelId)}`] = record;
+    });
+    return out;
+  }
+
+  function calcTotalScore(bestObj){
+    return Object.values(bestObj || {}).reduce((sum, record) => sum + (Number(record?.score) || 0), 0);
+  }
+
+  function getRecordStatus(record, isBoss = false){
+    if(!record){
+      return { statusClass:'none', main:'－', sub:'', title:'尚未通關' };
+    }
+    const stars = Number(record.stars || 0);
+    const score = Number(record.score || 0);
+    const steps = Number(record.steps || 0);
+    const timeMs = Number(record.timeMs || 0);
+    let statusClass = 'one';
+    if(isBoss){
+      statusClass = 'boss';
+    }else if(stars >= 3){
+      statusClass = 'three';
+    }else if(stars === 2){
+      statusClass = 'two';
+    }
+    return {
+      statusClass,
+      main: isBoss ? 'B' : `${Math.max(stars, 1)}★`,
+      sub: score > 0 ? String(score) : '',
+      title: `星數：${stars || 0}｜分數：${score || 0}｜步數：${steps || 0}${timeMs > 0 ? `｜${(timeMs / 1000).toFixed(1)}秒` : ''}`
+    };
+  }
+
   function renderClassRank(){
     const s = StorageAPI.getSession();
     const area = document.getElementById('rankArea');
     if(!s || s.role !== 'student'){
-      area.textContent = '請先以學生登入後再查看。';
+      area.innerHTML = '<div class="home-empty">請先以學生登入後再查看本班闖關總覽。</div>';
       return;
     }
 
     const progress = StorageAPI.getProgress();
     const classId = s.classId;
-    const uids = Object.keys(progress)
+    const displayLevels = getAllDisplayLevels();
+    const classStudents = Object.keys(progress)
       .filter(uid => uid !== 'teacher')
-      .filter(uid => uid.slice(0,3) === classId);
+      .filter(uid => /^\d{5}$/.test(uid))
+      .filter(uid => uid.slice(0,3) === classId)
+      .map(uid => {
+        const best = getNormalizedBestMap(progress[uid]?.best || {});
+        return {
+          uid,
+          seat: uid.slice(3,5),
+          best,
+          total: calcTotalScore(best),
+          passed: Object.keys(best).length
+        };
+      })
+      .sort((a,b)=> b.total - a.total || b.passed - a.passed || a.seat.localeCompare(b.seat));
 
-    if(uids.length === 0){
-      area.textContent = '目前尚無排行榜資料。';
+    if(classStudents.length === 0){
+      area.innerHTML = '<div class="home-empty">目前這個班級還沒有闖關紀錄。</div>';
       return;
     }
 
-    const rows = uids.map(uid => {
-      const best = progress[uid]?.best || {};
-      const passed = Object.keys(best).length;
-      const total = Object.keys(best).reduce((sum, key) => sum + (Number(best[key]?.score) || 0), 0);
-      return {
-        uid,
-        seat: uid.slice(3,5),
-        passed,
-        total
-      };
-    }).sort((a,b)=> b.total - a.total || b.passed - a.passed || a.seat.localeCompare(b.seat));
+    const worldGroups = LEVELS.map(world => ({
+      worldId: normalizeWorldId(world.worldId),
+      worldName: getDisplayWorldName(world),
+      count: getHomeNormalLevels(world).length
+    }));
 
-    area.innerHTML = '';
+    const headerTop = worldGroups.map(group => `<th class="world-head world-${group.worldId}" colspan="${group.count}">${group.worldName}</th>`).join('');
+    const headerBottom = LEVELS.flatMap(world => getHomeNormalLevels(world).map((level, idx) => `<th class="level-head">L${idx + 1}</th>`)).join('');
 
-    const table = document.createElement('table');
-    table.className = 'table';
-    table.innerHTML = `
-      <thead><tr>
-        <th>名次</th><th>座號</th><th>通關數</th><th>總分</th>
-      </tr></thead>
-      <tbody>
-        ${rows.slice(0, 30).map((r, i) => `
-          <tr>
-            <td>${i + 1}</td>
-            <td>${r.seat}</td>
-            <td>${r.passed}</td>
-            <td>${r.total}</td>
-          </tr>
-        `).join('')}
-      </tbody>
+    const tableRows = classStudents.map(stu => {
+      const isCurrent = stu.uid === s.userId;
+      const cells = displayLevels.map(meta => {
+        const record = stu.best[`${meta.worldId}-${meta.levelId}`];
+        const status = getRecordStatus(record, meta.isBoss);
+        return `
+          <td class="status-cell" title="${status.title}">
+            <button type="button" class="status-btn ${status.statusClass}" disabled>
+              <span class="cell-main">${status.main}</span>
+              <span class="cell-sub">${status.sub}</span>
+            </button>
+          </td>`;
+      }).join('');
+
+      return `
+        <tr class="${isCurrent ? 'home-current-student' : ''}">
+          <td class="student-col">
+            <div class="student-meta">
+              <div class="student-name">${classId}-${stu.seat}${isCurrent ? '（目前）' : ''}</div>
+              <div class="student-sub">通關 ${stu.passed} 關｜總分 ${stu.total}</div>
+            </div>
+          </td>
+          ${cells}
+          <td class="total-col">${stu.total}</td>
+        </tr>`;
+    }).join('');
+
+    area.innerHTML = `
+      <div class="class-progress-wrap">
+        <table class="class-progress-board">
+          <thead>
+            <tr>
+              <th class="student-col" rowspan="2">學生</th>
+              ${headerTop}
+              <th class="total-col" rowspan="2">總分</th>
+            </tr>
+            <tr>${headerBottom}</tr>
+          </thead>
+          <tbody>${tableRows}</tbody>
+        </table>
+      </div>
+      <div class="small" style="margin-top:10px;">說明：每格顯示該關最佳星數與分數，方便老師與學生一起掌握全班進度。</div>
     `;
-    area.appendChild(table);
-
-    const small = document.createElement('div');
-    small.className = 'small';
-    small.style.marginTop = '10px';
-    small.textContent = '說明：總分＝每一關最佳分數加總。';
-    area.appendChild(small);
   }
 
   function handleStudentLogin(){
@@ -866,7 +1152,21 @@
     location.href = 'teacher.html';
   }
 
-  document.getElementById('btnOpenLogin').onclick = ()=> openLoginModal('student');
+  const homeStage = document.getElementById('homeStage');
+  const btnStartGame = document.getElementById('btnStartGame');
+  homeStage.onclick = ()=> openLoginModal('student');
+  if(btnStartGame){
+    btnStartGame.onclick = (e)=>{
+      e.stopPropagation();
+      openLoginModal('student');
+    };
+  }
+  homeStage.addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter' || e.key === ' '){
+      e.preventDefault();
+      openLoginModal('student');
+    }
+  });
   document.getElementById('btnReopenLogin').onclick = ()=> openLoginModal('student');
   document.getElementById('btnCloseLogin').onclick = closeLoginModal;
   document.getElementById('tabStudent').onclick = ()=> switchLoginTab('student');
@@ -875,7 +1175,7 @@
   document.getElementById('btnTeacherLogin').onclick = handleTeacherLogin;
   document.getElementById('btnClassRank').onclick = ()=>{
     renderClassRank();
-    toast('已更新本班排行榜（總分）。');
+    toast('已更新本班闖關總覽。');
   };
 
   document.getElementById('btnLogout').onclick = ()=>{
