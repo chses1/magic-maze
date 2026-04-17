@@ -294,6 +294,7 @@ window.GamePage = (()=>{
   let legendTimer = null;
   let legendIndex = 0;
   let mazeScale = 1;
+  let mazeManualScale = 1;
 
   const LEGEND_CARDS = [
     { icon: '🗝️', title: '鑰匙', desc: '先拿到鑰匙，鎖住的出口門才會打開。' },
@@ -447,27 +448,69 @@ window.GamePage = (()=>{
     return 1.16;
   }
 
+  function getAutoFitMazeScale(){
+    const wrap = document.getElementById('gridWrap');
+    if (!wrap || !W || !H) return getMazeBaseScale();
+
+    const styles = window.getComputedStyle(wrap);
+    const padX = parseFloat(styles.paddingLeft || '0') + parseFloat(styles.paddingRight || '0');
+    const padY = parseFloat(styles.paddingTop || '0') + parseFloat(styles.paddingBottom || '0');
+    const availW = Math.max(120, wrap.clientWidth - padX - 4);
+    const availH = Math.max(120, wrap.clientHeight - padY - 4);
+
+    const baseGap = 6;
+    const baseCell = 34;
+    const fitByWidth = (availW - baseGap * Math.max(0, W - 1)) / (baseCell * W);
+    const fitByHeight = (availH - baseGap * Math.max(0, H - 1)) / (baseCell * H);
+    const fitted = Math.min(getMazeBaseScale(), fitByWidth, fitByHeight) * 0.98;
+
+    if (!Number.isFinite(fitted) || fitted <= 0) return getMazeBaseScale();
+    return Math.max(0.52, Math.min(1.9, fitted));
+  }
+
   function applyMazeScale(){
     const gridEl = document.getElementById('grid');
     if (!gridEl) return;
-    const cellSize = Math.round(34 * mazeScale);
-    const gap = Math.max(4, Math.round(6 * mazeScale));
+    const autoScale = getAutoFitMazeScale();
+    const finalScale = Math.max(0.52, Math.min(1.9, autoScale * mazeManualScale));
+    mazeScale = Math.round(finalScale * 100) / 100;
+    const cellSize = Math.max(20, Math.round(34 * mazeScale));
+    const gap = Math.max(3, Math.round(6 * mazeScale));
     gridEl.style.setProperty('--maze-cell-size', `${cellSize}px`);
     gridEl.style.setProperty('--maze-gap', `${gap}px`);
   }
 
   function setMazeScale(nextScale){
     const clamped = Math.max(0.7, Math.min(1.9, Number(nextScale || 1)));
-    mazeScale = Math.round(clamped * 100) / 100;
+    mazeManualScale = Math.round(clamped * 100) / 100;
     applyMazeScale();
   }
 
   function zoomMaze(delta){
-    setMazeScale(mazeScale + delta);
+    setMazeScale(mazeManualScale + delta);
   }
 
   function resetMazeScale(){
-    setMazeScale(getMazeBaseScale());
+    mazeManualScale = 1;
+    applyMazeScale();
+  }
+
+  function bindMazeAutoFit(){
+    const rerenderFit = ()=>{
+      applyMazeScale();
+    };
+    window.addEventListener('resize', rerenderFit, { passive:true });
+    window.addEventListener('orientationchange', rerenderFit, { passive:true });
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', rerenderFit, { passive:true });
+    }
+    try{
+      const wrap = document.getElementById('gridWrap');
+      if (wrap && window.ResizeObserver) {
+        const ro = new ResizeObserver(()=> rerenderFit());
+        ro.observe(wrap);
+      }
+    }catch(_err){}
   }
 
   function renderLegendCard(){
@@ -2846,6 +2889,7 @@ window.GamePage = (()=>{
     ensureInfoPanels();
     workspace = BlocklySetup.createWorkspace("blocklyDiv", normalizeWorldId(worldId || pack.w?.worldId || "W1"), { levelId: normalizeLevelId(levelId || pack.lv?.levelId || ""), availableSpellSymbols: getSpellObstacleSymbolsFromMap(pack.lv?.map) });
     bindUI();
+    bindMazeAutoFit();
 
     function refreshVisibleTargetBlocksText(targetBlocks){
       const resultWrap = document.getElementById("mazeResultWrap");
