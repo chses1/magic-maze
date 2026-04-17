@@ -233,6 +233,17 @@
     maxShieldFlatBonus: 4
   };
 
+
+  const TEACHER_BOSS_SIM_KEY = 'mw_teacher_boss_sim_v1';
+  const WORLD_EQUIPMENT_OPTIONS = {
+    world1: ['頭盔', '劍', '盔甲', '盾牌'],
+    world2: ['頭盔', '盾牌', '盔甲', '劍'],
+    world3: ['頭盔', '盾牌', '盔甲', '劍'],
+    world4: ['頭盔', '盾牌', '盔甲', '劍']
+  };
+
+  let teacherBossSimOverride = null;
+
   function getBossMechanics(){
     return config.mechanics || {};
   }
@@ -282,13 +293,25 @@
   }
 
   function getWorldInventory(worldKey){
+    if (teacherBossSimOverride && String(worldKey || '').toUpperCase() === String(teacherBossSimOverride.worldKey || '').toUpperCase()) {
+      return {
+        items: Array.isArray(teacherBossSimOverride.items) ? teacherBossSimOverride.items.slice() : [],
+        equipments: Array.isArray(teacherBossSimOverride.equipments) ? teacherBossSimOverride.equipments.slice() : [],
+        hpBonus: Number(teacherBossSimOverride.hpBonus || 0),
+        atkBonus: Number(teacherBossSimOverride.atkBonus || 0),
+        defBonus: Number(teacherBossSimOverride.defBonus || 0),
+        simulatedThreeStars: Number(teacherBossSimOverride.simulatedThreeStars || 0)
+      };
+    }
+
     const build = getPlayerBuild();
     return {
       items: build.itemsByWorld?.[String(worldKey).toUpperCase()] || [],
       equipments: build.equipmentsByWorld?.[String(worldKey).toUpperCase()] || [],
       hpBonus: build.hpBonus || 0,
       atkBonus: build.atkBonus || 0,
-      defBonus: build.defBonus || 0
+      defBonus: build.defBonus || 0,
+      simulatedThreeStars: null
     };
   }
 
@@ -371,6 +394,224 @@
         <div style="margin-top:12px;padding:12px 14px;border-radius:16px;background:#eef8ee;border:1px solid #b9d9bc;color:#214728;font-weight:900;">➡️ ${guide.nextHint}</div>
       </div>
     `;
+  }
+
+
+  function isTeacherMode(){
+    return getSessionSafe()?.role === 'teacher';
+  }
+
+  function getTeacherWorldItemOptions(){
+    return Object.values(config.cards || {}).map(card => String(card?.title || '').trim()).filter(Boolean);
+  }
+
+  function getTeacherWorldEquipmentOptions(){
+    return (WORLD_EQUIPMENT_OPTIONS[worldId] || ['頭盔', '劍', '盔甲', '盾牌']).slice();
+  }
+
+  function calculateEquipmentBonuses(equipments){
+    const result = { atkBonus: 0, defBonus: 0 };
+    (Array.isArray(equipments) ? equipments : []).forEach(name => {
+      const effect = {
+        '頭盔': { defBonus: 1 },
+        '盔甲': { defBonus: 2 },
+        '盾牌': { defBonus: 2 },
+        '劍': { atkBonus: 2 }
+      }[String(name || '').trim()] || {};
+      result.atkBonus += Number(effect.atkBonus || 0);
+      result.defBonus += Number(effect.defBonus || 0);
+    });
+    return result;
+  }
+
+  function buildTeacherBossOverride(payload){
+    const safeItems = getTeacherWorldItemOptions();
+    const safeEquips = getTeacherWorldEquipmentOptions();
+    const items = (Array.isArray(payload?.items) ? payload.items : []).map(v => String(v || '').trim()).filter(v => safeItems.includes(v));
+    const equipments = (Array.isArray(payload?.equipments) ? payload.equipments : []).map(v => String(v || '').trim()).filter(v => safeEquips.includes(v));
+    const simulatedThreeStars = Math.max(0, Math.min(4, Number(payload?.simulatedThreeStars || 0) || 0));
+    const equipBonus = calculateEquipmentBonuses(equipments);
+    return {
+      worldKey: worldId.replace(/^world/i, 'W'),
+      items,
+      equipments,
+      simulatedThreeStars,
+      hpBonus: simulatedThreeStars * 4,
+      atkBonus: equipBonus.atkBonus,
+      defBonus: equipBonus.defBonus
+    };
+  }
+
+  function readTeacherBossOverride(){
+    if (!isTeacherMode()) return null;
+    try {
+      const raw = sessionStorage.getItem(TEACHER_BOSS_SIM_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (!parsed || String(parsed.worldKey || '').toUpperCase() !== worldId.replace(/^world/i, 'W').toUpperCase()) return null;
+      return buildTeacherBossOverride(parsed);
+    } catch (_err) {
+      return null;
+    }
+  }
+
+  function saveTeacherBossOverride(override){
+    if (!isTeacherMode()) return;
+    if (!override) {
+      try { sessionStorage.removeItem(TEACHER_BOSS_SIM_KEY); } catch (_err) {}
+      return;
+    }
+    try {
+      sessionStorage.setItem(TEACHER_BOSS_SIM_KEY, JSON.stringify(override));
+    } catch (_err) {}
+  }
+
+  function getRealWorldInventoryForTeacherTool(){
+    const build = getPlayerBuild();
+    const worldKey = worldId.replace(/^world/i, 'W').toUpperCase();
+    return {
+      items: (build.itemsByWorld?.[worldKey] || []).slice(),
+      equipments: (build.equipmentsByWorld?.[worldKey] || []).slice(),
+      hpBonus: Number(build.hpBonus || 0),
+      atkBonus: Number(build.atkBonus || 0),
+      defBonus: Number(build.defBonus || 0)
+    };
+  }
+
+  function estimateThreeStarsFromHpBonus(hpBonus){
+    return Math.max(0, Math.min(4, Math.round(Number(hpBonus || 0) / 4)));
+  }
+
+  function teacherBossSummaryHtml(override){
+    if (!override) return '目前使用學生實際進度。';
+    const items = override.items.length ? override.items.join('、') : '未取得';
+    const equips = override.equipments.length ? override.equipments.join('、') : '未取得';
+    return `模擬三星關卡：${override.simulatedThreeStars}／4｜生命 +${override.hpBonus}｜攻擊 +${override.atkBonus}｜防禦 +${override.defBonus}<br>模擬道具：${items}<br>模擬裝備：${equips}`;
+  }
+
+  function syncTeacherBossToolUi(){
+    const panel = document.getElementById('teacherBossTool');
+    if (!panel) return;
+    const override = teacherBossSimOverride;
+    const summary = document.getElementById('teacherBossSummary');
+    if (summary) summary.innerHTML = teacherBossSummaryHtml(override);
+    panel.dataset.active = override ? '1' : '0';
+  }
+
+  function applyTeacherBossSimulation(options = {}){
+    teacherBossSimOverride = options && typeof options === 'object' ? buildTeacherBossOverride(options) : null;
+    saveTeacherBossOverride(teacherBossSimOverride);
+    bossState = createBossState();
+    if (teacherBossSimOverride) {
+      bossState.log.unshift(`教師模擬已套用：三星 ${teacherBossSimOverride.simulatedThreeStars}／4，道具 ${teacherBossSimOverride.items.length || 0} 個，裝備 ${teacherBossSimOverride.equipments.length || 0} 件。`);
+      bossState.fxText = '🧪 教師模擬狀態已更新';
+    } else {
+      bossState.log.unshift('已恢復學生實際進度狀態。');
+      bossState.fxText = '♻️ 已恢復實際進度';
+    }
+    render();
+    syncTeacherBossToolUi();
+  }
+
+  function injectTeacherBossTool(){
+    if (!isTeacherMode() || document.getElementById('teacherBossTool')) return;
+    const real = getRealWorldInventoryForTeacherTool();
+    const defaultOverride = readTeacherBossOverride() || buildTeacherBossOverride({
+      items: real.items,
+      equipments: real.equipments,
+      simulatedThreeStars: estimateThreeStarsFromHpBonus(real.hpBonus)
+    });
+    teacherBossSimOverride = readTeacherBossOverride() || null;
+
+    const itemOptions = getTeacherWorldItemOptions();
+    const equipOptions = getTeacherWorldEquipmentOptions();
+
+    const style = document.createElement('style');
+    style.textContent = `
+      .teacher-boss-tool{position:fixed;left:12px;bottom:12px;z-index:40;width:min(380px,calc(100vw - 24px));padding:14px 14px 12px;border-radius:20px;background:rgba(12,22,46,.78);border:1px solid rgba(255,255,255,.16);backdrop-filter:blur(8px);box-shadow:0 16px 34px rgba(0,0,0,.22);color:#f5f8ff}
+      .teacher-boss-tool h3{margin:0;font-size:18px;line-height:1.2;color:#fff4cd}
+      .teacher-boss-tool p{margin:4px 0 0;color:rgba(245,248,255,.85);font-size:12px;line-height:1.5}
+      .teacher-boss-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+      .teacher-boss-field{display:flex;flex-direction:column;gap:6px}
+      .teacher-boss-field label{margin:0;font-size:12px;color:#d9e7ff}
+      .teacher-boss-checks{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:10px;border-radius:14px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10)}
+      .teacher-boss-check{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:#fff}
+      .teacher-boss-check input{width:16px;height:16px;margin:0}
+      .teacher-boss-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+      .teacher-boss-actions button{flex:1 1 120px;border:none;border-radius:12px;padding:10px 12px;font-size:13px;font-weight:900;cursor:pointer}
+      .teacher-boss-actions .apply{background:linear-gradient(180deg,#77d86d,#47ad51);color:#fff}
+      .teacher-boss-actions .reset{background:#edf2ff;color:#243b76}
+      .teacher-boss-actions .real{background:#ffe9c4;color:#6a4300}
+      .teacher-boss-summary{margin-top:10px;padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.10);font-size:12px;line-height:1.6;color:#f8fbff}
+      .teacher-boss-tool[data-active="1"]{border-color:rgba(255,226,143,.45)}
+      @media (max-width: 720px){.teacher-boss-tool{width:min(340px,calc(100vw - 20px));left:10px;right:10px;bottom:10px}.teacher-boss-grid{grid-template-columns:1fr}}
+    `;
+    document.head.appendChild(style);
+
+    const panel = document.createElement('section');
+    panel.id = 'teacherBossTool';
+    panel.className = 'teacher-boss-tool';
+    panel.innerHTML = `
+      <h3>🧪 教師 Boss 測試工具</h3>
+      <p>可直接模擬本世界已取得的道具、裝備與三星關卡數，方便測試不同難度。</p>
+      <div class="teacher-boss-grid">
+        <div class="teacher-boss-field">
+          <label for="teacherBossStars">本世界三星關卡數（0～4）</label>
+          <input id="teacherBossStars" type="number" min="0" max="4" step="1" value="${defaultOverride.simulatedThreeStars}">
+        </div>
+        <div class="teacher-boss-field">
+          <label>能力換算說明</label>
+          <div class="teacher-boss-summary">每個三星關卡 = 生命 +4；裝備會自動換算攻擊 / 防禦加成。</div>
+        </div>
+      </div>
+      <div class="teacher-boss-grid">
+        <div class="teacher-boss-field">
+          <label>已取得道具</label>
+          <div class="teacher-boss-checks" id="teacherBossItems"></div>
+        </div>
+        <div class="teacher-boss-field">
+          <label>已取得裝備</label>
+          <div class="teacher-boss-checks" id="teacherBossEquips"></div>
+        </div>
+      </div>
+      <div class="teacher-boss-actions">
+        <button type="button" class="apply" id="teacherBossApply">套用模擬</button>
+        <button type="button" class="reset" id="teacherBossReset">清空成最低狀態</button>
+        <button type="button" class="real" id="teacherBossUseReal">恢復實際進度</button>
+      </div>
+      <div class="teacher-boss-summary" id="teacherBossSummary"></div>
+    `;
+    document.body.appendChild(panel);
+
+    const itemWrap = document.getElementById('teacherBossItems');
+    const equipWrap = document.getElementById('teacherBossEquips');
+    itemWrap.innerHTML = itemOptions.map((name, idx) => `<label class="teacher-boss-check"><input type="checkbox" value="${name}" ${defaultOverride.items.includes(name) ? 'checked' : ''}>${idx + 1}. ${name}</label>`).join('');
+    equipWrap.innerHTML = equipOptions.map((name, idx) => `<label class="teacher-boss-check"><input type="checkbox" value="${name}" ${defaultOverride.equipments.includes(name) ? 'checked' : ''}>${idx + 1}. ${name}</label>`).join('');
+
+    const collect = () => ({
+      simulatedThreeStars: document.getElementById('teacherBossStars')?.value,
+      items: Array.from(itemWrap.querySelectorAll('input:checked')).map(el => el.value),
+      equipments: Array.from(equipWrap.querySelectorAll('input:checked')).map(el => el.value)
+    });
+
+    document.getElementById('teacherBossApply').onclick = () => applyTeacherBossSimulation(collect());
+    document.getElementById('teacherBossReset').onclick = () => {
+      document.getElementById('teacherBossStars').value = '0';
+      itemWrap.querySelectorAll('input').forEach(el => { el.checked = false; });
+      equipWrap.querySelectorAll('input').forEach(el => { el.checked = false; });
+      applyTeacherBossSimulation({ simulatedThreeStars: 0, items: [], equipments: [] });
+    };
+    document.getElementById('teacherBossUseReal').onclick = () => {
+      teacherBossSimOverride = null;
+      saveTeacherBossOverride(null);
+      bossState = createBossState();
+      bossState.log.unshift('已恢復學生實際進度狀態。');
+      bossState.fxText = '♻️ 已恢復實際進度';
+      render();
+      syncTeacherBossToolUi();
+    };
+
+    syncTeacherBossToolUi();
   }
 
 
@@ -903,6 +1144,7 @@
     const resultEl = document.getElementById('resultCard');
     resultEl.hidden = true;
     render();
+    syncTeacherBossToolUi();
   }
 
   function finishBossBattle(win){
@@ -1219,7 +1461,11 @@
   }
 
   document.addEventListener('DOMContentLoaded', async () => {
+    teacherBossSimOverride = readTeacherBossOverride();
+    bossState = createBossState();
     await applyTheme();
+    injectTeacherBossTool();
     render();
+    syncTeacherBossToolUi();
   });
 })();
