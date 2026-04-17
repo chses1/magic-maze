@@ -10,8 +10,8 @@
   <script src="auth.js"></script>
   <style>
     :root{
-      --home-panel-bg:rgba(18,24,38,.82);
-      --home-panel-line:rgba(255,255,255,.14);
+      --home-panel-bg:rgba(10,16,28,.52);
+      --home-panel-line:rgba(255,255,255,.16);
       --home-gold:#f7d27a;
       --home-gold-2:#eab84c;
       --home-text:#f8f4ea;
@@ -106,12 +106,15 @@
 
     .home-panels[hidden]{display:none !important;}
 
+    body.home-page.student-logged-in .home-start-wrap{display:none !important;}
+
     .home-card{
       background:var(--home-panel-bg);
       border:1px solid var(--home-panel-line);
       border-radius:24px;
       box-shadow:var(--home-shadow);
-      backdrop-filter:blur(12px);
+      backdrop-filter:blur(10px);
+      -webkit-backdrop-filter:blur(10px);
       padding:16px;
       color:var(--home-text);
     }
@@ -434,7 +437,7 @@
       overflow:auto;
       border-radius:18px;
       border:1px solid rgba(255,255,255,.10);
-      background:rgba(7,12,28,.34);
+      background:rgba(7,12,28,.16);
     }
 
     .class-progress-board{
@@ -588,14 +591,12 @@
         </div>
         <h2>世界與關卡</h2>
         <div id="worldList"></div>
-        <div class="small" style="margin-top:10px;">小提醒：世界區改為 2 × 2 排列；先完成同世界前一關，再挑戰下一關。</div>
       </div>
 
       <div class="home-card home-rank-card">
         <div class="class-progress-head">
           <div>
-            <h2 style="margin-bottom:6px;">本班闖關總覽</h2>
-            <div class="class-progress-sub">依照目前登入學生的班級顯示全班進度，風格延續首頁介面，但呈現方式參考 code.org 教師總覽。</div>
+            <h2 style="margin-bottom:0;">本班闖關總覽</h2>
           </div>
           <button id="btnClassRank">更新本班進度</button>
         </div>
@@ -789,6 +790,7 @@
   function renderSession(){
     const s = StorageAPI.getSession();
     const panels = document.getElementById('homePanels');
+    document.body.classList.toggle('student-logged-in', !!s && s.role === 'student');
 
     if(!s){
       panels.hidden = true;
@@ -965,20 +967,6 @@
 
       wCard.appendChild(list);
 
-      const hint = document.createElement('div');
-      hint.className = 'small';
-      hint.style.marginTop = '8px';
-      hint.style.color = theme.text;
-      hint.textContent = isTeacher
-        ? '教師模式：可直接進入前四個一般關，並可看到第5關 Boss 預留按鈕。'
-        : (!userId
-            ? '請先登入才能選關。'
-            : (!worldUnlocked
-                ? '先完成前面世界的指定關數才能解鎖。'
-                : (bossUnlocked
-                    ? '已完成前四個一般關，現在已出現第5關 Boss 按鈕。'
-                    : '本世界共有 4 個一般關，全部完成後才會顯示第5關 Boss 按鈕。')));
-      wCard.appendChild(hint);
 
       wrap.appendChild(wCard);
     });
@@ -1116,7 +1104,6 @@
           <tbody>${tableRows}</tbody>
         </table>
       </div>
-      <div class="small" style="margin-top:10px;">說明：每格顯示該關最佳星數與分數，方便老師與學生一起掌握全班進度。</div>
     `;
   }
 
