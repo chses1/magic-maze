@@ -810,11 +810,19 @@
     if(!rule) return true;
     if(rule.type === 'always') return true;
     if(rule.type === 'passCountInWorld'){
+      if(!userId) return false;
+
       const need = Number(rule.need || 0);
-      const w = rule.worldId;
+      const requiredWorldId = normalizeWorldId(rule.worldId);
       const best = progress[userId]?.best || {};
-      const passed = Object.keys(best).filter(k => k.startsWith(w + '-')).length;
-      return passed >= need;
+
+      const passedNormalCount = Object.keys(best).filter(key => {
+        const [w, l] = String(key).split('-');
+        return normalizeWorldId(w) === requiredWorldId && normalizeLevelId(l) !== 'BOSS';
+      }).length;
+
+      const bossPassed = !!getBestRecord(progress, userId, requiredWorldId, 'boss');
+      return passedNormalCount >= need && bossPassed;
     }
     return false;
   }
