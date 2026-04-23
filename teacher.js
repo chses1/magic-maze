@@ -731,12 +731,12 @@ window.TeacherPage = (()=>{
   }
 
   async function openSelectedLevel(picked){
-    const teacherSource = 'from=teacher';
+    const queryBase = `world=${encodeURIComponent(picked.world)}&from=teacher`;
     if(isBossLevel(picked.level)){
-      await goToAppPage('boss.html', `world=${encodeURIComponent(picked.world)}&level=boss&${teacherSource}`);
+      await goToAppPage('boss.html', `${queryBase}&level=boss`);
       return;
     }
-    await goToAppPage('game.html', `world=${encodeURIComponent(picked.world)}&level=${encodeURIComponent(picked.level)}&${teacherSource}`);
+    await goToAppPage('game.html', `${queryBase}&level=${encodeURIComponent(picked.level)}`);
   }
 
   async function openBoss(){

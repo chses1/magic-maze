@@ -1164,8 +1164,17 @@
     }
   }
 
+  function cameFromTeacherPage(){
+    const from = String(qs('from') || qs('source') || '').trim().toLowerCase();
+    return from === 'teacher' || from === 'teacherpage' || from === 'teacher_mode';
+  }
+
+  function getExitTargetPage(){
+    return cameFromTeacherPage() || isTeacherMode() ? 'teacher.html' : 'index.html';
+  }
+
   function goBackToLevelSelect(){
-    location.href = 'index.html';
+    location.href = getExitTargetPage();
   }
 
   function goHome(){
@@ -1177,7 +1186,8 @@
       goHome();
       return;
     }
-    location.href = `game.html?world=${encodeURIComponent(config.nextWorld)}&level=level1`;
+    const from = cameFromTeacherPage() || isTeacherMode() ? '&from=teacher' : '';
+    location.href = `game.html?world=${encodeURIComponent(config.nextWorld)}&level=level1${from}`;
   }
 
   function goToRetryBoss(){
@@ -1202,7 +1212,7 @@
       resultEl.innerHTML = `
         <div class="result-inner" style="max-height:min(88vh,900px);overflow:auto;">
           <h3>Boss 戰勝利！</h3>
-          <p>${config.winText}<br>${config.nextWorld ? '你不只通關了，還學會了新的程式能力。先看完下面的新指令說明，再前往下一個世界第 1 關。' : '你已完成目前所有世界，現在可以回首頁繼續整理內容。'}</p>
+          <p>${config.winText}<br>${config.nextWorld ? '你不只通關了，還學會了新的程式能力。先看完下面的新指令說明，再前往下一個世界第 1 關。' : '你已完成目前所有世界，現在可以返回選關頁面繼續挑戰其他關卡。'}</p>
           <div class="result-badges">
             <span>回合數：${turnsUsed}</span>
             <span>剩餘生命：${bossState.playerHp}</span>

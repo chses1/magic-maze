@@ -2930,7 +2930,7 @@ window.GamePage = (()=>{
       const saved = saveProgramDraft();
       forceStopCurrentRun();
       const exitTarget = getExitTargetPage();
-      const exitLabel = exitTarget === "teacher.html" ? "教師介面" : "遊戲大廳";
+      const exitLabel = exitTarget === "teacher.html" ? "教師介面" : "選擇關卡頁面";
       if (!isBossLevel()) {
         toast(saved
           ? `已保存目前積木進度，返回${exitLabel}中…`
