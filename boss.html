@@ -35,9 +35,9 @@
       gap:10px;
     }
     .top-actions{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:nowrap;min-height:0}
-    .title-wrap{min-width:0;padding:10px 14px;border-radius:18px;background:rgba(12,22,46,.58);border:1px solid rgba(255,255,255,.18);backdrop-filter:blur(6px);box-shadow:0 10px 24px rgba(0,0,0,.18)}
-    .title-wrap h1{margin:0;font-size:clamp(22px,2vw,28px);line-height:1.12;color:#f8fbff;text-shadow:0 2px 8px rgba(0,0,0,.28)}
-    .title-wrap p{margin:4px 0 0;color:rgba(244,248,255,.92);font-weight:700;font-size:clamp(11px,.86vw,13px);max-width:900px;line-height:1.35;text-shadow:0 1px 6px rgba(0,0,0,.22)}
+    .title-wrap{min-width:0;padding:8px 12px;border-radius:16px;background:rgba(12,22,46,.52);border:1px solid rgba(255,255,255,.16);backdrop-filter:blur(5px);box-shadow:0 8px 18px rgba(0,0,0,.16)}
+    .title-wrap h1{margin:0;font-size:clamp(18px,1.7vw,24px);line-height:1.08;color:#f8fbff;text-shadow:0 2px 8px rgba(0,0,0,.28)}
+    .title-wrap p{display:none}
     .toolbar{display:flex;gap:8px;flex-wrap:nowrap;flex-shrink:0}
     .toolbar button{border:none;border-radius:14px;padding:10px 15px;font-size:clamp(13px,.95vw,16px);font-weight:900;cursor:pointer;box-shadow:var(--shadow)}
     .toolbar .ghost{background:#fff;color:#36533f;border:1px solid var(--line)}
@@ -48,8 +48,8 @@
       background:transparent;
       border:none;
       border-radius:var(--radius);
-      padding:8px;
-      grid-template-rows:auto minmax(380px,1fr) auto;
+      padding:4px 6px 6px;
+      grid-template-rows:auto minmax(320px,1fr) auto;
       gap:8px;
       overflow:visible;
     }
@@ -146,54 +146,55 @@
     .battle-banner-label{font-size:clamp(12px,.9vw,14px);font-weight:900;color:#e9f2ff;letter-spacing:.08em;}
     .battle-banner-main{margin-top:8px;font-size:clamp(28px,2.4vw,42px);line-height:1.12;font-weight:900;color:#fff7ea;text-shadow:0 3px 10px rgba(0,0,0,.28);min-height:2.3em;display:flex;align-items:center;justify-content:center;}
     .battle-banner-sub{margin-top:8px;font-size:clamp(12px,.92vw,14px);line-height:1.5;color:#eef6ff;min-height:2.8em;}
-    .portrait-caption{margin-top:10px;padding:8px 14px;border-radius:999px;background:rgba(247,250,245,.95);border:1px solid var(--line);box-shadow:0 6px 14px rgba(31,53,38,.06);font-size:clamp(12px,.9vw,14px);font-weight:900;color:#395142;}
+    .portrait-caption{display:none !important}
     .portrait.player-portrait img{max-height:300px;}
     .portrait.boss-portrait img{max-height:330px;}
 
-    
     .section-title{font-size:clamp(15px,1vw,17px);font-weight:900;margin-bottom:6px;color:#1f3526}
     .cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;align-items:stretch}
-    .boss-card{
-      display:grid;
-      grid-template-rows:minmax(108px, auto) auto auto auto;
-      gap:5px;
-      padding:8px;
-      border-radius:18px;
-      background:linear-gradient(180deg,#fffefd 0%,#f2f8ef 100%);
-      border:1px solid #d8e3d6;
-      min-height:0;
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.7);
+    .boss-card{min-height:0}
+    .boss-icon-btn,.action-icon-btn{
+      width:100%;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+      border-radius:18px;padding:8px 6px;background:linear-gradient(180deg,#fffefd 0%,#f2f8ef 100%);border:1px solid #d8e3d6;min-height:118px;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 8px 18px rgba(57,100,70,.08);transition:transform .15s ease,filter .15s ease,opacity .15s ease;
     }
-    .boss-card.is-used{opacity:.58;filter:grayscale(.15)}
-    .boss-card-art{
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      border-radius:14px;
-      background:radial-gradient(circle at top, #ffffff 0%, #f0f4ee 78%);
-      border:1px solid #e4ebe2;
-      padding:4px;
-      min-height:108px;
-      overflow:hidden;
+    .boss-icon-btn:hover,.action-icon-btn:hover{transform:translateY(-1px);filter:brightness(1.02)}
+    .boss-icon-btn:disabled,.action-icon-btn:disabled{cursor:not-allowed;opacity:.58;transform:none;filter:grayscale(.15)}
+    .boss-icon-art,.action-icon-art{
+      display:flex;align-items:center;justify-content:center;border-radius:16px;background:radial-gradient(circle at top,#ffffff 0%,#f0f4ee 78%);
+      border:1px solid #e4ebe2;overflow:hidden;
     }
-    .boss-card img{
-      width:104px;
-      height:104px;
-      object-fit:contain;
-      display:block;
-      transform:scale(1.12);
-      transform-origin:center center;
-      filter:drop-shadow(0 8px 14px rgba(0,0,0,.14));
-    }
-    .boss-card-title{font-size:clamp(13px,.9vw,15px);font-weight:900;line-height:1.18;text-align:center}
-    .boss-card-desc{font-size:clamp(9px,.68vw,11px);line-height:1.25;color:#2f4335;min-height:22px;text-align:center;font-weight:800}
-    .boss-card-tag{display:inline-flex;justify-content:center;align-items:center;align-self:center;font-size:10px;font-weight:900;color:#487055;background:#e3f1e1;border-radius:999px;padding:4px 8px}
-    .boss-card button,.action-buttons button{width:100%;margin-top:0;border:none;border-radius:14px;padding:9px 10px;font-size:clamp(11px,.82vw,13px);font-weight:900;color:#fff;cursor:pointer;box-shadow:0 8px 18px rgba(57,100,70,.12)}
-    .boss-card button,.action-buttons .primary{background:linear-gradient(180deg,var(--green1),var(--green2))}
+    .boss-icon-art{width:min(100%,104px);aspect-ratio:1/1;padding:4px}
+    .boss-icon-art img{width:92px;height:92px;object-fit:contain;display:block;transform:scale(1.08);transform-origin:center center;filter:drop-shadow(0 8px 14px rgba(0,0,0,.14));}
+    .action-icon-art{width:72px;height:72px;font-size:34px;font-weight:900;color:#355441}
+    .boss-icon-label,.action-icon-label{font-size:clamp(12px,.86vw,14px);font-weight:900;line-height:1.15;text-align:center;color:#1f3526}
+    .boss-icon-state,.action-icon-hint{font-size:11px;line-height:1.2;text-align:center;font-weight:800;color:#5e7664}
+    .boss-icon-btn.is-used .boss-icon-state{color:#8b4b4b}
+    .boss-icon-btn.is-locked .boss-icon-state{color:#6f6581}
     .action-buttons{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-    .action-buttons .secondary{background:linear-gradient(180deg,var(--blue1),var(--blue2))}
-    .action-buttons .utility{background:linear-gradient(180deg,#9bcca0,#6fad75)}
-    .action-buttons .danger{background:linear-gradient(180deg,var(--red1),var(--red2))}
+    .action-icon-btn.primary{background:linear-gradient(180deg,#f6fff6,#e7f7e8)}
+    .action-icon-btn.secondary{background:linear-gradient(180deg,#f4f8ff,#e7efff)}
+    .action-icon-btn.utility{background:linear-gradient(180deg,#f6fbf1,#e5f1df)}
+    .action-icon-btn.danger{background:linear-gradient(180deg,#fff6f4,#ffe8e3)}
+    .action-icon-btn.primary .action-icon-art{color:#2d7b38}
+    .action-icon-btn.secondary .action-icon-art{color:#436dce}
+    .action-icon-btn.utility .action-icon-art{color:#527d3f}
+    .action-icon-btn.danger .action-icon-art{color:#c8513f}
+    .boss-action-modal{position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(8,14,28,.42);backdrop-filter:blur(5px)}
+    .boss-action-modal[hidden]{display:none !important}
+    .boss-action-card{width:min(420px,100%);padding:18px;border-radius:24px;background:rgba(247,250,245,.98);border:1px solid var(--line);box-shadow:0 18px 36px rgba(0,0,0,.22);color:var(--text)}
+    .boss-action-head{display:flex;align-items:center;gap:12px}
+    .boss-action-preview{width:86px;height:86px;border-radius:20px;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at top,#ffffff 0%,#f0f4ee 78%);border:1px solid #e4ebe2;overflow:hidden;font-size:40px;font-weight:900;color:#355441;flex:0 0 auto}
+    .boss-action-preview img{width:76px;height:76px;object-fit:contain;display:block;filter:drop-shadow(0 8px 14px rgba(0,0,0,.14));}
+    .boss-action-title{margin:0;font-size:22px;line-height:1.15;color:#1f3526}
+    .boss-action-state{margin-top:6px;display:inline-flex;align-items:center;padding:5px 10px;border-radius:999px;background:#edf4eb;font-size:12px;font-weight:900;color:#4a654f}
+    .boss-action-desc{margin-top:14px;font-size:15px;line-height:1.65;color:#355441;font-weight:700}
+    .boss-action-note{margin-top:12px;padding:12px 14px;border-radius:16px;background:#f5f8ff;border:1px solid #dbe4ff;font-size:13px;line-height:1.6;font-weight:800;color:#35508c}
+    .boss-action-buttons{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+    .boss-action-buttons button{border:none;border-radius:14px;padding:12px 14px;font-size:14px;font-weight:900;cursor:pointer}
+    .boss-action-cancel{background:#eef2f8;color:#355441}
+    .boss-action-confirm{background:linear-gradient(180deg,var(--green1),var(--green2));color:#fff}
+    .boss-action-confirm.danger{background:linear-gradient(180deg,var(--red1),var(--red2))}
     button[disabled]{opacity:.45;cursor:not-allowed}
     .footer-tip{margin-top:6px;color:#24392c;font-weight:800;line-height:1.45;font-size:clamp(11px,.78vw,12px)}
     .inline-log{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
@@ -258,8 +259,8 @@
       body{padding:8px}
       .page{width:min(100vw - 16px, 1500px);aspect-ratio:16 / 9;min-height:0;padding:10px;gap:8px}
       .top-actions{gap:10px}
-      .title-wrap{padding:10px 12px}
-      .toolbar button{padding:10px 13px}
+      .title-wrap{padding:8px 10px}
+      .toolbar button{padding:9px 12px}
       .stage{padding:6px;gap:8px;grid-template-rows:auto minmax(320px,1fr) auto}
       .stage-top{grid-template-columns:minmax(0,1fr) minmax(220px,320px) minmax(0,1fr);gap:8px}
       .stage-bottom{grid-template-columns:1.45fr .95fr;gap:8px}
@@ -278,10 +279,10 @@
       .arena-center{padding-bottom:32px}
       .battle-banner{padding:16px 18px}
       .cards{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
-      .boss-card{padding:7px;gap:4px}
-      .boss-card-art{min-height:92px}
-      .boss-card img{width:88px;height:88px}
-      .action-buttons button{min-height:46px}
+      .boss-icon-btn,.action-icon-btn{min-height:100px;padding:7px 5px}
+      .boss-icon-art{width:min(100%,88px)}
+      .boss-icon-art img{width:78px;height:78px}
+      .action-icon-art{width:64px;height:64px;font-size:30px}
       .boss-floating-name{display:none !important}
     }
     @media (max-width: 900px){
@@ -289,6 +290,7 @@
       .page{width:min(100vw - 16px, 1500px);aspect-ratio:auto;min-height:calc(100vh - 16px)}
       .stage-top,.stage-bottom{grid-template-columns:1fr}
       .cards{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .boss-action-card{padding:16px}
       .arena{
         min-height:300px;
         margin-top:0;
@@ -313,7 +315,9 @@
       .top-actions{flex-wrap:wrap}
       .toolbar{width:100%;flex-wrap:wrap}
       .toolbar button{flex:1}
-      .cards,.action-buttons,.result-actions{grid-template-columns:1fr}
+      .cards,.result-actions{grid-template-columns:1fr 1fr}
+      .action-buttons{grid-template-columns:1fr 1fr}
+      .boss-action-buttons{grid-template-columns:1fr}
       .panel,.intent-box,.card-box,.action-box{border-radius:20px}
       .result-inner{border-radius:22px;padding:20px 16px 16px}
     }
@@ -385,18 +389,31 @@
 
         <div class="action-box">
           <div class="section-title">玩家行動</div>
-          <div class="action-buttons">
-            <button type="button" class="primary" id="bossBasicAttack">普通攻擊（3＋蓄力）</button>
-            <button type="button" class="secondary" id="bossDefend">防禦姿態（+8 護盾）</button>
-            <button type="button" class="utility" id="bossFocus">專注蓄力（下次 +3）</button>
-            <button type="button" class="danger" id="bossEndTurn">略過回合</button>
-          </div>
+          <div class="action-buttons" id="bossActions"></div>
           <div class="inline-log" id="battleLog"></div>
         </div>
       </div>
     </section>
 
     <section class="result-card" id="resultCard" hidden aria-live="polite"></section>
+  </div>
+
+  <div class="boss-action-modal" id="bossActionModal" hidden aria-hidden="true">
+    <div class="boss-action-card" role="dialog" aria-modal="true" aria-labelledby="bossActionTitle">
+      <div class="boss-action-head">
+        <div class="boss-action-preview" id="bossActionPreview">⚔️</div>
+        <div>
+          <h3 class="boss-action-title" id="bossActionTitle">動作說明</h3>
+          <div class="boss-action-state" id="bossActionState">準備中</div>
+        </div>
+      </div>
+      <div class="boss-action-desc" id="bossActionDesc">請確認後再執行。</div>
+      <div class="boss-action-note" id="bossActionNote">點擊確認後才會真正出招，避免 iPad 誤觸。</div>
+      <div class="boss-action-buttons">
+        <button type="button" class="boss-action-cancel" id="bossActionCancel">返回</button>
+        <button type="button" class="boss-action-confirm" id="bossActionConfirm">確認使用</button>
+      </div>
+    </div>
   </div>
 
   <script src="storage.js"></script>

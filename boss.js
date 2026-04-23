@@ -233,6 +233,12 @@
     maxShieldFlatBonus: 4
   };
 
+  const ACTION_META = {
+    basic: { icon:'⚔️', label:'攻擊', buttonClass:'primary', state:'造成基礎傷害', note:()=>`會造成 ${config.stats.basicDamage} 點基礎傷害，再加上目前蓄力值。若連續一直用普通攻擊，Boss 可能會反制。`, confirm:'確認攻擊' },
+    defend: { icon:'🛡️', label:'防禦', buttonClass:'secondary', state:'先撐住這回合', note:()=>`本回合獲得 ${config.stats.defendShield} 點護盾，並提高閃避率，適合用來扛 Boss 的大招。`, confirm:'確認防禦' },
+    focus: { icon:'✨', label:'蓄力', buttonClass:'utility', state:'準備下次爆發', note:()=>`本回合不攻擊，改為累積 ${config.stats.focusGain} 點蓄力，讓下一次普通攻擊更強。`, confirm:'確認蓄力' },
+    skip: { icon:'⏭️', label:'略過', buttonClass:'danger', state:'直接結束這回合', note:()=>`不做任何行動，直接輪到 Boss。通常不建議亂用，除非想故意測試 Boss 出招。`, confirm:'確認略過' }
+  };
 
   const TEACHER_BOSS_SIM_KEY = 'mw_teacher_boss_sim_v1';
   const WORLD_EQUIPMENT_OPTIONS = {
@@ -243,6 +249,7 @@
   };
 
   let teacherBossSimOverride = null;
+  let pendingActionPreview = null;
 
   function getBossMechanics(){
     return config.mechanics || {};
@@ -528,9 +535,18 @@
 
     const style = document.createElement('style');
     style.textContent = `
-      .teacher-boss-tool{position:fixed;left:12px;bottom:12px;z-index:40;width:min(380px,calc(100vw - 24px));padding:14px 14px 12px;border-radius:20px;background:rgba(12,22,46,.78);border:1px solid rgba(255,255,255,.16);backdrop-filter:blur(8px);box-shadow:0 16px 34px rgba(0,0,0,.22);color:#f5f8ff}
+      .teacher-boss-tool{position:fixed;left:12px;bottom:12px;z-index:40;width:min(380px,calc(100vw - 24px));padding:12px;border-radius:20px;background:rgba(12,22,46,.78);border:1px solid rgba(255,255,255,.16);backdrop-filter:blur(8px);box-shadow:0 16px 34px rgba(0,0,0,.22);color:#f5f8ff}
       .teacher-boss-tool h3{margin:0;font-size:18px;line-height:1.2;color:#fff4cd}
       .teacher-boss-tool p{margin:4px 0 0;color:rgba(245,248,255,.85);font-size:12px;line-height:1.5}
+      .teacher-boss-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+      .teacher-boss-head-actions{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+      .teacher-boss-mini-btn{width:40px;height:40px;border:none;border-radius:12px;background:rgba(255,255,255,.12);color:#fff;font-size:20px;font-weight:900;cursor:pointer}
+      .teacher-boss-body{margin-top:10px}
+      .teacher-boss-tool.is-collapsed{width:auto;min-width:0;padding:10px 12px}
+      .teacher-boss-tool.is-collapsed .teacher-boss-body{display:none}
+      .teacher-boss-tool.is-collapsed .teacher-boss-head{align-items:center}
+      .teacher-boss-tool.is-collapsed h3{font-size:15px;white-space:nowrap}
+      .teacher-boss-tool.is-collapsed p{display:none}
       .teacher-boss-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
       .teacher-boss-field{display:flex;flex-direction:column;gap:6px}
       .teacher-boss-field label{margin:0;font-size:12px;color:#d9e7ff}
@@ -552,8 +568,16 @@
     panel.id = 'teacherBossTool';
     panel.className = 'teacher-boss-tool';
     panel.innerHTML = `
-      <h3>🧪 教師 Boss 測試工具</h3>
-      <p>可直接模擬本世界已取得的道具、裝備與三星關卡數，方便測試不同難度。</p>
+      <div class="teacher-boss-head">
+        <div>
+          <h3>🧪 教師 Boss 測試工具</h3>
+          <p>可直接模擬本世界已取得的道具、裝備與三星關卡數，方便測試不同難度。</p>
+        </div>
+        <div class="teacher-boss-head-actions">
+          <button type="button" class="teacher-boss-mini-btn" id="teacherBossToggle" aria-expanded="true" title="最小化或展開">－</button>
+        </div>
+      </div>
+      <div class="teacher-boss-body" id="teacherBossBody">
       <div class="teacher-boss-grid">
         <div class="teacher-boss-field">
           <label for="teacherBossStars">本世界三星關卡數（0～4）</label>
@@ -580,8 +604,24 @@
         <button type="button" class="real" id="teacherBossUseReal">恢復實際進度</button>
       </div>
       <div class="teacher-boss-summary" id="teacherBossSummary"></div>
+      </div>
     `;
     document.body.appendChild(panel);
+
+    const toggleBtn = document.getElementById('teacherBossToggle');
+    const setTeacherToolCollapsed = (collapsed) => {
+      panel.classList.toggle('is-collapsed', !!collapsed);
+      if (toggleBtn) {
+        toggleBtn.textContent = collapsed ? '＋' : '－';
+        toggleBtn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+        toggleBtn.title = collapsed ? '展開工具' : '最小化工具';
+      }
+    };
+    if (toggleBtn) {
+      toggleBtn.onclick = () => {
+        setTeacherToolCollapsed(!panel.classList.contains('is-collapsed'));
+      };
+    }
 
     const itemWrap = document.getElementById('teacherBossItems');
     const equipWrap = document.getElementById('teacherBossEquips');
@@ -1307,19 +1347,114 @@
     render();
   }
 
+  function escapeHtml(value){
+    return String(value == null ? '' : value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function getActionPreview(actionKey){
+    if (config.cards && config.cards[actionKey]) {
+      const card = bossState.cards.find(c => c.key === actionKey) || config.cards[actionKey];
+      return {
+        key: actionKey,
+        type: 'card',
+        iconType: 'image',
+        iconValue: card.resolvedImg || card.img || '',
+        fallbackIcon: '🧩',
+        label: card.title,
+        state: card.locked ? '尚未取得' : (card.used ? '已使用' : '可使用 1 次'),
+        desc: card.locked ? '這張卡還沒在一般關取得，所以這場戰鬥不能使用。' : card.desc,
+        note: card.locked ? '先在一般關拿到這個道具，Boss 戰才會開放。' : '點確認後才會真正使用這張卡，避免 iPad 誤觸。',
+        confirmText: '確認使用',
+        confirmClass: 'boss-action-confirm',
+        disabled: !!(card.used || card.locked || bossState.finished)
+      };
+    }
+    const meta = ACTION_META[actionKey];
+    if (!meta) return null;
+    return {
+      key: actionKey,
+      type: 'action',
+      iconType: 'emoji',
+      iconValue: meta.icon,
+      fallbackIcon: meta.icon,
+      label: meta.label,
+      state: meta.state,
+      desc: meta.note(),
+      note: '點確認後才會真正執行，避免 iPad 誤觸。',
+      confirmText: meta.confirm,
+      confirmClass: `boss-action-confirm ${meta.buttonClass === 'danger' ? 'danger' : ''}`.trim(),
+      disabled: !!bossState.finished
+    };
+  }
+
+  function closeActionModal(){
+    pendingActionPreview = null;
+    const modal = document.getElementById('bossActionModal');
+    if (modal) {
+      modal.hidden = true;
+      modal.setAttribute('aria-hidden', 'true');
+    }
+  }
+
+  function openActionModal(actionKey){
+    const preview = getActionPreview(actionKey);
+    if (!preview) return;
+    pendingActionPreview = preview;
+    const modal = document.getElementById('bossActionModal');
+    const previewEl = document.getElementById('bossActionPreview');
+    const titleEl = document.getElementById('bossActionTitle');
+    const stateEl = document.getElementById('bossActionState');
+    const descEl = document.getElementById('bossActionDesc');
+    const noteEl = document.getElementById('bossActionNote');
+    const confirmBtn = document.getElementById('bossActionConfirm');
+    if (!modal || !previewEl || !titleEl || !stateEl || !descEl || !noteEl || !confirmBtn) return;
+
+    if (preview.iconType === 'image' && preview.iconValue) {
+      previewEl.innerHTML = `<img src="${escapeHtml(preview.iconValue)}" alt="${escapeHtml(preview.label)}">`;
+    } else {
+      previewEl.textContent = preview.iconValue || preview.fallbackIcon || '⚔️';
+    }
+    titleEl.textContent = preview.label;
+    stateEl.textContent = preview.state;
+    descEl.textContent = preview.desc;
+    noteEl.textContent = preview.note;
+    confirmBtn.textContent = preview.confirmText;
+    confirmBtn.className = preview.confirmClass;
+    confirmBtn.disabled = !!preview.disabled;
+    modal.hidden = false;
+    modal.setAttribute('aria-hidden', 'false');
+  }
+
+  function actionButtonsHtml(){
+    return Object.entries(ACTION_META).map(([key, meta]) => `
+      <button type="button" class="action-icon-btn ${meta.buttonClass}" data-action="${key}" ${bossState.finished ? 'disabled' : ''}>
+        <span class="action-icon-art">${meta.icon}</span>
+        <span class="action-icon-label">${meta.label}</span>
+        <span class="action-icon-hint">點擊查看</span>
+      </button>
+    `).join('');
+  }
+
   function bossCardsHtml(){
     return bossState.cards.map(card => {
       const cardImg = card.resolvedImg || card.img || '';
+      const stateClass = card.used ? 'is-used' : (card.locked ? 'is-locked' : '');
+      const stateText = card.locked ? '未取得' : (card.used ? '已使用' : '點擊查看');
       const cardImgHtml = cardImg
-        ? `<img src="${cardImg}" alt="${card.title}" onerror="this.style.display='none'; this.parentElement.textContent='🧩';">`
+        ? `<img src="${escapeHtml(cardImg)}" alt="${escapeHtml(card.title)}" onerror="this.style.display='none'; this.parentElement.textContent='🧩';">`
         : '🧩';
       return `
-        <div class="boss-card ${card.used || card.locked ? 'is-used' : ''}">
-          <div class="boss-card-art">${cardImgHtml}</div>
-          <div class="boss-card-title">${card.title}</div>
-          <div class="boss-card-desc">${card.locked ? '這張卡還沒在一般關取得。' : card.desc}</div>
-          <div class="boss-card-tag">${card.locked ? '未取得' : (card.used ? '已使用' : '可使用 1 次')}</div>
-          <button type="button" data-card="${card.key}" ${card.used || card.locked || bossState.finished ? 'disabled' : ''}>使用</button>
+        <div class="boss-card">
+          <button type="button" class="boss-icon-btn ${stateClass}" data-card="${card.key}" ${card.used || card.locked || bossState.finished ? 'disabled' : ''}>
+            <span class="boss-icon-art">${cardImgHtml}</span>
+            <span class="boss-icon-label">${card.title}</span>
+            <span class="boss-icon-state">${stateText}</span>
+          </button>
         </div>
       `;
     }).join('');
@@ -1333,16 +1468,34 @@
   }
 
   function bindButtons(){
-    document.getElementById('bossBasicAttack').onclick = () => playerBossAction('basic');
-    document.getElementById('bossDefend').onclick = () => playerBossAction('defend');
-    document.getElementById('bossFocus').onclick = () => playerBossAction('focus');
-    document.getElementById('bossEndTurn').onclick = () => playerBossAction('skip');
     document.getElementById('btnRetry').onclick = () => goToRetryBoss();
     document.getElementById('btnExit').onclick = goHome;
     document.getElementById('btnBackGame').onclick = goBackToLevelSelect;
+
     document.querySelectorAll('#bossCards [data-card]').forEach(btn => {
-      btn.onclick = () => playerBossAction(btn.dataset.card);
+      btn.onclick = () => openActionModal(btn.dataset.card);
     });
+    document.querySelectorAll('#bossActions [data-action]').forEach(btn => {
+      btn.onclick = () => openActionModal(btn.dataset.action);
+    });
+
+    const cancelBtn = document.getElementById('bossActionCancel');
+    const confirmBtn = document.getElementById('bossActionConfirm');
+    const modal = document.getElementById('bossActionModal');
+    if (cancelBtn) cancelBtn.onclick = closeActionModal;
+    if (confirmBtn) {
+      confirmBtn.onclick = () => {
+        if (!pendingActionPreview || pendingActionPreview.disabled) return;
+        const actionKey = pendingActionPreview.key;
+        closeActionModal();
+        playerBossAction(actionKey);
+      };
+    }
+    if (modal) {
+      modal.onclick = (event) => {
+        if (event.target === modal) closeActionModal();
+      };
+    }
   }
 
   async function applyTheme(){
@@ -1362,13 +1515,6 @@
     if (bossName) bossName.textContent = config.bossName;
     if (phase) phase.textContent = config.phaseNames[0];
     if (turnText) turnText.textContent = `第 1 回合｜${config.bossShortName}下一招`;
-
-    const basic = document.getElementById('bossBasicAttack');
-    const defend = document.getElementById('bossDefend');
-    const focus = document.getElementById('bossFocus');
-    if (basic) basic.textContent = `普通攻擊（${config.stats.basicDamage}＋蓄力）`;
-    if (defend) defend.textContent = `防禦姿態（+${config.stats.defendShield} 護盾＋提高閃避）`;
-    if (focus) focus.textContent = `專注蓄力（下次 +${config.stats.focusGain}）`;
 
     await resolveConfigAssets();
 
@@ -1445,7 +1591,10 @@
     document.getElementById('playerHpBar').style.width = `${playerPct}%`;
     document.getElementById('bossHpBar').style.width = `${bossPct}%`;
     document.getElementById('bossCards').innerHTML = bossCardsHtml();
+    const actionsEl = document.getElementById('bossActions');
+    if (actionsEl) actionsEl.innerHTML = actionButtonsHtml();
     document.getElementById('battleLog').innerHTML = logPillsHtml();
+    if (bossState.finished) closeActionModal();
     const fxEl = document.getElementById('fxText');
     if (fxEl) fxEl.textContent = bossState.fxText || `${bossState.lastPlayerAction}｜${bossState.lastBossAction}`;
     const fxSubEl = document.getElementById('fxSubText');
@@ -1453,11 +1602,6 @@
 
     bindButtons();
 
-    const disabled = bossState.finished;
-    ['bossBasicAttack','bossDefend','bossFocus','bossEndTurn'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.disabled = disabled;
-    });
   }
 
   document.addEventListener('DOMContentLoaded', async () => {
@@ -1467,5 +1611,9 @@
     injectTeacherBossTool();
     render();
     syncTeacherBossToolUi();
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') closeActionModal();
+    });
   });
 })();
