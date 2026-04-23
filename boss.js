@@ -795,7 +795,8 @@
       lastPlayerAction: '尚未行動',
       lastPlayerRoll: '尚未觸發',
       lastBossRoll: '尚未觸發',
-      playerCharacter: getPlayerCharacterMeta()
+      playerCharacter: getPlayerCharacterMeta(),
+      actionHintShown: {}
     };
     const openingArmor = getBossArmorForPhase(1);
     if (openingArmor > 0) {
@@ -1430,12 +1431,32 @@
     modal.setAttribute('aria-hidden', 'false');
   }
 
+  function hasSeenActionHint(actionKey){
+    return !!bossState?.actionHintShown?.[String(actionKey || '')];
+  }
+
+  function markActionHintShown(actionKey){
+    if (!bossState) return;
+    bossState.actionHintShown ??= {};
+    bossState.actionHintShown[String(actionKey || '')] = true;
+  }
+
+  function handleActionSelection(actionKey){
+    if (!actionKey || bossState?.finished) return;
+    if (hasSeenActionHint(actionKey)) {
+      playerBossAction(actionKey);
+      return;
+    }
+    markActionHintShown(actionKey);
+    openActionModal(actionKey);
+  }
+
   function actionButtonsHtml(){
     return Object.entries(ACTION_META).map(([key, meta]) => `
       <button type="button" class="action-icon-btn ${meta.buttonClass}" data-action="${key}" ${bossState.finished ? 'disabled' : ''}>
         <span class="action-icon-art">${meta.icon}</span>
         <span class="action-icon-label">${meta.label}</span>
-        <span class="action-icon-hint">點擊查看</span>
+        <span class="action-icon-hint">${hasSeenActionHint(key) ? '再次點擊發動' : '首次點擊說明'}</span>
       </button>
     `).join('');
   }
@@ -1444,7 +1465,7 @@
     return bossState.cards.map(card => {
       const cardImg = card.resolvedImg || card.img || '';
       const stateClass = card.used ? 'is-used' : (card.locked ? 'is-locked' : '');
-      const stateText = card.locked ? '未取得' : (card.used ? '已使用' : '點擊查看');
+      const stateText = card.locked ? '未取得' : (card.used ? '已使用' : (hasSeenActionHint(card.key) ? '再次點擊使用' : '首次點擊說明'));
       const cardImgHtml = cardImg
         ? `<img src="${escapeHtml(cardImg)}" alt="${escapeHtml(card.title)}" onerror="this.style.display='none'; this.parentElement.textContent='🧩';">`
         : '🧩';
@@ -1473,10 +1494,10 @@
     document.getElementById('btnBackGame').onclick = goBackToLevelSelect;
 
     document.querySelectorAll('#bossCards [data-card]').forEach(btn => {
-      btn.onclick = () => openActionModal(btn.dataset.card);
+      btn.onclick = () => handleActionSelection(btn.dataset.card);
     });
     document.querySelectorAll('#bossActions [data-action]').forEach(btn => {
-      btn.onclick = () => openActionModal(btn.dataset.action);
+      btn.onclick = () => handleActionSelection(btn.dataset.action);
     });
 
     const cancelBtn = document.getElementById('bossActionCancel');
