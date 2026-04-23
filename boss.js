@@ -251,6 +251,107 @@
   let teacherBossSimOverride = null;
   let pendingActionPreview = null;
 
+  function fxNode(id){
+    return document.getElementById(id);
+  }
+
+  function replayFxClass(el, className, duration = 700){
+    if (!el) return;
+    el.classList.remove(className);
+    void el.offsetWidth;
+    el.classList.add(className);
+    window.setTimeout(() => el.classList.remove(className), duration);
+  }
+
+  function stageShake(duration = 340){
+    const arena = document.querySelector('.arena');
+    if (!arena) return;
+    arena.classList.remove('shake-stage');
+    void arena.offsetWidth;
+    arena.classList.add('shake-stage');
+    window.setTimeout(() => arena.classList.remove('shake-stage'), duration);
+  }
+
+  function portraitHit(side = 'boss', duration = 300){
+    const selector = side === 'player' ? '.portrait.player-portrait' : '.portrait.boss-portrait';
+    const el = document.querySelector(selector);
+    if (!el) return;
+    const className = side === 'player' ? 'hit-player' : 'hit-boss';
+    el.classList.remove(className);
+    void el.offsetWidth;
+    el.classList.add(className);
+    window.setTimeout(() => el.classList.remove(className), duration);
+  }
+
+  function spawnFloatText(text, type = 'damage', side = 'boss'){
+    const layer = fxNode('floatingTextLayer');
+    if (!layer) return;
+    const div = document.createElement('div');
+    div.className = `battle-float ${type}`;
+    const pos = {
+      player: { left: '18%', top: '40%' },
+      center: { left: '50%', top: '42%' },
+      boss: { left: '76%', top: '34%' }
+    }[side] || { left: '50%', top: '42%' };
+    div.style.left = pos.left;
+    div.style.top = pos.top;
+    div.style.transform = 'translate(-50%, 0)';
+    div.textContent = text;
+    layer.appendChild(div);
+    window.setTimeout(() => div.remove(), 950);
+  }
+
+  function setBattleBanner(mainText = '', subText = ''){
+    const main = document.getElementById('fxText');
+    const sub = document.getElementById('fxSubText');
+    if (main && mainText) main.textContent = mainText;
+    if (sub && subText) sub.textContent = subText;
+  }
+
+  function showAttackFx(target = 'boss', amount = 0, isCrit = false){
+    replayFxClass(fxNode('battleSlash'), 'fx-show-slash', 340);
+    replayFxClass(fxNode(target === 'boss' ? 'bossFlash' : 'playerFlash'), 'fx-show-flash', 340);
+    portraitHit(target, 300);
+    stageShake(280);
+    spawnFloatText(`${isCrit ? '暴擊 ' : ''}-${amount}`, 'damage', target);
+  }
+
+  function showGuardFx(target = 'player', blocked = 0, perfect = false){
+    replayFxClass(fxNode('battleShield'), 'fx-show-shield', 550);
+    replayFxClass(fxNode(target === 'boss' ? 'bossFlash' : 'playerFlash'), 'fx-show-flash', 300);
+    spawnFloatText(perfect ? `完美格擋 ${blocked}` : `格擋 ${blocked}`, 'guard', target);
+  }
+
+  function showHealFx(target = 'player', amount = 0){
+    replayFxClass(fxNode(target === 'boss' ? 'bossAura' : 'playerAura'), 'fx-show-aura', 700);
+    spawnFloatText(`+${amount}`, 'heal', target);
+  }
+
+  function showBuffFx(text = '強化', side = 'player'){
+    replayFxClass(fxNode(side === 'boss' ? 'bossAura' : 'playerAura'), 'fx-show-aura', 700);
+    spawnFloatText(text, 'buff', side);
+  }
+
+  function showFreezeFx(target = 'boss', turns = 1){
+    replayFxClass(fxNode('battleVines'), 'fx-show-vines', 1000);
+    const portrait = document.querySelector(target === 'boss' ? '.portrait.boss-portrait img' : '.portrait.player-portrait img');
+    if (portrait) {
+      portrait.classList.add('boss-frozen');
+      window.setTimeout(() => portrait.classList.remove('boss-frozen'), 1100);
+    }
+    spawnFloatText(`冰凍 ${turns} 回合`, 'freeze', target);
+  }
+
+  function showWarningFx(text = 'Boss 大招預警！'){
+    replayFxClass(fxNode('battleWarning'), 'fx-show-warning', 1500);
+    spawnFloatText(text, 'damage', 'center');
+  }
+
+  function showDodgeFx(target = 'boss'){
+    replayFxClass(fxNode(target === 'boss' ? 'bossFlash' : 'playerFlash'), 'fx-show-flash', 260);
+    spawnFloatText('閃避', 'guard', target);
+  }
+
   function getBossMechanics(){
     return config.mechanics || {};
   }
@@ -1050,6 +1151,16 @@
       : (isCrit ? `爆擊成功！${Math.round(playerCritRate * 100)}%` : '普通命中');
 
     bossState.tempBossDodgeBonus = 0;
+    if (isDodged) {
+      showDodgeFx('boss');
+      setBattleBanner(`${config.bossShortName} 閃開了！`, '這次攻擊沒有打中');
+    } else if (damage > 0) {
+      showAttackFx('boss', damage, isCrit);
+      setBattleBanner(isCrit ? '爆擊命中！' : '攻擊命中！', `對${config.bossShortName}造成 ${damage} 點傷害`);
+    } else if (armorBroken > 0) {
+      showGuardFx('boss', armorBroken, false);
+      setBattleBanner('削弱防護！', `削掉 ${armorBroken} 點 Boss 防護`);
+    }
     return { damage, armorBroken, isCrit, isDodged };
   }
 
@@ -1105,6 +1216,16 @@
       : (damage > 0 ? `😵 你受到 ${damage} 點傷害！` : '🛡️ 你完全擋住了這次攻擊！');
     bossState.playerDodgeBonus = 0;
     bossState.tempBossDamageBonus = 0;
+    if (isDodged) {
+      showDodgeFx('player');
+      setBattleBanner('成功閃避！', '你躲開了這次攻擊');
+    } else if (damage > 0) {
+      showAttackFx('player', damage, isCrit);
+      setBattleBanner(isCrit ? `${config.bossShortName} 爆擊！` : `${config.bossShortName} 命中！`, `你受到 ${damage} 點傷害`);
+    } else {
+      showGuardFx('player', 0, false);
+      setBattleBanner('完全防住！', '護盾和裝備幫你擋下了攻擊');
+    }
     return { damage, isCrit, isDodged };
   }
 
@@ -1124,6 +1245,8 @@
     const action = bossPatternAction(bossState.bossPatternIndex, getBossPhase());
     bossState.bossPatternIndex += 1;
     bossState.lastBossAction = action.label;
+    showWarningFx(`Boss：${action.label}`);
+    setBattleBanner(`Boss 準備：${action.label}`, action.hint || '小心下一波攻擊');
 
     if (action.type === 'multi') {
       let total = 0;
@@ -1302,22 +1425,29 @@
         ? `🛡️ 完美防禦！護盾共 +${actualGain}，下次更容易閃避！`
         : `🛡️ 你架起防禦姿態，護盾 +${actualGain}，下次閃避率提升！`;
       pushBossLog(`<strong>玩家：</strong>${perfectGuard ? '完美防禦' : '進入防禦姿態'}，護盾增加 ${actualGain}，下次閃避率提升。`);
+      showGuardFx('player', actualGain, perfectGuard);
+      setBattleBanner(perfectGuard ? '完美防禦！' : '防禦姿態！', `護盾 +${actualGain}`);
     } else if (actionKey === 'focus') {
       bossState.playerPower += config.stats.focusGain;
       bossState.lastPlayerAction = '專注蓄力';
       bossState.lastPlayerRoll = '蓄力中';
       bossState.fxText = `✨ 你正在蓄力，下次普通攻擊 +${config.stats.focusGain}！`;
       pushBossLog(`<strong>玩家：</strong>專注蓄力，下次普通攻擊 +${config.stats.focusGain} 傷害。`);
+      showBuffFx(`蓄力 +${config.stats.focusGain}`, 'player');
+      setBattleBanner('專注蓄力！', `下次普通攻擊 +${config.stats.focusGain}`);
     } else if (actionKey === 'skip') {
       bossState.lastPlayerAction = '略過回合';
       bossState.fxText = `👀 你選擇觀察${config.bossShortName}。`;
       pushBossLog(`<strong>玩家：</strong>先觀察${config.bossShortName}的動作。`);
+      setBattleBanner('先觀察局勢', `看看${config.bossShortName}接下來想做什麼`);
     } else {
       const card = bossState.cards.find(c => c.key === actionKey);
       if (!card || card.used || card.locked) return;
       card.used = true;
       bossState.lastPlayerAction = `使用卡牌：${card.title}`;
       const prevFreezeTurns = Number(bossState.bossFreezeTurns || 0);
+      const hpBefore = Number(bossState.playerHp || 0);
+      const shieldBefore = Number(bossState.playerShield || 0);
       const result = typeof card.effect === 'function' ? card.effect(bossState) : null;
       const requestedFreezeTurns = Math.max(0, Number(bossState.bossFreezeTurns || 0));
       let preserveControlFx = false;
@@ -1329,6 +1459,8 @@
           pushBossLog(`<strong>控制抗性：</strong>原本想控制 ${requestedFreezeTurns} 回合，實際只生效 ${applied} 回合。`);
         }
       }
+      const healed = Math.max(0, Number(bossState.playerHp || 0) - hpBefore);
+      const shieldGained = Math.max(0, Number(bossState.playerShield || 0) - shieldBefore);
       if (typeof result === 'string' && result) {
         pushBossLog(`<strong>玩家卡牌：</strong>${card.title}${result}`);
       } else if (result && typeof result === 'object') {
@@ -1338,6 +1470,22 @@
         }
         if (result.log) pushBossLog(`<strong>玩家卡牌：</strong>${result.log}`);
         if (result.fxText && !preserveControlFx) bossState.fxText = result.fxText;
+      }
+      if (healed > 0) {
+        showHealFx('player', healed);
+        setBattleBanner(`${card.title}！`, `恢復 ${healed} 點生命`);
+      }
+      if (shieldGained > 0) {
+        showGuardFx('player', shieldGained, false);
+        setBattleBanner(`${card.title}！`, `護盾 +${shieldGained}`);
+      }
+      if (requestedFreezeTurns > prevFreezeTurns) {
+        showFreezeFx('boss', Math.max(1, requestedFreezeTurns - prevFreezeTurns));
+        setBattleBanner(`${card.title}！`, `${config.bossShortName} 暫時無法行動`);
+      }
+      if (healed <= 0 && shieldGained <= 0 && requestedFreezeTurns <= prevFreezeTurns && !(result && typeof result === 'object' && result.damage)) {
+        showBuffFx(card.title, 'player');
+        setBattleBanner(`${card.title}！`, '道具效果已發動');
       }
     }
 
