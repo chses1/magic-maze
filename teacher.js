@@ -1288,15 +1288,17 @@ window.LEVELS = ${JSON.stringify(exported, null, 2)};
   }
 
   function bindUI(){
-    document.getElementById('btnTeacherLogin').onclick = ()=>{
+    document.getElementById('btnTeacherLogin').onclick = async ()=>{
       const code = document.getElementById('teacherCode').value.trim();
-      const s = Auth.loginTeacher({teacherCode: code});
+      toast('正在連線驗證教師密碼，請稍候…');
+      const s = await Auth.loginTeacher({teacherCode: code});
       if(!s){
-        toast('教師密碼錯誤。');
+        toast('教師密碼錯誤，或後端連線失敗。');
         setBadge();
         return;
       }
-      toast('教師登入成功！');
+      toast('教師登入成功，正在同步雲端資料…');
+      try{ await StorageAPI.syncTeacherProgressFromBackend(); }catch(err){ console.warn(err); }
       setBadge();
       render();
       loadSelectedLevelIntoEditor();
@@ -1400,7 +1402,7 @@ window.LEVELS = ${JSON.stringify(exported, null, 2)};
     if(btnClearLevelEdit) btnClearLevelEdit.onclick = clearEditedLevel;
   }
 
-  function init(){
+  async function init(){
     setupToolSelectors();
     setupEditorDropdowns();
     renderMapPalette();
@@ -1409,6 +1411,14 @@ window.LEVELS = ${JSON.stringify(exported, null, 2)};
     setBadge();
     bindUI();
     updateControlsLock();
+    if(isTeacherLoggedIn()){
+      toast('正在從 MongoDB 讀取學生資料…');
+      try{ await StorageAPI.syncTeacherProgressFromBackend(); }
+      catch(err){
+        console.warn('教師後台雲端同步失敗，先使用本機快取：', err);
+        toast('⚠️ 雲端同步失敗，暫時顯示本機快取資料。');
+      }
+    }
     render();
     if(isTeacherLoggedIn()) loadSelectedLevelIntoEditor();
   }

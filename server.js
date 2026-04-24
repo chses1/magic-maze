@@ -115,6 +115,16 @@ function isBetterRecord(prev, next) {
   return false;
 }
 
+// ✅ Render 根網址測試頁：直接點 Render 網址時會看到這裡
+app.get('/', (req, res) => {
+  res.type('html').send(`<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /><title>Magic Maze Backend</title><style>body{font-family:system-ui,-apple-system,"Noto Sans TC",sans-serif;background:#0b1020;color:#e7ecff;padding:32px;line-height:1.7}.card{max-width:760px;margin:auto;background:#111a33;border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:24px;box-shadow:0 16px 40px rgba(0,0,0,.35)}code{background:rgba(255,255,255,.08);padding:3px 6px;border-radius:6px}a{color:#31d0ff}</style></head><body><div class="card"><h1>✅ 程式迷宮後端已啟動</h1><p>這個 Render 網址是後端 API，不是遊戲前端首頁。</p><p>請用 GitHub Pages 開啟遊戲前端；後端只負責登入、成績、排行榜與 MongoDB 存取。</p><p>健康檢查：<a href="/api/health"><code>/api/health</code></a></p></div></body></html>`);
+});
+
+// ✅ API 路由清單，方便老師檢查後端功能
+app.get('/api', (req, res) => {
+  res.json({ ok: true, service: 'magic-maze-backend', message: '後端 API 正常運作。遊戲前端請使用 GitHub Pages 開啟。', endpoints: ['GET /api/health','POST /api/auth/student','POST /api/auth/teacher','GET /api/progress/me','PUT /api/progress/level','GET /api/leaderboard','GET /api/teacher/progress'] });
+});
+
 app.get('/api/health', async (req, res) => {
   try {
     await db.command({ ping: 1 });

@@ -1,8 +1,7 @@
 // auth.js
+// ✅ 教師密碼不再寫在前端；改由 Render 後端驗證。
 window.Auth = {
-  // ✅ 學生登入：支援五碼學號（例如 30105）
-  // 也保留舊參數 classId/seat 的相容性
-  loginStudent({ studentId, classId, seat, name, character }){
+  async loginStudent({ studentId, classId, seat, name, character }){
     let uid = "";
 
     if(studentId != null && String(studentId).trim() !== ""){
@@ -13,38 +12,61 @@ window.Auth = {
       uid = `${class3}${seat2}`;
     }
 
-    // 基本防呆：一定要 5 碼
     if(!/^\d{5}$/.test(uid)) return null;
 
-    const class3 = uid.slice(0,3);
-    const seat2 = uid.slice(3,5);
+    try{
+      const data = await StorageAPI.apiFetch("/api/auth/student", {
+        method: "POST",
+        body: JSON.stringify({
+          studentId: uid,
+          character: ["boy","girl"].includes(String(character || "").trim()) ? String(character).trim() : "boy"
+        })
+      });
 
-    const session = {
-      role: "student",
-      userId: uid,       // ✅ 5 碼
-      classId: class3,   // ✅ 前 3 碼
-      seat: seat2,       // ✅ 後 2 碼
-      name: "",
-      character: ["boy","girl"].includes(String(character || "").trim()) ? String(character).trim() : "boy",
-      loginAt: Date.now()
-    };
-    StorageAPI.setSession(session);
-    return session;
+      const session = {
+        ...(data.user || {}),
+        token: data.token,
+        role: "student",
+        userId: uid,
+        classId: uid.slice(0,3),
+        seat: uid.slice(3,5),
+        name: name || data.user?.name || "",
+        character: data.user?.character || character || "boy",
+        loginAt: Date.now()
+      };
+      StorageAPI.setSession(session);
+
+      try{ await StorageAPI.syncMyProgressFromBackend(); }catch(_err){}
+      return session;
+    }catch(err){
+      console.error("學生登入失敗", err);
+      return null;
+    }
   },
 
-  // ✅ 教師登入：密碼改成 1070
-  loginTeacher({teacherCode}){
-    const ok = teacherCode === "1070";
-    if(!ok) return null;
+  async loginTeacher({ teacherCode }){
+    try{
+      const data = await StorageAPI.apiFetch("/api/auth/teacher", {
+        method: "POST",
+        body: JSON.stringify({ teacherCode: String(teacherCode || "") })
+      });
 
-    const session = {
-      role: "teacher",
-      userId: "teacher",
-      name: "教師",
-      loginAt: Date.now()
-    };
-    StorageAPI.setSession(session);
-    return session;
+      const session = {
+        ...(data.user || {}),
+        token: data.token,
+        role: "teacher",
+        userId: "teacher",
+        name: "教師",
+        loginAt: Date.now()
+      };
+      StorageAPI.setSession(session);
+
+      try{ await StorageAPI.syncTeacherProgressFromBackend(); }catch(_err){}
+      return session;
+    }catch(err){
+      console.error("教師登入失敗", err);
+      return null;
+    }
   },
 
   logout(){
@@ -61,7 +83,6 @@ window.Auth = {
   }
 };
 
-// ✅ 允許多角色：例如 requireAnyRole(["student","teacher"])
 function requireAnyRole(roles){
   const s = StorageAPI.getSession();
   if(!s || !roles.includes(s.role)){
@@ -71,5 +92,4 @@ function requireAnyRole(roles){
   return s;
 }
 
-// 掛到 Auth（若你本來就是 window.Auth = {...}，就加進去即可）
 Auth.requireAnyRole = requireAnyRole;

@@ -2901,6 +2901,8 @@ window.GamePage = (()=>{
         const improved = StorageAPI.upsertBest(session.userId, levelKey(), record);
         StorageAPI.updateLeaderboard(session, levelKey(), record);
         const updatedBuild = persistLevelRewards(stars) || getPlayerBuildSummary(session?.userId);
+        // ✅ 道具/裝備/三星加成寫入 localStorage 後，再補同步一次到 MongoDB，避免雲端缺少 meta。
+        try{ StorageAPI.syncLevelRecordToBackend?.(levelKey(), record); }catch(_err){}
         const copy = getLevelCopy(world.worldId, level.levelId);
 
         const starDesc = stars === 3

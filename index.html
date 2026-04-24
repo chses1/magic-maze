@@ -1114,7 +1114,7 @@
     `;
   }
 
-  function handleStudentLogin(){
+  async function handleStudentLogin(){
     const studentId = document.getElementById('studentId').value.trim();
     if(!/^\d{5}$/.test(studentId)){
       toast('學號請輸入 5 位數，例如 30105');
@@ -1122,9 +1122,10 @@
     }
 
     const character = document.getElementById('selectedCharacter')?.value || 'boy';
-    const s = Auth.loginStudent({ studentId, character });
+    toast("正在連線登入，請稍候…");
+    const s = await Auth.loginStudent({ studentId, character });
     if(!s){
-      toast('登入失敗：學號格式錯誤');
+      toast('登入失敗：請確認後端是否已啟動，或學號格式是否正確。');
       return;
     }
 
@@ -1135,9 +1136,10 @@
     closeLoginModal();
   }
 
-  function handleTeacherLogin(){
+  async function handleTeacherLogin(){
     const teacherCode = document.getElementById('teacherCode').value.trim();
-    const s = Auth.loginTeacher({ teacherCode });
+    teacherToast("正在驗證教師密碼，請稍候…");
+    const s = await Auth.loginTeacher({ teacherCode });
     if(!s){
       teacherToast('教師密碼錯誤，請重新輸入。');
       return;
@@ -1196,6 +1198,20 @@
   renderSession();
   renderWorlds();
   renderClassRank();
+
+  // ✅ 若已登入，進入首頁時先嘗試從 MongoDB 同步最新資料，再重畫畫面。
+  (async()=>{
+    try{
+      const s = StorageAPI.getSession();
+      if(s?.role === 'student') await StorageAPI.syncMyProgressFromBackend();
+      if(s?.role === 'teacher') await StorageAPI.syncTeacherProgressFromBackend();
+      renderSession();
+      renderWorlds();
+      renderClassRank();
+    }catch(err){
+      console.warn('首頁雲端同步失敗，先使用本機快取：', err);
+    }
+  })();
 </script>
 </body>
 </html>
