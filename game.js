@@ -2509,7 +2509,7 @@ window.GamePage = (()=>{
     void wrap.offsetWidth;
     wrap.classList.add('show', state);
     clearTimeout(wrap._timer);
-    wrap._timer = setTimeout(()=>{ wrap.classList.remove('show','win','lose'); }, 1000);
+    wrap._timer = setTimeout(()=>{ wrap.classList.remove('show','win','lose'); }, 2000);
   }
 
   function showResult(text){

@@ -583,6 +583,41 @@ ${elseCode}}
     }
   }
 
+  function getWorkspaceVisibleTargetXY(workspace, margin = 18){
+    // Blockly 的 x/y 是「工作區座標」，不是畫面像素。
+    // 若工作區載入草稿後自動捲動，單純把積木移到 x=20,y=20 仍可能不在目前可視區左上角。
+    // 因此要先讀取目前可視區的 viewLeft/viewTop，再把起始積木放到可視區左上角。
+    let viewLeft = 0;
+    let viewTop = 0;
+    try{
+      const metrics = workspace?.getMetrics?.();
+      viewLeft = Number(metrics?.viewLeft || 0);
+      viewTop = Number(metrics?.viewTop || 0);
+    }catch(_err){}
+    return { x: viewLeft + margin, y: viewTop + margin };
+  }
+
+  function moveBlockStackTo(block, targetX, targetY){
+    if(!block) return;
+    try{
+      const wasMovable = typeof block.isMovable === 'function' ? block.isMovable() : true;
+      block.setMovable?.(true);
+      const xy = typeof block.getRelativeToSurfaceXY === 'function'
+        ? block.getRelativeToSurfaceXY()
+        : { x: 0, y: 0 };
+      block.moveBy?.(Number(targetX || 0) - Number(xy.x || 0), Number(targetY || 0) - Number(xy.y || 0));
+      block.setMovable?.(wasMovable);
+    }catch(_err){}
+  }
+
+  function placeStartBlockAtEditableTopLeft(workspace, startBlock){
+    if(!workspace || !startBlock) return;
+    try{ workspace.render?.(); }catch(_err){}
+    const target = getWorkspaceVisibleTargetXY(workspace, 18);
+    moveBlockStackTo(startBlock, target.x, target.y);
+    try{ workspace.render?.(); }catch(_err){}
+  }
+
   function ensureStartBlock(workspace){
     if(!workspace || !window.Blockly) return null;
     const allBlocks = typeof workspace.getAllBlocks === "function" ? workspace.getAllBlocks(false) : [];
@@ -605,40 +640,33 @@ ${elseCode}}
       }
     }
 
-    // ✅ 固定起始積木在「可編輯工作區」左上角。
-    // 舊版會保留學生上次儲存的 x/y，或因為載入最佳解而跑到下方；
-    // 這裡每次建立／載入工作區後，都把整串起始程式搬回左上角。
-    try{
-      // ✅ 從草稿載入時，起始積木可能是 movable:false；先暫時解鎖才移得動。
-      startBlock.setMovable?.(true);
-      const xy = typeof startBlock.getRelativeToSurfaceXY === 'function'
-        ? startBlock.getRelativeToSurfaceXY()
-        : { x: 0, y: 0 };
-      startBlock.moveBy?.(20 - Number(xy.x || 0), 20 - Number(xy.y || 0));
-      startBlock.setMovable?.(false);
-    }catch(_err){}
+    // ✅ 固定起始積木在「目前可視的可編輯區域」左上角。
+    // 關鍵修正：不要只用 x=20,y=20；草稿或序列化資料載入後，Blockly 可能已經改變視窗 viewLeft/viewTop。
+    placeStartBlockAtEditableTopLeft(workspace, startBlock);
 
     topBlocks.slice(1).forEach((block, index)=>{
       try{
-        block.moveBy?.(220 + index * 28, 20 + index * 28);
+        const target = getWorkspaceVisibleTargetXY(workspace, 18);
+        moveBlockStackTo(block, target.x + 220 + index * 28, target.y + index * 28);
       }catch(_err){}
     });
 
     try{
-      workspace.scrollbar?.set?.(0, 0);
       workspace.render?.();
       requestAnimationFrame?.(()=>{
         try{
-          startBlock.setMovable?.(true);
-          const xy2 = typeof startBlock.getRelativeToSurfaceXY === 'function'
-            ? startBlock.getRelativeToSurfaceXY()
-            : { x: 0, y: 0 };
-          startBlock.moveBy?.(20 - Number(xy2.x || 0), 20 - Number(xy2.y || 0));
-          startBlock.setMovable?.(false);
-          workspace.scrollbar?.set?.(0, 0);
+          placeStartBlockAtEditableTopLeft(workspace, startBlock);
+          lockStartBlocks(workspace);
           workspace.render?.();
         }catch(_err){}
       });
+      setTimeout(()=>{
+        try{
+          placeStartBlockAtEditableTopLeft(workspace, startBlock);
+          lockStartBlocks(workspace);
+          workspace.render?.();
+        }catch(_err){}
+      }, 260);
     }catch(_err){}
 
     return startBlock;

@@ -1153,26 +1153,28 @@ body{
   }
 }
 
-/* ✅ 角色通關／失敗提示：顯示在迷宮區上方，1 秒後消失 */
+/* ✅ 角色通關／失敗提示：顯示在整個畫面正中央，2 秒後消失 */
 .character-outcome-fx{
-  position:absolute;
-  left:50%;
-  top:10px;
-  transform:translateX(-50%) translateY(-10px) scale(.96);
-  z-index:30;
+  position:fixed;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transform:scale(.96);
+  z-index:9999;
   pointer-events:none;
   opacity:0;
   transition:opacity .18s ease, transform .18s ease;
-  filter:drop-shadow(0 12px 22px rgba(0,0,0,.22));
+  filter:drop-shadow(0 18px 32px rgba(0,0,0,.28));
 }
 .character-outcome-fx.show{
   opacity:1;
-  transform:translateX(-50%) translateY(0) scale(1);
+  transform:scale(1);
 }
 .character-outcome-fx img{
   display:block;
-  width:min(230px, 42vw);
-  max-height:min(300px, 42vh);
+  width:min(340px, 52vw);
+  max-height:min(460px, 62vh);
   object-fit:contain;
 }
 .character-outcome-fx.win img{ animation:characterOutcomePop .42s ease both; }
