@@ -360,59 +360,34 @@ ${elseCode}}
 
   function buildToolbox(worldId, levelId = '', opts = {}){
     ensureDefinitions();
-    const contents = [];
 
-    contents.push({
-      kind:"category",
-      name:"移動",
-      colour:BLOCK_COLORS.SEQUENCE,
-      contents:[
-        {kind:"block", type:"mw_move_forward"},
-        {kind:"block", type:"mw_turn", fields:{ DIR:"left" }}
-      ]
-    });
+    // ✅ 改成「單一飛出工具箱」：所有目前關卡可用積木一次顯示，
+    // 不需要學生先點分類標籤，適合 iPad 與國小課堂操作。
+    const contents = [
+      {kind:"block", type:"mw_move_forward"},
+      {kind:"block", type:"mw_turn", fields:{ DIR:"left" }}
+    ];
 
     if(worldId === "W2" || worldId === "W3" || worldId === "W4"){
-      const loopContents = [
-        loopRepeatBlockToolboxItem(3)
-      ];
+      contents.push(loopRepeatBlockToolboxItem(3));
       if(worldId === "W3" || worldId === "W4"){
-        loopContents.push({kind:"block", type:"mw_repeat_until_goal"});
+        contents.push({kind:"block", type:"mw_repeat_until_goal"});
       }
-      contents.push({
-        kind:"category",
-        name:"迴圈",
-        colour:BLOCK_COLORS.LOOP,
-        contents: loopContents
-      });
     }
 
     if(worldId === "W3" || worldId === "W4"){
-      contents.push({
-        kind:"category",
-        name:"條件",
-        colour:BLOCK_COLORS.CONDITION,
-        contents:[
-          {kind:"block", type:"mw_if_path", fields:{ DIR:"ahead" }}
-        ]
-      });
+      contents.push({kind:"block", type:"mw_if_path", fields:{ DIR:"ahead" }});
     }
 
     if(worldId === "W4"){
       const spellConfigs = getWorld4AvailableSpellConfigs(levelId, opts);
-      const functionContents = spellConfigs.flatMap(cfg => ([
-        {kind:"block", type:cfg.defType},
-        {kind:"block", type:cfg.callType}
-      ]));
-      contents.push({
-        kind:"category",
-        name:"函式（咒語）",
-        colour:BLOCK_COLORS.FUNCTION,
-        contents:functionContents
+      spellConfigs.forEach(cfg => {
+        contents.push({kind:"block", type:cfg.defType});
+        contents.push({kind:"block", type:cfg.callType});
       });
     }
 
-    return { kind:"categoryToolbox", contents };
+    return { kind:"flyoutToolbox", contents };
   }
 
   function buildWorld4PresetXml(levelId){

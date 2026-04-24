@@ -2602,7 +2602,8 @@ window.GamePage = (()=>{
     collectedEquipmentName = "";
     resetRunState();
     showResult("");
-    resetMazeScale();
+    // 保留玩家手動調整的迷宮縮放比例；重設關卡時只重新套用目前比例，不自動還原。
+    applyMazeScale();
     startLegendTicker();
     toast(UI.common.startTip);
     render();
@@ -2913,33 +2914,18 @@ window.GamePage = (()=>{
   }
 
   function bindUI(){
-    document.getElementById("btnRun").onclick = ()=> runProgram();
+    const btnRun = document.getElementById("btnRun");
+    const btnReset = document.getElementById("btnReset");
+    const btnExit = document.getElementById("btnExit");
 
-    document.getElementById("btnStep").onclick = ()=> executeSingleStep();
+    if (btnRun) btnRun.onclick = ()=> runProgram();
 
-    document.getElementById("btnPause").onclick = ()=>{
-      if (isBossLevel()) {
-        toast('Boss 戰不需要暫停鍵。');
-        return;
-      }
-      if(!running){
-        toast(UI.common.notStarted);
-        return;
-      }
-      if(stepMode){
-        toast('步進模式不需要暫停，直接按「步進」即可。');
-        return;
-      }
-      paused = !paused;
-      toast(paused ? UI.common.paused : UI.common.resumed);
-    };
-
-    document.getElementById("btnReset").onclick = ()=>{
+    if (btnReset) btnReset.onclick = ()=>{
       forceStopCurrentRun();
       resetLevel();
     };
 
-    document.getElementById("btnExit").onclick = ()=>{
+    if (btnExit) btnExit.onclick = ()=>{
       if(!confirm("確定要離開這一關嗎？系統會先保存你目前的積木進度。")) return;
       const saved = saveProgramDraft();
       forceStopCurrentRun();
