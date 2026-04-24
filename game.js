@@ -1030,7 +1030,7 @@ window.GamePage = (()=>{
         flex: 1 1 auto;
         min-height: 0;
         display: grid;
-        grid-template-columns: minmax(520px, 1.08fr) minmax(440px, .92fr);
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
         gap: 12px;
         align-items: stretch;
       }

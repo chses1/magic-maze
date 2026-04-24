@@ -592,7 +592,6 @@ ${elseCode}}
       startBlock = workspace.newBlock("mw_start");
       startBlock.initSvg?.();
       startBlock.render?.();
-      startBlock.moveBy?.(20, 20);
     }
 
     const topBlocks = (typeof workspace.getTopBlocks === "function" ? workspace.getTopBlocks(true) : [])
@@ -606,11 +605,26 @@ ${elseCode}}
       }
     }
 
+    // ✅ 固定起始積木在「可編輯工作區」左上角。
+    // 舊版會保留學生上次儲存的 x/y，或因為載入最佳解而跑到下方；
+    // 這裡每次建立／載入工作區後，都把整串起始程式搬回左上角。
+    try{
+      const xy = typeof startBlock.getRelativeToSurfaceXY === 'function'
+        ? startBlock.getRelativeToSurfaceXY()
+        : { x: 0, y: 0 };
+      startBlock.moveBy?.(20 - Number(xy.x || 0), 20 - Number(xy.y || 0));
+    }catch(_err){}
+
     topBlocks.slice(1).forEach((block, index)=>{
       try{
         block.moveBy?.(220 + index * 28, 20 + index * 28);
       }catch(_err){}
     });
+
+    try{
+      workspace.scrollbar?.set?.(0, 0);
+      workspace.render?.();
+    }catch(_err){}
 
     return startBlock;
   }
