@@ -5,6 +5,11 @@ window.TeacherPage = (()=>{
   const TEACHER_ACTION_KEY = 'maze_teacher_pending_action';
   const LEVEL_TARGET_BLOCK_OVERRIDE_KEY = 'mw_published_level_overrides_v1';
   const LEVEL_EDIT_OVERRIDE_KEY = 'mw_teacher_level_edits_v1';
+  const TEACHER_TOOLS_COLLAPSED_KEY = 'mw_teacher_tools_collapsed_v1';
+  const TEACHER_PROGRESS_AUTO_SYNC_MS = 5000;
+
+  let teacherProgressSyncTimer = null;
+  let teacherProgressSyncBusy = false;
 
   const WORLD_NAME_MAP = {
     W1: '世界1｜魔法學院（序列）',
@@ -120,6 +125,85 @@ window.TeacherPage = (()=>{
       return false;
     }
     return true;
+  }
+
+  function setTeacherSyncBadge(text){
+    const badge = document.getElementById('teacherAutoSyncBadge');
+    if(badge) badge.textContent = text;
+  }
+
+  function getCurrentFilterClass(){
+    return String(document.getElementById('filterClass')?.value || 'all').trim();
+  }
+
+  async function refreshTeacherProgressFromCloud(options = {}){
+    if(!isTeacherLoggedIn()) return false;
+    if(teacherProgressSyncBusy) return false;
+
+    const silent = options.silent === true;
+    const classId = getCurrentFilterClass();
+    teacherProgressSyncBusy = true;
+    setTeacherSyncBadge('成績同步中…');
+
+    try{
+      await StorageAPI.syncTeacherProgressFromBackend(classId);
+      render();
+      const timeText = new Date().toLocaleTimeString('zh-TW', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+      setTeacherSyncBadge(`已同步 ${timeText}｜每 5 秒`);
+      if(!silent) toast('✅ 已從 MongoDB 更新學生通關成績。');
+      return true;
+    }catch(err){
+      console.warn('教師後台雲端同步失敗：', err);
+      setTeacherSyncBadge('同步失敗，顯示本機快取');
+      if(!silent) toast('⚠️ 雲端同步失敗，暫時顯示本機快取資料。');
+      return false;
+    }finally{
+      teacherProgressSyncBusy = false;
+    }
+  }
+
+  function stopTeacherProgressAutoSync(){
+    if(teacherProgressSyncTimer) clearInterval(teacherProgressSyncTimer);
+    teacherProgressSyncTimer = null;
+  }
+
+  function startTeacherProgressAutoSync(){
+    stopTeacherProgressAutoSync();
+    if(!isTeacherLoggedIn()) return;
+    teacherProgressSyncTimer = setInterval(()=>{
+      if(document.hidden) return;
+      refreshTeacherProgressFromCloud({ silent:true });
+    }, TEACHER_PROGRESS_AUTO_SYNC_MS);
+  }
+
+  function setTeacherToolsCollapsed(collapsed){
+    const card = document.getElementById('teacherToolsCard');
+    const body = document.getElementById('teacherToolsBody');
+    const btn = document.getElementById('btnToggleTeacherTools');
+    const isCollapsed = !!collapsed;
+
+    if(card) card.classList.toggle('is-collapsed', isCollapsed);
+    if(body) body.hidden = isCollapsed;
+    if(btn){
+      btn.textContent = isCollapsed ? '展開 ▼' : '最小化 ▲';
+      btn.setAttribute('aria-expanded', String(!isCollapsed));
+    }
+
+    try{ localStorage.setItem(TEACHER_TOOLS_COLLAPSED_KEY, isCollapsed ? '1' : '0'); }catch(_err){}
+  }
+
+  function initTeacherToolsCollapse(){
+    const btn = document.getElementById('btnToggleTeacherTools');
+    const saved = (()=>{
+      try{ return localStorage.getItem(TEACHER_TOOLS_COLLAPSED_KEY) === '1'; }catch(_err){ return false; }
+    })();
+    setTeacherToolsCollapsed(saved);
+    if(btn){
+      btn.onclick = ()=>{
+        const card = document.getElementById('teacherToolsCard');
+        setTeacherToolsCollapsed(!card?.classList.contains('is-collapsed'));
+      };
+    }
   }
 
   function solutionKey(world, level){
@@ -1298,14 +1382,15 @@ window.LEVELS = ${JSON.stringify(exported, null, 2)};
         return;
       }
       toast('教師登入成功，正在同步雲端資料…');
-      try{ await StorageAPI.syncTeacherProgressFromBackend(); }catch(err){ console.warn(err); }
+      await refreshTeacherProgressFromCloud({ silent:true });
       setBadge();
-      render();
+      startTeacherProgressAutoSync();
       loadSelectedLevelIntoEditor();
     };
 
     document.getElementById('btnTeacherLogout').onclick = ()=>{
       Auth.logout();
+      stopTeacherProgressAutoSync();
       toast('已登出。');
       setBadge();
       render();
@@ -1315,17 +1400,18 @@ window.LEVELS = ${JSON.stringify(exported, null, 2)};
       await goToAppPage('index.html');
     };
 
-    document.getElementById('btnRefresh').onclick = ()=>{
+    document.getElementById('btnRefresh').onclick = async ()=>{
       if(!requireTeacherOrBlock('更新列表')) return;
-      render();
-      toast('已更新列表。');
+      toast('正在從 MongoDB 更新列表…');
+      await refreshTeacherProgressFromCloud({ silent:false });
     };
 
     const filterClassEl = document.getElementById('filterClass');
     const sortModeEl = document.getElementById('sortMode');
-    if(filterClassEl) filterClassEl.onchange = ()=>{
+    if(filterClassEl) filterClassEl.onchange = async ()=>{
       if(!requireTeacherOrBlock('切換班級顯示')) return;
       render();
+      await refreshTeacherProgressFromCloud({ silent:true });
       const btnClearAll = document.getElementById('btnClearAll');
       if(btnClearAll){
         const selected = String(filterClassEl.value || 'all').trim();
@@ -1410,17 +1496,19 @@ window.LEVELS = ${JSON.stringify(exported, null, 2)};
     renderMapEditorGrid();
     setBadge();
     bindUI();
+    initTeacherToolsCollapse();
     updateControlsLock();
     if(isTeacherLoggedIn()){
       toast('正在從 MongoDB 讀取學生資料…');
-      try{ await StorageAPI.syncTeacherProgressFromBackend(); }
-      catch(err){
-        console.warn('教師後台雲端同步失敗，先使用本機快取：', err);
-        toast('⚠️ 雲端同步失敗，暫時顯示本機快取資料。');
-      }
+      await refreshTeacherProgressFromCloud({ silent:true });
+      startTeacherProgressAutoSync();
     }
     render();
     if(isTeacherLoggedIn()) loadSelectedLevelIntoEditor();
+
+    document.addEventListener('visibilitychange', ()=>{
+      if(!document.hidden && isTeacherLoggedIn()) refreshTeacherProgressFromCloud({ silent:true });
+    });
   }
 
   return { init };

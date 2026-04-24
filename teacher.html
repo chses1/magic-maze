@@ -131,6 +131,12 @@
     .teacherToastLine{min-height:22px;margin-top:10px;font-size:13px;font-weight:800;color:#ffe39a;}
     .teacherCardHead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;}
     .teacherCardHead h2{margin:0;font-size:20px;line-height:1.2;}
+    .teacherCardTitleRow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-width:0;}
+    .teacherAutoSyncBadge{font-size:12px;padding:6px 9px;background:rgba(78,227,165,.10);border-color:rgba(78,227,165,.24);color:#d8fff0;}
+    .teacherCollapseBtn{flex:0 0 auto;min-width:96px;padding:8px 12px;border-radius:12px;font-weight:900;background:rgba(255,255,255,.08);border:1px solid rgba(255,231,173,.20);}
+    .teacherToolsBody{display:block;}
+    #teacherToolsCard.is-collapsed .teacherToolsBody{display:none !important;}
+    #teacherToolsCard.is-collapsed{padding-bottom:12px;}
     .teacherCompactGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
     .teacherActionBar{margin-top:12px;}
     .teacherToolsGridCompact{grid-template-columns:repeat(2,minmax(220px,1fr));}
@@ -191,9 +197,14 @@
 
     <div class="card teacherCompactCard" id="teacherToolsCard" style="margin-top:14px; display:none;">
       <div class="teacherCardHead">
-        <h2>教師模式快捷工具</h2>
+        <div class="teacherCardTitleRow">
+          <h2>教師模式快捷工具</h2>
+          <span class="badge teacherAutoSyncBadge" id="teacherAutoSyncBadge">成績自動更新：每 5 秒</span>
+        </div>
+        <button type="button" class="teacherCollapseBtn" id="btnToggleTeacherTools" aria-expanded="true">最小化 ▲</button>
       </div>
 
+      <div class="teacherToolsBody" id="teacherToolsBody">
       <div class="teacherToolsGrid teacherToolsGridCompact">
         <div>
           <label>世界選擇</label>
@@ -275,6 +286,7 @@
 #########"></textarea>
           </div>
         </div>
+      </div>
       </div>
 
     </div>
