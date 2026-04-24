@@ -609,10 +609,13 @@ ${elseCode}}
     // 舊版會保留學生上次儲存的 x/y，或因為載入最佳解而跑到下方；
     // 這裡每次建立／載入工作區後，都把整串起始程式搬回左上角。
     try{
+      // ✅ 從草稿載入時，起始積木可能是 movable:false；先暫時解鎖才移得動。
+      startBlock.setMovable?.(true);
       const xy = typeof startBlock.getRelativeToSurfaceXY === 'function'
         ? startBlock.getRelativeToSurfaceXY()
         : { x: 0, y: 0 };
       startBlock.moveBy?.(20 - Number(xy.x || 0), 20 - Number(xy.y || 0));
+      startBlock.setMovable?.(false);
     }catch(_err){}
 
     topBlocks.slice(1).forEach((block, index)=>{
@@ -624,6 +627,18 @@ ${elseCode}}
     try{
       workspace.scrollbar?.set?.(0, 0);
       workspace.render?.();
+      requestAnimationFrame?.(()=>{
+        try{
+          startBlock.setMovable?.(true);
+          const xy2 = typeof startBlock.getRelativeToSurfaceXY === 'function'
+            ? startBlock.getRelativeToSurfaceXY()
+            : { x: 0, y: 0 };
+          startBlock.moveBy?.(20 - Number(xy2.x || 0), 20 - Number(xy2.y || 0));
+          startBlock.setMovable?.(false);
+          workspace.scrollbar?.set?.(0, 0);
+          workspace.render?.();
+        }catch(_err){}
+      });
     }catch(_err){}
 
     return startBlock;

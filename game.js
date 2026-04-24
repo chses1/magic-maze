@@ -9,6 +9,11 @@ window.GamePage = (()=>{
     {dx:-1, dy:0, emoji:"←"},
   ];
 
+  const CHARACTER_OUTCOME_IMAGES = {
+    boy: { win: 'img/boy-win.png', lose: 'img/boy-lose.png' },
+    girl: { win: 'img/girl-win.png', lose: 'img/girl-lose.png' }
+  };
+
   const WORLD_ASSETS = {
     W1: {
       worldBg: "img/world1_bg_magic_academy.png",
@@ -2211,9 +2216,9 @@ window.GamePage = (()=>{
       ? '<span class="cell-symbol-stack"><span class="door-icon">🚪</span></span>'
       : '<span class="cell-symbol-stack"><span class="door-icon">🚪</span><span class="lock-icon">🔒</span></span>';
     if(s === 'T') return '🕳️';
-    if(s === 'P') return '<span class="cell-symbol portal-glyph portal-glyph-blue" aria-label="藍色傳送門"></span>';
-    if(s === 'Q') return '<span class="cell-symbol portal-glyph portal-glyph-purple" aria-label="紫色傳送門"></span>';
-    if(s === 'R') return '<span class="cell-symbol portal-glyph portal-glyph-red" aria-label="紅色傳送門"></span>';
+    if(s === 'P') return '<img class="cell-symbol portal-img portal-img-blue" src="img/door1.jpeg" alt="藍色傳送門">';
+    if(s === 'Q') return '<img class="cell-symbol portal-img portal-img-purple" src="img/door2.jpeg" alt="紫色傳送門">';
+    if(s === 'R') return '<img class="cell-symbol portal-img portal-img-red" src="img/door3.jpeg" alt="紅色傳送門">';
     if(s === 'C') return '🎁';
     if(s === 'G') return '<img class="cell-symbol symbol-gold-img" src="img/gold.png" alt="裝備寶箱">';
     if(s === 'I') return '✨';
@@ -2475,6 +2480,38 @@ window.GamePage = (()=>{
     return `${world.worldId}-${level.levelId}`;
   }
 
+  function getSelectedCharacter(){
+    const session = getSessionSafe();
+    const character = String(session?.character || 'boy').trim().toLowerCase();
+    return character === 'girl' ? 'girl' : 'boy';
+  }
+
+  function showCharacterOutcomeImage(isWin){
+    const stageMiddle = document.querySelector('.stageMiddle');
+    if(!stageMiddle) return;
+    const character = getSelectedCharacter();
+    const state = isWin ? 'win' : 'lose';
+    const src = CHARACTER_OUTCOME_IMAGES?.[character]?.[state];
+    if(!src) return;
+
+    let wrap = document.getElementById('characterOutcomeFx');
+    if(!wrap){
+      wrap = document.createElement('div');
+      wrap.id = 'characterOutcomeFx';
+      wrap.className = 'character-outcome-fx';
+      wrap.innerHTML = '<img alt="角色結果提示">';
+      stageMiddle.appendChild(wrap);
+    }
+
+    const img = wrap.querySelector('img');
+    if(img) img.src = src;
+    wrap.classList.remove('show','win','lose');
+    void wrap.offsetWidth;
+    wrap.classList.add('show', state);
+    clearTimeout(wrap._timer);
+    wrap._timer = setTimeout(()=>{ wrap.classList.remove('show','win','lose'); }, 1000);
+  }
+
   function showResult(text){
     const footerResult = document.getElementById("result");
     const resultWrap = document.getElementById("mazeResultWrap");
@@ -2504,6 +2541,7 @@ window.GamePage = (()=>{
 
   function showInlineRunFeedback(title, body){
     // ✅ 失敗時不要蓋住迷宮，保留目前角色位置，讓學生可以直接觀察走到哪裡。
+    showCharacterOutcomeImage(false);
     const resultWrap = document.getElementById("mazeResultWrap");
     const gridWrap = document.getElementById("gridWrap") || document.querySelector('.gridWrap');
     const footerResult = document.getElementById("result");
@@ -2876,6 +2914,7 @@ window.GamePage = (()=>{
         if (openedEquipmentChest && collectedEquipmentName) rewardSummary.push(`🛡️ 裝備：<b>${collectedEquipmentName}</b>`);
 
         clearProgramDraft(world.worldId, level.levelId);
+        showCharacterOutcomeImage(true);
 
         showResult(buildResultCard(
           "good",
@@ -2998,6 +3037,10 @@ window.GamePage = (()=>{
     if (!hasDraft) {
       maybeShowWorld4HintSpell();
     }
+    // ✅ 草稿／提示積木載入後，再固定起始積木位置。
+    BlocklySetup?.ensureStartBlock?.(workspace);
+    setTimeout(()=> BlocklySetup?.ensureStartBlock?.(workspace), 120);
+    setTimeout(()=> BlocklySetup?.ensureStartBlock?.(workspace), 420);
     // 不再自動載入 levels.js 內嵌的最佳解法，避免學生一進關卡就看到答案。
     // 若開發測試需要，請改用快捷工具手動載入。
     applyMainContrast();

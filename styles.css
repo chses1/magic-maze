@@ -1152,3 +1152,57 @@ body{
     bottom:18px !important;
   }
 }
+
+/* ✅ 角色通關／失敗提示：顯示在迷宮區上方，1 秒後消失 */
+.character-outcome-fx{
+  position:absolute;
+  left:50%;
+  top:10px;
+  transform:translateX(-50%) translateY(-10px) scale(.96);
+  z-index:30;
+  pointer-events:none;
+  opacity:0;
+  transition:opacity .18s ease, transform .18s ease;
+  filter:drop-shadow(0 12px 22px rgba(0,0,0,.22));
+}
+.character-outcome-fx.show{
+  opacity:1;
+  transform:translateX(-50%) translateY(0) scale(1);
+}
+.character-outcome-fx img{
+  display:block;
+  width:min(230px, 42vw);
+  max-height:min(300px, 42vh);
+  object-fit:contain;
+}
+.character-outcome-fx.win img{ animation:characterOutcomePop .42s ease both; }
+.character-outcome-fx.lose img{ animation:characterOutcomeDrop .42s ease both; }
+@keyframes characterOutcomePop{
+  0%{transform:scale(.82) translateY(8px);}
+  60%{transform:scale(1.06) translateY(-4px);}
+  100%{transform:scale(1) translateY(0);}
+}
+@keyframes characterOutcomeDrop{
+  0%{transform:scale(.9) translateY(-4px);}
+  100%{transform:scale(1) translateY(0);}
+}
+
+/* ✅ 三色傳送門改用 img/door1.jpeg、door2.jpeg、door3.jpeg */
+.portal-img{
+  width:calc(var(--maze-cell-size) * .82);
+  height:calc(var(--maze-cell-size) * .82);
+  object-fit:contain;
+  display:inline-block;
+  vertical-align:middle;
+  border-radius:999px;
+  mix-blend-mode:normal;
+  filter:drop-shadow(0 0 6px rgba(49,208,255,.35));
+}
+.portal-img-blue{filter:drop-shadow(0 0 7px rgba(49,208,255,.55));}
+.portal-img-purple{filter:drop-shadow(0 0 7px rgba(168,85,247,.55));}
+.portal-img-red{filter:drop-shadow(0 0 7px rgba(248,113,113,.55));}
+.mapSymbolImg.portal-img{
+  width:24px;
+  height:24px;
+  border-radius:999px;
+}

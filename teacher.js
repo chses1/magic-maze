@@ -1081,9 +1081,9 @@ window.LEVELS = ${JSON.stringify(exported, null, 2)};
 
   function getMapSymbolHtml(symbol){
     const s = String(symbol || '').toUpperCase();
-    if(s === 'P') return '<span class="mapSymbol portal-glyph portal-glyph-blue" aria-label="藍色傳送門"></span>';
-    if(s === 'Q') return '<span class="mapSymbol portal-glyph portal-glyph-purple" aria-label="紫色傳送門"></span>';
-    if(s === 'R') return '<span class="mapSymbol portal-glyph portal-glyph-red" aria-label="紅色傳送門"></span>';
+    if(s === 'P') return '<img class="mapSymbol mapSymbolImg portal-img portal-img-blue" src="img/door1.jpeg" alt="藍色傳送門">';
+    if(s === 'Q') return '<img class="mapSymbol mapSymbolImg portal-img portal-img-purple" src="img/door2.jpeg" alt="紫色傳送門">';
+    if(s === 'R') return '<img class="mapSymbol mapSymbolImg portal-img portal-img-red" src="img/door3.jpeg" alt="紅色傳送門">';
     if(s === 'G') return '<img class="mapSymbol mapSymbolImg symbol-gold-img" src="img/gold.png" alt="裝備寶箱">';
     const meta = MAP_SYMBOLS[s] || MAP_SYMBOLS['.'];
     return `<span class="mapSymbol">${meta.emoji}</span>`;
