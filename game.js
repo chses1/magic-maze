@@ -285,6 +285,8 @@ window.GamePage = (()=>{
     "劍": { atkBonus: 2 }
   };
 
+  const MAX_BUMPS_BEFORE_SAFE_STOP = 3; // ✅ 撞牆達 3 次就安全停止，避免學生程式卡住
+
   let startX = 0, startY = 0;
   let openedItemChest = false;
   let openedEquipmentChest = false;
@@ -2654,7 +2656,7 @@ window.GamePage = (()=>{
 
         if(!canMoveTo(nx, ny)){
           bumps++;
-          if (bumps >= 5) {
+          if (bumps >= MAX_BUMPS_BEFORE_SAFE_STOP) {
             abortRun = true;
             render();
             throw new Error("SAFE_STOP_TOO_MANY_BUMPS");
@@ -2883,9 +2885,9 @@ window.GamePage = (()=>{
         showResult(buildResultCard(
           "warn",
           "安全停止",
-          `角色已撞牆太多次，系統已自動停止程式。<br><b>目前撞牆次數：${bumps}</b>`
+          `角色已撞牆達 ${MAX_BUMPS_BEFORE_SAFE_STOP} 次，系統已自動停止程式。<br><b>目前撞牆次數：${bumps}</b>`
         ));
-        toast("安全停止：撞牆太多次，已自動中止程式。");
+        toast(`安全停止：撞牆達 ${MAX_BUMPS_BEFORE_SAFE_STOP} 次，已自動中止程式。`);
       }else{
         resetRunState();
         showResult(buildResultCard(

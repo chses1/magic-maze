@@ -191,8 +191,11 @@ window.BlocklySetup = (()=>{
     try{ js.STATEMENT_PREFIX = 'await api.__highlight(%1);\n'; }catch(_err){}
 
     registerGenerator(js, "mw_start", function(block){
-      const nextBlock = block.getNextBlock?.();
-      return nextBlock ? js.blockToCode(nextBlock) : "";
+      // ✅ 起始積木本身不產生動作。
+      // Blockly 會自動接著產生 nextStatement 的程式碼；
+      // 如果這裡再手動 blockToCode(nextBlock)，整串指令會被執行兩次，
+      // 看起來就像「最後一個指令跑完後又自動重新開始」。
+      return "";
     });
 
     registerGenerator(js, "mw_move_forward", ()=> "await api.moveForward();\n");
