@@ -2898,11 +2898,15 @@ window.GamePage = (()=>{
         const record = { score, stars, steps, timeMs, bumps, at: Date.now() };
 
         const session = StorageAPI.getSession();
+        const updatedBuild = persistLevelRewards(stars) || getPlayerBuildSummary(session?.userId);
         const improved = StorageAPI.upsertBest(session.userId, levelKey(), record);
         StorageAPI.updateLeaderboard(session, levelKey(), record);
-        const updatedBuild = persistLevelRewards(stars) || getPlayerBuildSummary(session?.userId);
-        // ✅ 道具/裝備/三星加成寫入 localStorage 後，再補同步一次到 MongoDB，避免雲端缺少 meta。
-        try{ StorageAPI.syncLevelRecordToBackend?.(levelKey(), record); }catch(_err){}
+        // ✅ 道具/裝備/三星加成已先寫入 localStorage，再同步到 MongoDB，避免教師後台看不到完整資料。
+        try{
+          StorageAPI.syncLevelRecordToBackend?.(levelKey(), record)
+            ?.then(()=> toast('✅ 成績已同步到後端資料庫。'))
+            ?.catch(err=> toast(`⚠️ 成績已存在本機，但後端同步失敗：${err.message || err}`));
+        }catch(_err){}
         const copy = getLevelCopy(world.worldId, level.levelId);
 
         const starDesc = stars === 3
@@ -3004,6 +3008,23 @@ window.GamePage = (()=>{
     bindMazeAutoFit();
     bindMazeGestureZoom();
     lockTouchZoomGestures();
+
+    // ✅ 舊版學生登入狀態可能沒有後端 token；沒有 token 就無法寫入 MongoDB。
+    const sessionForBackend = StorageAPI?.getSession?.();
+    if (sessionForBackend?.role === 'student' && !sessionForBackend?.token) {
+      alert('目前是舊版登入狀態，成績無法寫入後端資料庫。請回首頁登出後重新登入一次。');
+      location.href = 'index.html';
+      return;
+    }
+
+    window.addEventListener('maze:progressSyncStatus', (event)=>{
+      const detail = event?.detail || {};
+      if (detail.ok) {
+        console.log('成績已同步到 MongoDB：', detail.levelKey);
+      } else if (detail.message) {
+        toast(`⚠️ 成績暫存本機：${detail.message}`);
+      }
+    });
 
     function refreshVisibleTargetBlocksText(targetBlocks){
       const resultWrap = document.getElementById("mazeResultWrap");

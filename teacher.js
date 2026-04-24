@@ -183,13 +183,24 @@ window.TeacherPage = (()=>{
     const isCollapsed = !!collapsed;
 
     if(card) card.classList.toggle('is-collapsed', isCollapsed);
-    if(body) body.hidden = isCollapsed;
+    if(body){
+      body.hidden = isCollapsed;
+      body.style.display = isCollapsed ? 'none' : '';
+    }
     if(btn){
       btn.textContent = isCollapsed ? '展開 ▼' : '最小化 ▲';
       btn.setAttribute('aria-expanded', String(!isCollapsed));
+      btn.dataset.collapsed = isCollapsed ? '1' : '0';
     }
 
     try{ localStorage.setItem(TEACHER_TOOLS_COLLAPSED_KEY, isCollapsed ? '1' : '0'); }catch(_err){}
+  }
+
+  function toggleTeacherToolsCollapsed(){
+    const btn = document.getElementById('btnToggleTeacherTools');
+    const card = document.getElementById('teacherToolsCard');
+    const currentlyCollapsed = btn?.dataset?.collapsed === '1' || card?.classList.contains('is-collapsed');
+    setTeacherToolsCollapsed(!currentlyCollapsed);
   }
 
   function initTeacherToolsCollapse(){
@@ -199,10 +210,16 @@ window.TeacherPage = (()=>{
     })();
     setTeacherToolsCollapsed(saved);
     if(btn){
-      btn.onclick = ()=>{
-        const card = document.getElementById('teacherToolsCard');
-        setTeacherToolsCollapsed(!card?.classList.contains('is-collapsed'));
+      btn.onclick = (e)=>{
+        e.preventDefault();
+        e.stopPropagation();
+        toggleTeacherToolsCollapsed();
       };
+      btn.addEventListener('click', (e)=>{
+        e.preventDefault();
+        e.stopPropagation();
+        toggleTeacherToolsCollapsed();
+      }, { capture:true });
     }
   }
 
@@ -323,6 +340,8 @@ window.TeacherPage = (()=>{
 
     const teacherToolsCard = document.getElementById('teacherToolsCard');
     if(teacherToolsCard) teacherToolsCard.style.display = isTeacher ? '' : 'none';
+    const btnToggleTeacherTools = document.getElementById('btnToggleTeacherTools');
+    if(btnToggleTeacherTools) btnToggleTeacherTools.disabled = false;
 
     const levelEditorCard = document.getElementById('levelEditorCard');
     if(levelEditorCard) levelEditorCard.style.display = isTeacher ? '' : 'none';

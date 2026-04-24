@@ -11,6 +11,7 @@ const LS_KEYS = {
 };
 
 const PROGRAM_STORE_KEY = "maze_saved_programs_v1";
+const PENDING_PROGRESS_SYNC_KEY = "mw_pending_progress_sync_v1";
 const PROTECTED_KEYS = new Set([
   "mw_teacher_best_v1",
   "mw_published_level_overrides_v1",
@@ -192,6 +193,33 @@ function normalizeProgressArrayToMap(progressArray){
   return out;
 }
 
+function getPendingProgressSync(){
+  return loadJSON(PENDING_PROGRESS_SYNC_KEY, []);
+}
+
+function savePendingProgressSync(list){
+  const safe = Array.isArray(list) ? list : [];
+  if(safe.length === 0){
+    localStorage.removeItem(PENDING_PROGRESS_SYNC_KEY);
+    return;
+  }
+  saveJSON(PENDING_PROGRESS_SYNC_KEY, safe.slice(-200));
+}
+
+function queuePendingProgressSync(userId, levelKey, record, meta = {}){
+  if(!userId || !levelKey) return;
+  const list = getPendingProgressSync();
+  const idx = list.findIndex(item => String(item.userId) === String(userId) && String(item.levelKey) === String(levelKey));
+  const item = { userId:String(userId), levelKey:String(levelKey), record:record || {}, meta:meta || {}, queuedAt:Date.now() };
+  if(idx >= 0) list[idx] = item;
+  else list.push(item);
+  savePendingProgressSync(list);
+}
+
+function emitProgressSyncStatus(detail){
+  try{ window.dispatchEvent(new CustomEvent('maze:progressSyncStatus', { detail })); }catch(_err){}
+}
+
 window.StorageAPI = {
   API_BASE,
 
@@ -205,6 +233,7 @@ window.StorageAPI = {
 
   setSession(session){
     saveJSON(LS_KEYS.session, session);
+    try{ window.dispatchEvent(new CustomEvent('maze:sessionChanged', { detail:{ session } })); }catch(_err){}
   },
 
   clearSession(){
@@ -295,21 +324,23 @@ window.StorageAPI = {
       this.saveProgress(progress);
     }
 
-    // 背景同步到 MongoDB；不阻塞遊戲結算畫面。
+    // ✅ 不管是否刷新最佳紀錄，都嘗試同步到 MongoDB。
+    // 這樣即使只是補寫 meta（道具、裝備、三星加成），教師後台也能讀到。
     const s = this.getSession();
-    if(s?.role === "student" && s?.token && String(s.userId) === String(userId)){
-      apiFetch("/api/progress/level", {
-        method: "PUT",
-        body: JSON.stringify({ levelKey, record, meta: progress[userId].meta || {} })
-      }).then(data=>{
-        if(data?.progress){
-          const latest = this.getProgress();
-          latest[userId] = { best: data.progress.best || {}, meta: data.progress.meta || {} };
-          this.saveProgress(latest);
-        }
-      }).catch(err=>{
-        console.warn("成績雲端同步失敗，已先保存在本機：", err.message || err);
-      });
+    if(s?.role === "student" && String(s.userId) === String(userId)){
+      if(s?.token){
+        this.syncLevelRecordToBackend(levelKey, record)
+          .then(()=> emitProgressSyncStatus({ ok:true, levelKey }))
+          .catch(err=>{
+            queuePendingProgressSync(userId, levelKey, record, progress[userId].meta || {});
+            emitProgressSyncStatus({ ok:false, levelKey, message:err.message || String(err) });
+            console.warn("成績雲端同步失敗，已先保存在本機待補傳：", err.message || err);
+          });
+      }else{
+        queuePendingProgressSync(userId, levelKey, record, progress[userId].meta || {});
+        emitProgressSyncStatus({ ok:false, levelKey, message:"目前登入狀態沒有後端 token，請回首頁重新登入一次。" });
+        console.warn("目前登入狀態沒有後端 token，成績已先存在本機，請回首頁重新登入後補傳。")
+      }
     }
 
     return improved;
@@ -318,7 +349,11 @@ window.StorageAPI = {
 
   async syncLevelRecordToBackend(levelKey, record){
     const s = this.getSession();
-    if(!s?.token || s.role !== "student") return null;
+    if(!s?.token || s.role !== "student"){
+      const progress = this.getProgress();
+      queuePendingProgressSync(s?.userId || "", levelKey, record, progress?.[s?.userId]?.meta || {});
+      throw new Error("尚未取得後端登入 token，請回首頁重新登入。");
+    }
     const progress = this.getProgress();
     const meta = progress?.[s.userId]?.meta || {};
     const data = await apiFetch("/api/progress/level", {
@@ -327,10 +362,37 @@ window.StorageAPI = {
     });
     if(data?.progress){
       const latest = this.getProgress();
-      latest[s.userId] = { best: data.progress.best || {}, meta: data.progress.meta || {} };
+      latest[s.userId] = {
+        best: data.progress.best || {},
+        meta: data.progress.meta || {},
+        classId: data.progress.classId || s.classId || String(s.userId).slice(0,3),
+        seat: data.progress.seat || s.seat || String(s.userId).slice(3,5),
+      };
       this.saveProgress(latest);
     }
     return data;
+  },
+
+  async flushPendingProgressToBackend(){
+    const s = this.getSession();
+    if(!s?.token || s.role !== "student") return { ok:false, remaining:getPendingProgressSync().length };
+
+    const pending = getPendingProgressSync();
+    const mine = pending.filter(item => String(item.userId) === String(s.userId));
+    const others = pending.filter(item => String(item.userId) !== String(s.userId));
+    const failed = [];
+
+    for(const item of mine){
+      try{
+        await this.syncLevelRecordToBackend(item.levelKey, item.record || {});
+      }catch(err){
+        failed.push(item);
+        console.warn("補傳成績失敗：", item.levelKey, err.message || err);
+      }
+    }
+
+    savePendingProgressSync(others.concat(failed));
+    return { ok: failed.length === 0, sent: mine.length - failed.length, failed: failed.length, remaining: others.length + failed.length };
   },
 
   updateLeaderboard(session, levelKey, record){

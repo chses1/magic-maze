@@ -36,6 +36,7 @@ window.Auth = {
       };
       StorageAPI.setSession(session);
 
+      try{ await StorageAPI.flushPendingProgressToBackend?.(); }catch(_err){}
       try{ await StorageAPI.syncMyProgressFromBackend(); }catch(_err){}
       return session;
     }catch(err){
