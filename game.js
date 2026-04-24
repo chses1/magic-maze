@@ -2501,6 +2501,26 @@ window.GamePage = (()=>{
     }
   }
 
+
+  function showInlineRunFeedback(title, body){
+    // ✅ 失敗時不要蓋住迷宮，保留目前角色位置，讓學生可以直接觀察走到哪裡。
+    const resultWrap = document.getElementById("mazeResultWrap");
+    const gridWrap = document.getElementById("gridWrap") || document.querySelector('.gridWrap');
+    const footerResult = document.getElementById("result");
+
+    if (resultWrap) {
+      resultWrap.innerHTML = '';
+      resultWrap.hidden = true;
+    }
+    if (gridWrap) {
+      gridWrap.style.display = 'flex';
+    }
+    if (footerResult) {
+      footerResult.style.display = '';
+      footerResult.innerHTML = `<b>${title}</b>｜${body}`;
+    }
+  }
+
   function stopTimers(){
     if(tickTimer) clearInterval(tickTimer);
     tickTimer = null;
@@ -2820,17 +2840,11 @@ window.GamePage = (()=>{
       resetRunState();
       const {score, stars} = scoreAndStars();
       const copy = getLevelCopy(world.worldId, level.levelId);
-      showResult(buildResultCard(
-        "bad",
+      showInlineRunFeedback(
         "這次還沒成功",
-        `${copy.fail}<br><br>程式跑完了，但角色還沒走到出口門。`,
-        `<div class="result-stats">
-          <span class="result-badge">分數：${score}</span>
-          <span class="result-badge">星等：★${stars}</span>
-          <span class="result-badge">未通關不存檔</span>
-        </div>`
-      ));
-      toast(UI.common.needFix);
+        "程式跑完了，但角色還沒走到出口門。請看目前角色位置，調整接下來的積木。"
+      );
+      toast("程式已停止：請觀察目前位置，再調整積木。");
     }catch(err){
       if(err?.message === "WIN"){
         stopTimers();
@@ -2882,19 +2896,17 @@ window.GamePage = (()=>{
         toast(UI.common.stopped);
       }else if(err?.message === "SAFE_STOP_TOO_MANY_BUMPS"){
         resetRunState();
-        showResult(buildResultCard(
-          "warn",
+        showInlineRunFeedback(
           "安全停止",
-          `角色已撞牆達 ${MAX_BUMPS_BEFORE_SAFE_STOP} 次，系統已自動停止程式。<br><b>目前撞牆次數：${bumps}</b>`
-        ));
-        toast(`安全停止：撞牆達 ${MAX_BUMPS_BEFORE_SAFE_STOP} 次，已自動中止程式。`);
+          `角色已撞牆達 ${MAX_BUMPS_BEFORE_SAFE_STOP} 次，系統已自動停止。請看目前位置與方向，再修改積木。`
+        );
+        toast(`安全停止：撞牆達 ${MAX_BUMPS_BEFORE_SAFE_STOP} 次，已保留目前迷宮位置。`);
       }else{
         resetRunState();
-        showResult(buildResultCard(
-          "warn",
+        showInlineRunFeedback(
           "程式執行發生錯誤",
-          `請檢查積木是否完整。<br><b>${String(err?.message || err)}</b>`
-        ));
+          `請檢查積木是否完整。錯誤：${String(err?.message || err)}`
+        );
         toast(UI.common.codeError);
       }
     }
