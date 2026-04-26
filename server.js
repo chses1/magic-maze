@@ -115,6 +115,99 @@ function isBetterRecord(prev, next) {
   return false;
 }
 
+
+function normalizePublicProgressDoc(item = {}) {
+  const userId = String(item.userId || item.studentId || '').trim();
+  if (!/^\d{5}$/.test(userId)) return null;
+  return {
+    ...item,
+    userId,
+    classId: String(item.classId || userId.slice(0, 3)),
+    seat: String(item.seat || userId.slice(3, 5)),
+    best: (item.best && typeof item.best === 'object') ? item.best : {},
+    meta: (item.meta && typeof item.meta === 'object') ? item.meta : {}
+  };
+}
+
+function leaderboardRecordToProgressRecord(item = {}) {
+  return {
+    score: Number(item.score || 0),
+    stars: Number(item.stars || 0),
+    steps: Number(item.steps || 0),
+    timeMs: Number(item.timeMs || 0),
+    updatedAt: item.at || item.updatedAt || now()
+  };
+}
+
+function buildBestFromLeaderboardItems(items = []) {
+  const best = {};
+  for (const item of Array.isArray(items) ? items : []) {
+    const levelKey = normalizeLevelKey(item.levelKey);
+    if (!levelKey) continue;
+    const record = leaderboardRecordToProgressRecord(item);
+    if (isBetterRecord(best[levelKey], record)) best[levelKey] = record;
+  }
+  return best;
+}
+
+async function mergeLeaderboardIntoProgressDoc(doc = {}) {
+  const normalized = normalizePublicProgressDoc(doc);
+  if (!normalized) return null;
+
+  const boardItems = await collections.leaderboard
+    .find({ userId: normalized.userId }, { projection: { _id: 0 } })
+    .toArray();
+
+  if (!boardItems.length) return normalized;
+
+  const boardBest = buildBestFromLeaderboardItems(boardItems);
+  const mergedBest = { ...(normalized.best || {}) };
+  const setPatch = {};
+
+  for (const [levelKey, record] of Object.entries(boardBest)) {
+    const prev = mergedBest[levelKey];
+    if (!prev || isBetterRecord(prev, record)) {
+      mergedBest[levelKey] = record;
+      setPatch[`best.${levelKey}`] = record;
+    }
+  }
+
+  if (Object.keys(setPatch).length > 0) {
+    await collections.progress.updateOne(
+      { userId: normalized.userId },
+      {
+        $setOnInsert: {
+          userId: normalized.userId,
+          classId: normalized.classId,
+          seat: normalized.seat,
+          meta: {},
+          createdAt: now()
+        },
+        $set: {
+          ...setPatch,
+          classId: normalized.classId,
+          seat: normalized.seat,
+          updatedAt: now()
+        }
+      },
+      { upsert: true }
+    );
+  }
+
+  return { ...normalized, best: mergedBest };
+}
+
+function buildClassQuery(classId) {
+  if (!classId) return {};
+  return {
+    $or: [
+      { classId },
+      { userId: { $regex: `^${classId}` } },
+      { studentId: { $regex: `^${classId}` } }
+    ]
+  };
+}
+
 // ✅ Render 根網址測試頁：直接點 Render 網址時會看到這裡
 app.get('/', (req, res) => {
   res.type('html').send(`<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /><title>Magic Maze Backend</title><style>body{font-family:system-ui,-apple-system,"Noto Sans TC",sans-serif;background:#0b1020;color:#e7ecff;padding:32px;line-height:1.7}.card{max-width:760px;margin:auto;background:#111a33;border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:24px;box-shadow:0 16px 40px rgba(0,0,0,.35)}code{background:rgba(255,255,255,.08);padding:3px 6px;border-radius:6px}a{color:#31d0ff}</style></head><body><div class="card"><h1>✅ 程式迷宮後端已啟動</h1><p>這個 Render 網址是後端 API，不是遊戲前端首頁。</p><p>請用 GitHub Pages 開啟遊戲前端；後端只負責登入、成績、排行榜與 MongoDB 存取。</p><p>健康檢查：<a href="/api/health"><code>/api/health</code></a></p></div></body></html>`);
@@ -193,8 +286,18 @@ app.get('/api/me', requireAuth, (req, res) => {
 
 app.get('/api/progress/me', requireAuth, async (req, res) => {
   if (req.user.role !== 'student') return res.json({ ok: true, progress: { best: {}, meta: {} } });
+
+  const fallback = {
+    userId: req.user.userId,
+    classId: req.user.classId || String(req.user.userId).slice(0, 3),
+    seat: req.user.seat || String(req.user.userId).slice(3, 5),
+    best: {},
+    meta: {}
+  };
+
   const progress = await collections.progress.findOne({ userId: req.user.userId }, { projection: { _id: 0 } });
-  res.json({ ok: true, progress: progress || { userId: req.user.userId, best: {}, meta: {} } });
+  const merged = await mergeLeaderboardIntoProgressDoc(progress || fallback);
+  res.json({ ok: true, progress: merged || fallback });
 });
 
 app.put('/api/progress/level', requireAuth, async (req, res) => {
@@ -267,39 +370,52 @@ app.get('/api/leaderboard', requireAuth, async (req, res) => {
 
 app.get('/api/teacher/progress', requireAuth, requireTeacher, async (req, res) => {
   const classId = String(req.query.classId || '').trim();
-  let query = {};
+  const query = buildClassQuery(classId);
 
-  // ✅ 若舊資料的 classId 欄位缺漏，仍可用 userId 前 3 碼找到該班學生。
-  if (classId) {
-    query = {
-      $or: [
-        { classId },
-        { userId: { $regex: `^${classId}` } },
-        { studentId: { $regex: `^${classId}` } }
-      ]
-    };
+  const [progressDocs, userDocs] = await Promise.all([
+    collections.progress
+      .find(query, { projection: { _id: 0 } })
+      .sort({ classId: 1, seat: 1, userId: 1 })
+      .toArray(),
+    collections.users
+      .find({ ...query, role: 'student' }, { projection: { _id: 0 } })
+      .sort({ classId: 1, seat: 1, userId: 1 })
+      .toArray()
+  ]);
+
+  // ✅ 教師後台以 progress.best 為主，但舊資料可能只寫進 leaderboard。
+  // 這裡會把 users、progress、leaderboard 三邊資料合併，並自動回補 progress.best。
+  const byUser = new Map();
+
+  for (const doc of progressDocs) {
+    const normalized = normalizePublicProgressDoc(doc);
+    if (normalized) byUser.set(normalized.userId, normalized);
   }
 
-  const progress = await collections.progress
-    .find(query, { projection: { _id: 0 } })
-    .sort({ classId: 1, seat: 1, userId: 1 })
-    .toArray();
+  for (const user of userDocs) {
+    const normalized = normalizePublicProgressDoc({
+      userId: user.userId,
+      classId: user.classId,
+      seat: user.seat,
+      best: {},
+      meta: {},
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt
+    });
+    if (normalized && !byUser.has(normalized.userId)) byUser.set(normalized.userId, normalized);
+  }
 
-  // ✅ 回傳前再補齊 userId/classId/seat，避免教師前端因欄位不完整而不顯示。
-  const normalized = progress
-    .map(item => {
-      const userId = String(item.userId || item.studentId || '').trim();
-      if (!/^\d{5}$/.test(userId)) return null;
-      return {
-        ...item,
-        userId,
-        classId: String(item.classId || userId.slice(0, 3)),
-        seat: String(item.seat || userId.slice(3, 5)),
-        best: item.best || {},
-        meta: item.meta || {}
-      };
-    })
-    .filter(Boolean);
+  const normalized = (await Promise.all(
+    [...byUser.values()].map(item => mergeLeaderboardIntoProgressDoc(item))
+  ))
+    .filter(Boolean)
+    .sort((a, b) => {
+      const ac = String(a.classId || '').localeCompare(String(b.classId || ''));
+      if (ac) return ac;
+      const as = String(a.seat || '').localeCompare(String(b.seat || ''));
+      if (as) return as;
+      return String(a.userId || '').localeCompare(String(b.userId || ''));
+    });
 
   res.json({ ok: true, count: normalized.length, progress: normalized });
 });
