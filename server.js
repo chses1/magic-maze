@@ -197,8 +197,6 @@ async function mergeLeaderboardIntoProgressDoc(doc = {}) {
       {
         $setOnInsert: {
           userId: normalized.userId,
-          classId: normalized.classId,
-          seat: normalized.seat,
           meta: {},
           createdAt: now()
         },
@@ -333,12 +331,13 @@ app.put('/api/progress/level', requireAuth, async (req, res) => {
   const update = {
     $setOnInsert: {
       userId: req.user.userId,
-      classId: req.user.classId,
-      seat: req.user.seat,
-      meta: {},
       createdAt: now()
     },
-    $set: { updatedAt: now() }
+    $set: {
+      classId: req.user.classId,
+      seat: req.user.seat,
+      updatedAt: now()
+    }
   };
 
   if (shouldUpdate) {
