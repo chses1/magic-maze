@@ -266,15 +266,42 @@ app.get('/api/leaderboard', requireAuth, async (req, res) => {
 });
 
 app.get('/api/teacher/progress', requireAuth, requireTeacher, async (req, res) => {
-  const query = {};
-  if (req.query.classId) query.classId = String(req.query.classId);
+  const classId = String(req.query.classId || '').trim();
+  let query = {};
+
+  // ✅ 若舊資料的 classId 欄位缺漏，仍可用 userId 前 3 碼找到該班學生。
+  if (classId) {
+    query = {
+      $or: [
+        { classId },
+        { userId: { $regex: `^${classId}` } },
+        { studentId: { $regex: `^${classId}` } }
+      ]
+    };
+  }
 
   const progress = await collections.progress
     .find(query, { projection: { _id: 0 } })
-    .sort({ classId: 1, seat: 1 })
+    .sort({ classId: 1, seat: 1, userId: 1 })
     .toArray();
 
-  res.json({ ok: true, progress });
+  // ✅ 回傳前再補齊 userId/classId/seat，避免教師前端因欄位不完整而不顯示。
+  const normalized = progress
+    .map(item => {
+      const userId = String(item.userId || item.studentId || '').trim();
+      if (!/^\d{5}$/.test(userId)) return null;
+      return {
+        ...item,
+        userId,
+        classId: String(item.classId || userId.slice(0, 3)),
+        seat: String(item.seat || userId.slice(3, 5)),
+        best: item.best || {},
+        meta: item.meta || {}
+      };
+    })
+    .filter(Boolean);
+
+  res.json({ ok: true, count: normalized.length, progress: normalized });
 });
 
 app.delete('/api/teacher/student/:userId', requireAuth, requireTeacher, async (req, res) => {

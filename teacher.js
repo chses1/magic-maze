@@ -132,6 +132,15 @@ window.TeacherPage = (()=>{
     if(badge) badge.textContent = text;
   }
 
+  function getLastTeacherSyncResult(){
+    try{
+      const raw = sessionStorage.getItem('mw_last_teacher_sync_result');
+      return raw ? JSON.parse(raw) : null;
+    }catch(_err){
+      return null;
+    }
+  }
+
   function getCurrentFilterClass(){
     return String(document.getElementById('filterClass')?.value || 'all').trim();
   }
@@ -146,10 +155,11 @@ window.TeacherPage = (()=>{
     setTeacherSyncBadge('成績同步中…');
 
     try{
-      await StorageAPI.syncTeacherProgressFromBackend(classId);
+      const remoteMap = await StorageAPI.syncTeacherProgressFromBackend(classId);
       render();
+      const count = Object.keys(remoteMap || {}).filter(uid => /^\d{5}$/.test(uid)).length;
       const timeText = new Date().toLocaleTimeString('zh-TW', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
-      setTeacherSyncBadge(`已同步 ${timeText}｜每 5 秒`);
+      setTeacherSyncBadge(`已同步 ${timeText}｜雲端 ${count} 人｜每 5 秒`);
       if(!silent) toast('✅ 已從 MongoDB 更新學生通關成績。');
       return true;
     }catch(err){
@@ -209,17 +219,14 @@ window.TeacherPage = (()=>{
       try{ return localStorage.getItem(TEACHER_TOOLS_COLLAPSED_KEY) === '1'; }catch(_err){ return false; }
     })();
     setTeacherToolsCollapsed(saved);
-    if(btn){
-      btn.onclick = (e)=>{
-        e.preventDefault();
-        e.stopPropagation();
-        toggleTeacherToolsCollapsed();
-      };
+    if(btn && !btn.dataset.collapseBound){
+      // ✅ 之前同時綁 onclick 和 capture click，會造成「收合後立刻又展開」，看起來像按鈕沒作用。
+      btn.dataset.collapseBound = '1';
       btn.addEventListener('click', (e)=>{
         e.preventDefault();
         e.stopPropagation();
         toggleTeacherToolsCollapsed();
-      }, { capture:true });
+      });
     }
   }
 
@@ -542,7 +549,9 @@ window.TeacherPage = (()=>{
       .filter(stu => !filterClass || filterClass === 'all' || stu.classId === filterClass);
 
     if(allStudents.length === 0){
-      area.innerHTML = '<div class="teacherEmptyState">目前沒有符合條件的學生資料。</div>';
+      const last = getLastTeacherSyncResult();
+      const extra = last ? `<br><br><strong>最近一次 MongoDB 同步：</strong><br>API 讀到 ${Number(last.apiCount || 0)} 筆，前端可辨識 ${Number(last.renderedCount || 0)} 位學生。<br>查詢班級：${last.classId || 'all'}<br>後端：${last.apiBase || ''}` : '';
+      area.innerHTML = `<div class="teacherEmptyState">目前沒有符合條件的學生資料。${extra}<br><br>若 MongoDB 明明有資料，請按「更新列表」；若仍是 0，通常代表教師端還在使用舊版後端或教師登入 token 已過期，請從首頁重新登入教師帳號。</div>`;
       return;
     }
 

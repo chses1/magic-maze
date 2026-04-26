@@ -182,12 +182,22 @@ function purgeUserLocalStorageArtifacts(userId){
 function normalizeProgressArrayToMap(progressArray){
   const out = {};
   (Array.isArray(progressArray) ? progressArray : []).forEach(item=>{
-    if(!item?.userId) return;
-    out[item.userId] = {
-      best: item.best || {},
-      meta: item.meta || {},
-      classId: item.classId || String(item.userId).slice(0,3),
-      seat: item.seat || String(item.userId).slice(3,5),
+    // ✅ 相容不同後端版本或 Mongo 手動檢視時可能看到的欄位名稱。
+    const rawId = item?.userId || item?.studentId || item?.id || item?._id || '';
+    const userId = String(rawId || '').trim();
+    if(!/^\d{5}$/.test(userId)) return;
+
+    const classId = String(item.classId || userId.slice(0,3)).trim();
+    const seat = String(item.seat || userId.slice(3,5)).trim();
+    const best = (item.best && typeof item.best === 'object') ? item.best : {};
+    const meta = (item.meta && typeof item.meta === 'object') ? item.meta : {};
+
+    out[userId] = {
+      best,
+      meta,
+      classId,
+      seat,
+      updatedAt: item.updatedAt || item.at || '',
     };
   });
   return out;
@@ -275,21 +285,35 @@ window.StorageAPI = {
 
   async syncTeacherProgressFromBackend(classId = ""){
     const s = this.getSession();
-    if(!s?.token || s.role !== "teacher") return this.getProgress();
+    if(!s?.token || s.role !== "teacher") {
+      throw new Error("教師登入狀態沒有後端 token，請回首頁重新登入教師帳號。");
+    }
 
-    const q = classId && classId !== "all" ? `?classId=${encodeURIComponent(classId)}` : "";
+    const safeClassId = String(classId || '').trim();
+    const q = safeClassId && safeClassId !== "all" ? `?classId=${encodeURIComponent(safeClassId)}` : "";
     const data = await apiFetch(`/api/teacher/progress${q}`);
     const remoteMap = normalizeProgressArrayToMap(data.progress || []);
 
+    // 記錄最近一次雲端同步結果，教師後台可以直接顯示，方便判斷是「沒有抓到」還是「表格沒有渲染」。
+    try{
+      sessionStorage.setItem('mw_last_teacher_sync_result', JSON.stringify({
+        at: Date.now(),
+        classId: safeClassId || 'all',
+        apiCount: Array.isArray(data.progress) ? data.progress.length : 0,
+        renderedCount: Object.keys(remoteMap).length,
+        apiBase: API_BASE
+      }));
+    }catch(_err){}
+
     // 教師查詢全部時直接以雲端為主；查單班時只覆蓋該班。
-    if(!classId || classId === "all"){
+    if(!safeClassId || safeClassId === "all"){
       this.saveProgress(remoteMap);
       return remoteMap;
     }
 
     const local = this.getProgress();
     Object.keys(local).forEach(uid=>{
-      if(String(uid).slice(0,3) === String(classId)) delete local[uid];
+      if(String(uid).slice(0,3) === String(safeClassId)) delete local[uid];
     });
     Object.assign(local, remoteMap);
     this.saveProgress(local);
