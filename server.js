@@ -17,18 +17,37 @@ if (!MONGODB_URI) throw new Error('缺少 MONGODB_URI，請在 .env 或 Render E
 if (!JWT_SECRET) throw new Error('缺少 JWT_SECRET，請在 .env 或 Render Environment 設定。');
 if (!TEACHER_PASSWORD) throw new Error('缺少 TEACHER_PASSWORD，請在 .env 或 Render Environment 設定。');
 
+function isAllowedOrigin(origin) {
+  // 沒有 origin 的請求通常是 Render 健康檢查、瀏覽器直接開 API、Postman 或 curl。
+  if (!origin) return true;
+
+  // 教學部署階段先採寬鬆策略，避免 GitHub Pages 網址少打一個斜線或換 repo 名就被 CORS 擋住。
+  if (FRONTEND_ORIGIN === '*') return true;
+
+  const allowed = FRONTEND_ORIGIN.split(',').map(s => s.trim()).filter(Boolean);
+  if (allowed.includes(origin)) return true;
+
+  try {
+    const url = new URL(origin);
+    const host = url.hostname.toLowerCase();
+    if (host === 'localhost' || host === '127.0.0.1') return true;
+    if (host.endsWith('.github.io')) return true;
+    if (host.endsWith('.onrender.com')) return true;
+  } catch (_err) {}
+
+  return false;
+}
+
 app.use(cors({
   origin(origin, callback) {
-    // 允許 Postman / curl / 本機沒有 origin 的測試請求
-    if (!origin) return callback(null, true);
-    if (FRONTEND_ORIGIN === '*') return callback(null, true);
-
-    const allowed = FRONTEND_ORIGIN.split(',').map(s => s.trim()).filter(Boolean);
-    if (allowed.includes(origin)) return callback(null, true);
-    return callback(new Error(`CORS blocked: ${origin}`));
+    // 重要：不要 callback(new Error)，否則前端只會看到「後端未啟動」，很難判斷。
+    callback(null, isAllowedOrigin(origin));
   },
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
+app.options('*', cors());
 app.use(express.json({ limit: '1mb' }));
 
 let db;
@@ -464,11 +483,20 @@ async function start() {
     leaderboard: db.collection('leaderboard')
   };
 
-  await collections.users.createIndex({ userId: 1 }, { unique: true });
-  await collections.progress.createIndex({ userId: 1 }, { unique: true });
-  await collections.progress.createIndex({ classId: 1, seat: 1 });
-  await collections.leaderboard.createIndex({ userId: 1, levelKey: 1 }, { unique: true });
-  await collections.leaderboard.createIndex({ classId: 1, levelKey: 1, score: -1, steps: 1 });
+  async function ensureIndex(collection, keys, options = {}) {
+    try {
+      await collection.createIndex(keys, options);
+    } catch (err) {
+      // 若 MongoDB 內已有舊索引或重複資料，不能讓整個 Render 服務直接掛掉。
+      console.warn('Index creation skipped:', keys, err.message);
+    }
+  }
+
+  await ensureIndex(collections.users, { userId: 1 }, { unique: true });
+  await ensureIndex(collections.progress, { userId: 1 }, { unique: true });
+  await ensureIndex(collections.progress, { classId: 1, seat: 1 });
+  await ensureIndex(collections.leaderboard, { userId: 1, levelKey: 1 }, { unique: true });
+  await ensureIndex(collections.leaderboard, { classId: 1, levelKey: 1, score: -1, steps: 1 });
 
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`Magic Maze backend running on port ${PORT}`);
