@@ -255,6 +255,47 @@
     .result-actions .retry{background:linear-gradient(180deg,var(--blue1),var(--blue2));color:#fff}
     .result-actions .back{background:#fff;color:#36533f;border:1px solid var(--line)}
     .result-actions.single{grid-template-columns:1fr}
+
+    /* ✅ iPad 橫向畫面：縮小卡牌與玩家行動按鈕，避免超出底部框架 */
+    @media (orientation: landscape) and (max-height: 920px){
+      body{padding:6px;overflow:hidden;}
+      .page{width:min(calc(100vw - 12px), 1500px);height:calc(100vh - 12px);aspect-ratio:auto;padding:8px;gap:6px;}
+      .top-actions{gap:8px;}
+      .title-wrap{padding:7px 10px;}
+      .toolbar button{padding:8px 12px;border-radius:13px;}
+      .stage{grid-template-rows:auto minmax(250px,1fr) minmax(126px,auto);gap:6px;padding:2px 4px 4px;overflow:hidden;}
+      .stage-top{grid-template-columns:minmax(0,1fr) minmax(250px,360px) minmax(0,1fr);gap:8px;}
+      .panel,.intent-box{padding:7px 10px;border-radius:18px;}
+      .hp-capsule{padding:7px 12px;}
+      .arena{min-height:250px;padding:4px 8px 0;grid-template-columns:minmax(0,1fr) minmax(230px,350px) minmax(0,1fr);gap:8px;}
+      .arena-center{padding-bottom:22px;}
+      .battle-banner{padding:13px 16px;border-radius:20px;}
+      .portrait{padding:6px 0 2px;}
+      .portrait.player-portrait img{max-height:230px;}
+      .portrait.boss-portrait img{max-height:250px;}
+      .stage-bottom{grid-template-columns:1.55fr 1fr;gap:6px;}
+      .card-box,.action-box{padding:7px;border-radius:18px;overflow:hidden;}
+      .section-title{font-size:14px;margin-bottom:5px;}
+      .cards{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;}
+      .action-buttons{gap:6px;}
+      .boss-icon-btn,.action-icon-btn{min-height:82px;border-radius:15px;padding:5px 4px;gap:3px;}
+      .boss-icon-art{width:54px;max-width:100%;padding:2px;border-radius:13px;}
+      .boss-icon-art img{width:48px;height:48px;}
+      .action-icon-art{width:48px;height:48px;font-size:26px;border-radius:13px;}
+      .boss-icon-label,.action-icon-label{font-size:12px;line-height:1.05;}
+      .boss-icon-state,.action-icon-hint{font-size:10px;line-height:1.05;}
+      .inline-log{display:none;}
+    }
+
+    /* ✅ Boss 戰角色成功／失敗圖示：和一般關卡一致，置中顯示 2 秒 */
+    .character-outcome-fx{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:9999;pointer-events:none;opacity:0;transform:scale(.96);transition:opacity .18s ease,transform .18s ease;filter:drop-shadow(0 18px 32px rgba(0,0,0,.28));}
+    .character-outcome-fx.show{opacity:1;transform:scale(1);}
+    .character-outcome-fx img{display:block;width:min(340px,52vw);max-height:min(460px,62vh);object-fit:contain;}
+    .character-outcome-fx.win img{animation:characterOutcomePop .42s ease both;}
+    .character-outcome-fx.lose img{animation:characterOutcomeDrop .42s ease both;}
+    @keyframes characterOutcomePop{0%{transform:scale(.82) translateY(8px);}60%{transform:scale(1.06) translateY(-4px);}100%{transform:scale(1) translateY(0);}}
+    @keyframes characterOutcomeDrop{0%{transform:scale(.9) translateY(-4px);}60%{transform:scale(1.03) translateY(2px);}100%{transform:scale(1) translateY(0);}}
+
     @media (max-width: 1100px) and (orientation: landscape){
       body{padding:8px}
       .page{width:min(100vw - 16px, 1500px);aspect-ratio:16 / 9;min-height:0;padding:10px;gap:8px}
@@ -279,10 +320,10 @@
       .arena-center{padding-bottom:32px}
       .battle-banner{padding:16px 18px}
       .cards{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
-      .boss-icon-btn,.action-icon-btn{min-height:100px;padding:7px 5px}
-      .boss-icon-art{width:min(100%,88px)}
-      .boss-icon-art img{width:78px;height:78px}
-      .action-icon-art{width:64px;height:64px;font-size:30px}
+      .boss-icon-btn,.action-icon-btn{min-height:84px;padding:5px 4px}
+      .boss-icon-art{width:min(100%,58px)}
+      .boss-icon-art img{width:52px;height:52px}
+      .action-icon-art{width:50px;height:50px;font-size:27px}
       .boss-floating-name{display:none !important}
     }
     @media (max-width: 900px){

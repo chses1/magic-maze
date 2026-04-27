@@ -447,6 +447,119 @@ ${elseCode}}
     return ok;
   }
 
+  function installLongPressTooltips(workspace, containerId){
+    if(!workspace || workspace.__mwLongPressHintsInstalled) return;
+    workspace.__mwLongPressHintsInstalled = true;
+
+    const container = typeof containerId === 'string' ? document.getElementById(containerId) : containerId;
+    if(!container) return;
+
+    let timer = null;
+    let startX = 0;
+    let startY = 0;
+    let activeBlock = null;
+
+    function ensureBox(){
+      let box = document.getElementById('mwBlocklyLongPressHint');
+      if(!box){
+        box = document.createElement('div');
+        box.id = 'mwBlocklyLongPressHint';
+        box.style.cssText = 'position:fixed;z-index:99999;max-width:min(360px,calc(100vw - 32px));background:#111827;color:#fff;padding:10px 12px;border-radius:14px;box-shadow:0 14px 34px rgba(0,0,0,.28);font:800 14px/1.55 system-ui,-apple-system,"Noto Sans TC",sans-serif;pointer-events:none;opacity:0;transform:translateY(6px);transition:opacity .16s ease,transform .16s ease;';
+        document.body.appendChild(box);
+      }
+      return box;
+    }
+
+    function hideBox(){
+      const box = document.getElementById('mwBlocklyLongPressHint');
+      if(box){
+        box.style.opacity = '0';
+        box.style.transform = 'translateY(6px)';
+      }
+    }
+
+    function findBlockFromEventTarget(target){
+      let node = target;
+      while(node && node !== container){
+        const id = node.getAttribute?.('data-id') || node.getAttribute?.('id') || '';
+        if(id && workspace.getBlockById){
+          const direct = workspace.getBlockById(id);
+          if(direct) return direct;
+        }
+        // Blockly SVG 的 group 有時不直接放 id，從祖先 class 找到後再檢查子節點資料。
+        if(node.classList && (node.classList.contains('blocklyDraggable') || node.classList.contains('blocklyBlockCanvas'))){
+          const dataId = node.getAttribute?.('data-id') || node.id || '';
+          if(dataId && workspace.getBlockById){
+            const block = workspace.getBlockById(dataId);
+            if(block) return block;
+          }
+        }
+        node = node.parentNode;
+      }
+      try{
+        const selected = Blockly?.selected;
+        if(selected && workspace.getBlockById?.(selected.id)) return selected;
+      }catch(_err){}
+      return null;
+    }
+
+    function getBlockTooltip(block){
+      if(!block) return '';
+      try{
+        const tip = typeof block.getTooltip === 'function' ? block.getTooltip() : block.tooltip;
+        if(typeof tip === 'function') return String(tip.call(block) || '').trim();
+        return String(tip || '').trim();
+      }catch(_err){ return ''; }
+    }
+
+    function showBox(block, x, y){
+      const tip = getBlockTooltip(block);
+      if(!tip) return;
+      const box = ensureBox();
+      box.innerHTML = `<div style="color:#fde68a;margin-bottom:2px;">💡 長按提示</div><div>${tip.replace(/[&<>]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[ch]))}</div>`;
+      const left = Math.min(window.innerWidth - 24, Math.max(16, x + 12));
+      const top = Math.min(window.innerHeight - 24, Math.max(16, y + 12));
+      box.style.left = left + 'px';
+      box.style.top = top + 'px';
+      box.style.opacity = '1';
+      box.style.transform = 'translateY(0)';
+      clearTimeout(box._hideTimer);
+      box._hideTimer = setTimeout(hideBox, 2600);
+    }
+
+    function clearTimer(){
+      if(timer) clearTimeout(timer);
+      timer = null;
+      activeBlock = null;
+    }
+
+    container.addEventListener('touchstart', (event)=>{
+      const touch = event.touches?.[0];
+      if(!touch) return;
+      activeBlock = findBlockFromEventTarget(event.target);
+      if(!activeBlock) return;
+      startX = touch.clientX;
+      startY = touch.clientY;
+      clearTimeout(timer);
+      timer = setTimeout(()=>{
+        showBox(activeBlock, startX, startY);
+        timer = null;
+      }, 620);
+    }, { passive:true });
+
+    container.addEventListener('touchmove', (event)=>{
+      const touch = event.touches?.[0];
+      if(!touch) return;
+      if(Math.hypot(touch.clientX - startX, touch.clientY - startY) > 12){
+        clearTimer();
+      }
+    }, { passive:true });
+
+    ['touchend','touchcancel','pointerdown','mousedown','wheel'].forEach(type=>{
+      container.addEventListener(type, ()=>{ clearTimer(); if(type !== 'touchend') hideBox(); }, { passive:true });
+    });
+  }
+
   function createWorkspace(containerId, worldId, opts = {}){
     ensureDefinitions();
 
@@ -478,6 +591,7 @@ ${elseCode}}
       }
     }
 
+    installLongPressTooltips(workspace, containerId);
     return workspace;
   }
 

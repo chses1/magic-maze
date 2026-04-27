@@ -14,6 +14,15 @@
 
   const worldId = normalizeWorldId(qs('world') || 'world1');
 
+  const CHARACTER_OUTCOME_IMAGES = {
+    boy: { win: 'img/boy-win.png', lose: 'img/boy-lose.png' },
+    girl: { win: 'img/girl-win.png', lose: 'img/girl-lose.png' }
+  };
+
+  function sleep(ms){
+    return new Promise(resolve => window.setTimeout(resolve, ms));
+  }
+
   const WORLD_CONFIG = {
     world1: {
       worldLabel: '世界1｜魔法學院',
@@ -890,6 +899,7 @@
       cards: getCardsForBoss(),
       log: [`戰鬥開始！先觀察${config.bossShortName}的下一招，再決定是否防禦或進攻。`, `本世界裝備：${(inventory.equipments || []).length ? inventory.equipments.join('、') : '尚未取得'}。玩家加成：生命 +${Number(inventory.hpBonus || 0)}、攻擊 +${Number(inventory.atkBonus || 0)}、防禦 +${Number(inventory.defBonus || 0)}。`],
       finished: false,
+      busy: false,
       startedAt: Date.now(),
       fxText: '⚔️ Boss 戰開始！',
       lastBossAction: '尚未行動',
@@ -1321,8 +1331,40 @@
     syncTeacherBossToolUi();
   }
 
+  function getSelectedCharacter(){
+    try{
+      const s = StorageAPI?.getSession?.() || null;
+      const character = String(s?.character || bossState?.playerCharacter?.key || 'boy').trim().toLowerCase();
+      return character === 'girl' ? 'girl' : 'boy';
+    }catch(_err){
+      return 'boy';
+    }
+  }
+
+  function showCharacterOutcomeImage(isWin){
+    const src = CHARACTER_OUTCOME_IMAGES?.[getSelectedCharacter()]?.[isWin ? 'win' : 'lose'];
+    if(!src) return;
+    let wrap = document.getElementById('characterOutcomeFx');
+    if(!wrap){
+      wrap = document.createElement('div');
+      wrap.id = 'characterOutcomeFx';
+      wrap.className = 'character-outcome-fx';
+      wrap.innerHTML = '<img alt="角色戰鬥結果">';
+      document.body.appendChild(wrap);
+    }
+    const img = wrap.querySelector('img');
+    if(img) img.src = src;
+    wrap.classList.remove('show','win','lose');
+    void wrap.offsetWidth;
+    wrap.classList.add('show', isWin ? 'win' : 'lose');
+    clearTimeout(wrap._timer);
+    wrap._timer = setTimeout(()=> wrap.classList.remove('show','win','lose'), 2000);
+  }
+
   function finishBossBattle(win){
     bossState.finished = true;
+    bossState.busy = false;
+    showCharacterOutcomeImage(!!win);
     saveBossResult(win);
     render();
 
@@ -1382,8 +1424,9 @@
     if (backLevelBtn) backLevelBtn.onclick = goBackToLevelSelect;
   }
 
-  function playerBossAction(actionKey){
-    if (!bossState || bossState.finished) return;
+  async function playerBossAction(actionKey){
+    if (!bossState || bossState.finished || bossState.busy) return;
+    bossState.busy = true;
 
     const mechanics = getBossMechanics();
     registerPlayerAction(actionKey === 'basic' ? 'basic' : (['defend','focus','skip'].includes(actionKey) ? actionKey : 'card'));
@@ -1442,7 +1485,7 @@
       setBattleBanner('先觀察局勢', `看看${config.bossShortName}接下來想做什麼`);
     } else {
       const card = bossState.cards.find(c => c.key === actionKey);
-      if (!card || card.used || card.locked) return;
+      if (!card || card.used || card.locked) { bossState.busy = false; return; }
       card.used = true;
       bossState.lastPlayerAction = `使用卡牌：${card.title}`;
       const prevFreezeTurns = Number(bossState.bossFreezeTurns || 0);
@@ -1490,12 +1533,22 @@
     }
 
     syncBossPhase();
+    render();
     if (bossState.bossHp <= 0) {
       finishBossBattle(true);
       return;
     }
 
+    // ✅ 回合節奏：玩家先出招並顯示結果，再輪到 Boss 後行。
+    await sleep(850);
+    if (!bossState || bossState.finished) return;
+    setBattleBanner(`${config.bossShortName}準備行動`, 'Boss 後行，請觀察結果');
+    render();
+    await sleep(450);
+
     bossTakeTurn();
+    render();
+    await sleep(850);
     if (bossState.playerHp <= 0) {
       finishBossBattle(false);
       return;
@@ -1503,6 +1556,7 @@
 
     decayPlayerShield();
     bossState.turn += 1;
+    bossState.busy = false;
     render();
   }
 
@@ -1530,7 +1584,7 @@
         note: card.locked ? '先在一般關拿到這個道具，Boss 戰才會開放。' : '點確認後才會真正使用這張卡，避免 iPad 誤觸。',
         confirmText: '確認使用',
         confirmClass: 'boss-action-confirm',
-        disabled: !!(card.used || card.locked || bossState.finished)
+        disabled: !!(card.used || card.locked || bossState.finished || bossState.busy)
       };
     }
     const meta = ACTION_META[actionKey];
@@ -1547,7 +1601,7 @@
       note: '點確認後才會真正執行，避免 iPad 誤觸。',
       confirmText: meta.confirm,
       confirmClass: `boss-action-confirm ${meta.buttonClass === 'danger' ? 'danger' : ''}`.trim(),
-      disabled: !!bossState.finished
+      disabled: !!(bossState.finished || bossState.busy)
     };
   }
 
@@ -1600,7 +1654,7 @@
   }
 
   function handleActionSelection(actionKey){
-    if (!actionKey || bossState?.finished) return;
+    if (!actionKey || bossState?.finished || bossState?.busy) return;
     if (hasSeenActionHint(actionKey)) {
       playerBossAction(actionKey);
       return;
@@ -1611,7 +1665,7 @@
 
   function actionButtonsHtml(){
     return Object.entries(ACTION_META).map(([key, meta]) => `
-      <button type="button" class="action-icon-btn ${meta.buttonClass}" data-action="${key}" ${bossState.finished ? 'disabled' : ''}>
+      <button type="button" class="action-icon-btn ${meta.buttonClass}" data-action="${key}" ${(bossState.finished || bossState.busy) ? 'disabled' : ''}>
         <span class="action-icon-art">${meta.icon}</span>
         <span class="action-icon-label">${meta.label}</span>
         <span class="action-icon-hint">${hasSeenActionHint(key) ? '再次點擊發動' : '首次點擊說明'}</span>
@@ -1629,7 +1683,7 @@
         : '🧩';
       return `
         <div class="boss-card">
-          <button type="button" class="boss-icon-btn ${stateClass}" data-card="${card.key}" ${card.used || card.locked || bossState.finished ? 'disabled' : ''}>
+          <button type="button" class="boss-icon-btn ${stateClass}" data-card="${card.key}" ${card.used || card.locked || bossState.finished || bossState.busy ? 'disabled' : ''}>
             <span class="boss-icon-art">${cardImgHtml}</span>
             <span class="boss-icon-label">${card.title}</span>
             <span class="boss-icon-state">${stateText}</span>
