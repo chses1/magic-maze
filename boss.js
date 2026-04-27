@@ -1495,6 +1495,33 @@
     wrap._timer = setTimeout(()=> wrap.classList.remove('show','win','lose'), 2000);
   }
 
+  function isFinalWorldVictory(win){
+    return !!win && worldId === 'world4' && !config.nextWorld;
+  }
+
+  function renderFinalVictoryHtml(turnsUsed, score){
+    return `
+      <div class="result-inner final-victory-screen" style="max-height:min(88vh,900px);overflow:auto;text-align:center;">
+        <img
+          src="img/victory.jpeg"
+          alt="恭喜闖關成功"
+          style="display:block;width:100%;max-width:980px;margin:0 auto 16px;border-radius:22px;box-shadow:0 18px 42px rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.28);"
+        >
+        <h3 style="margin-top:0;">恭喜闖關成功！</h3>
+        <p style="font-weight:800;">你成功擊敗機械主宰，完成四個世界的所有冒險！</p>
+        <div class="result-badges" style="justify-content:center;">
+          <span>回合數：${turnsUsed}</span>
+          <span>剩餘生命：${bossState.playerHp}</span>
+          <span>Boss 分數：${score}</span>
+        </div>
+        <div class="result-actions" style="margin-top:18px;justify-content:center;">
+          <button type="button" class="next" id="resultBackHome">返回選關頁面</button>
+          <button type="button" class="retry" id="resultRetryWin">重新挑戰最終 Boss</button>
+        </div>
+      </div>
+    `;
+  }
+
   function finishBossBattle(win){
     bossState.finished = true;
     bossState.busy = false;
@@ -1507,8 +1534,8 @@
     const score = Math.max(100, 1500 - (turnsUsed - 1) * 70 - Math.max(0, bossState.playerMaxHp - bossState.playerHp) * 5);
 
     if (win) {
-      resultEl.className = 'result-card good';
-      resultEl.innerHTML = `
+      resultEl.className = isFinalWorldVictory(win) ? 'result-card good final-victory-card' : 'result-card good';
+      resultEl.innerHTML = isFinalWorldVictory(win) ? renderFinalVictoryHtml(turnsUsed, score) : `
         <div class="result-inner" style="max-height:min(88vh,900px);overflow:auto;">
           <h3>Boss 戰勝利！</h3>
           <p>${config.winText}<br>${config.nextWorld ? '你不只通關了，還學會了新的程式能力。先看完下面的新指令說明，再前往下一個世界第 1 關。' : '你已完成目前所有世界，現在可以返回選關頁面繼續挑戰其他關卡。'}</p>
