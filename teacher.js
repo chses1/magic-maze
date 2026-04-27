@@ -869,37 +869,32 @@ window.TeacherPage = (()=>{
     const picked = validateToolSelection('載入最佳解法', false);
     if(!picked) return;
 
-    const raw = localStorage.getItem(solutionKey(picked.world, picked.level));
-    if(!raw){
-      toast(`這一關還沒有儲存最佳解法：${picked.world} / ${picked.level}`);
+    const best = findBestSolution(picked.world, picked.level);
+    if(!best?.blockly){
+      toast(`這一關還沒有儲存或內嵌最佳解法：${picked.world} / ${picked.level}`);
       return;
     }
 
-    try{
-      JSON.parse(raw);
-      rememberTeacherAction('loadBest', picked);
-      toast(`已找到最佳解法，將前往 ${picked.world} / ${picked.level}。進入後可用教師工具載入。`);
-      await openSelectedLevel(picked);
-    }catch(err){
-      toast('最佳解法資料損壞，請重新儲存。');
-    }
+    rememberTeacherAction('loadBest', picked);
+    const sourceText = best.source === 'levels.js' ? 'levels.js 內嵌資料' : '本機儲存';
+    toast(`已找到最佳解法（來源：${sourceText}），將前往 ${picked.world} / ${picked.level}。進入後可用教師工具載入。`);
+    await openSelectedLevel(picked);
   }
 
   function syncBestCode(){
     const picked = validateToolSelection('同步最佳程式碼數', false);
     if(!picked) return;
 
-    const raw = localStorage.getItem(solutionKey(picked.world, picked.level));
-    if(!raw){
-      toast(`這一關還沒有儲存最佳解法：${picked.world} / ${picked.level}`);
+    const payload = findBestSolution(picked.world, picked.level);
+    if(!payload?.blockly){
+      toast(`這一關還沒有儲存或內嵌最佳解法：${picked.world} / ${picked.level}`);
       return;
     }
 
     try{
-      const payload = JSON.parse(raw);
-      const targetBlocks = Number(payload?.targetBlocks || payload?.bestSteps || payload?.steps || 0);
+      const targetBlocks = Number(payload?.targetBlocks || 0);
       if(!(targetBlocks > 0)){
-        toast('這份最佳解法還沒有程式碼數資訊。請先進入關卡整理好最佳解法後重新儲存，再同步。');
+        toast('這份最佳解法還沒有程式碼數資訊。請先進入關卡載入最佳解法，再同步最佳程式碼數。');
         return;
       }
 
@@ -951,6 +946,27 @@ window.TeacherPage = (()=>{
       if(payload) return payload;
     }
     return null;
+  }
+
+
+  function findEmbeddedBestSolution(worldId, levelId){
+    const worldKey = normalizeWorldId(worldId);
+    const levelKey = normalizeLevelId(levelId, worldKey);
+    const world = getLevelsData().find(w => normalizeWorldId(w?.worldId) === worldKey);
+    if(!world || !Array.isArray(world.levels)) return null;
+    const level = world.levels.find(lv => normalizeLevelId(lv?.levelId, worldKey) === levelKey);
+    if(!level || isBossLevel(level.levelId)) return null;
+    const payload = normalizeSolutionPayload({
+      blockly: level.bestXml,
+      targetBlocks: level.targetBlocks || level.targetSteps,
+      source: 'levels.js'
+    });
+    if(payload) payload.source = 'levels.js';
+    return payload;
+  }
+
+  function findBestSolution(worldId, levelId){
+    return findStoredBestSolution(worldId, levelId) || findEmbeddedBestSolution(worldId, levelId);
   }
 
   function downloadTextFile(filename, content){

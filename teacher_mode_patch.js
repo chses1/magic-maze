@@ -3,6 +3,7 @@
   const LEVEL_TARGET_BLOCK_OVERRIDE_KEY = 'mw_published_level_overrides_v1';
   const PANEL_SHORTCUT_TOGGLE = 'Ctrl+Shift+T';
   const PANEL_SHORTCUT_LOAD = 'Ctrl+Shift+L';
+  const TEACHER_ACTION_KEY = 'maze_teacher_pending_action';
 
   function getSession(){
     try{
@@ -72,6 +73,81 @@
 
   function levelOverrideKey(world, level){
     return `${normalizeWorldId(world)}-${normalizeLevelId(level)}`;
+  }
+
+
+  function getLevelsData(){
+    return Array.isArray(window.LEVELS) ? window.LEVELS : [];
+  }
+
+  function findEmbeddedLevel(worldId, levelId){
+    const targetWorld = normalizeWorldId(worldId);
+    const targetLevel = normalizeLevelId(levelId);
+    if (!targetWorld || !targetLevel) return null;
+    const worldData = getLevelsData().find(w => normalizeWorldId(w?.worldId) === targetWorld);
+    if (!worldData || !Array.isArray(worldData.levels)) return null;
+    return worldData.levels.find(lv => normalizeLevelId(lv?.levelId) === targetLevel) || null;
+  }
+
+  function normalizeSolutionPayload(raw, fallback = {}){
+    try{
+      const payload = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      if (!payload || typeof payload !== 'object') return null;
+      const blockly = typeof payload.blockly === 'string'
+        ? payload.blockly
+        : (typeof payload.bestXml === 'string' ? payload.bestXml : '');
+      if (!blockly.trim()) return null;
+      const targetBlocks = Number(payload?.targetBlocks || payload?.bestSteps || payload?.steps || fallback?.targetBlocks || 0);
+      return {
+        blockly,
+        targetBlocks: Number.isFinite(targetBlocks) && targetBlocks > 0 ? targetBlocks : 0,
+        source: fallback?.source || payload?.source || 'localStorage'
+      };
+    }catch(_err){
+      return null;
+    }
+  }
+
+  function getCandidateSolutionKeys(world, level){
+    const normalizedWorld = normalizeWorldId(world);
+    const normalizedLevel = normalizeLevelId(level);
+    const worldNum = String(normalizedWorld).replace(/^W/i, '');
+    const levelNum = String(normalizedLevel).replace(/^L/i, '');
+    const keys = [
+      solutionKey(world, level),
+      solutionKey(normalizedWorld, normalizedLevel)
+    ];
+    if (worldNum) keys.push(solutionKey(`world${worldNum}`, level));
+    if (levelNum) keys.push(solutionKey(world, `level${levelNum}`));
+    if (worldNum && levelNum) {
+      keys.push(solutionKey(`world${worldNum}`, `level${levelNum}`));
+      keys.push(solutionKey(`W${worldNum}`, `L${levelNum}`));
+    }
+    return [...new Set(keys)];
+  }
+
+  function findStoredBestSolution(world, level){
+    for (const key of getCandidateSolutionKeys(world, level)){
+      const raw = localStorage.getItem(key);
+      if (!raw) continue;
+      const payload = normalizeSolutionPayload(raw, { source:'localStorage' });
+      if (payload) return payload;
+    }
+    return null;
+  }
+
+  function findEmbeddedBestSolution(world, level){
+    const lv = findEmbeddedLevel(world, level);
+    if (!lv) return null;
+    return normalizeSolutionPayload({
+      blockly: lv.bestXml,
+      targetBlocks: lv.targetBlocks || lv.targetSteps,
+      source: 'levels.js'
+    }, { source:'levels.js' });
+  }
+
+  function findBestSolution(world, level){
+    return findStoredBestSolution(world, level) || findEmbeddedBestSolution(world, level);
   }
 
   function getStoredTargetBlockOverrides(){
@@ -190,26 +266,25 @@
     if (!canUseDeveloperTools()) return false;
     const { world, level } = detectWorldLevel();
     if (!world || !level || isBossLevel(level)) return false;
-    const raw = localStorage.getItem(solutionKey(world, level));
-    if (!raw) {
-      if (!auto) toast('這一關還沒有儲存最佳解法。');
-      return false;
-    }
     const workspace = getBlocklyWorkspace();
     if (!workspace) {
       if (!auto) toast('Blockly 還沒準備好，稍後再試。');
       return false;
     }
-    try{
-      const payload = JSON.parse(raw);
-      const ok = textToWorkspace(payload.blockly, workspace);
-      if (ok && !auto) toast(`已載入 ${world} / ${level} 的最佳解法`);
-      return ok;
-    }catch(err){
-      console.error(err);
-      if (!auto) toast('最佳解法資料損壞，請重新儲存。');
+
+    const payload = findBestSolution(world, level);
+    if (!payload?.blockly) {
+      if (!auto) toast('這一關還沒有儲存或內嵌最佳解法。');
       return false;
     }
+
+    const ok = textToWorkspace(payload.blockly, workspace);
+    if (ok && !auto) {
+      const sourceText = payload.source === 'levels.js' ? 'levels.js 內嵌資料' : '本機儲存';
+      toast(`已載入 ${world} / ${level} 的最佳解法（來源：${sourceText}）`);
+    }
+    if (!ok && !auto) toast('最佳解法資料無法載入，請重新匯出 levels.js 或重新儲存。');
+    return ok;
   }
 
   function syncBestCode(){
@@ -218,25 +293,30 @@
     if (!world || !level) return toast('找不到目前關卡。');
     if (isBossLevel(level)) return toast('Boss 戰沒有一般關卡的最佳程式碼數設定。');
 
-    const raw = localStorage.getItem(solutionKey(world, level));
-    if (!raw) return toast('這一關還沒有儲存最佳解法，不能同步最佳程式碼數。');
+    const payload = findBestSolution(world, level);
+    if (!payload?.blockly) return toast('這一關還沒有儲存或內嵌最佳解法，不能同步最佳程式碼數。');
 
     try{
-      const payload = JSON.parse(raw);
       const currentCodeBlocks = getCurrentProgramBlockCount();
-      let targetBlocks = Number(payload?.targetBlocks || payload?.bestSteps || payload?.steps || 0);
+      let targetBlocks = Number(payload?.targetBlocks || 0);
 
       if (currentCodeBlocks > 0) {
         targetBlocks = currentCodeBlocks;
       }
 
       if (!Number.isFinite(targetBlocks) || targetBlocks <= 0) {
-        return toast('找不到已儲存的最佳程式碼數。請先載入最佳解法並確認工作區有積木，再按「同步最佳程式碼數」。');
+        return toast('找不到最佳程式碼數。請先載入最佳解法並確認工作區有積木，再按「同步最佳程式碼數」。');
       }
 
-      payload.targetBlocks = targetBlocks;
-      payload.syncedAt = Date.now();
-      localStorage.setItem(solutionKey(world, level), JSON.stringify(payload));
+      const storedPayload = {
+        world,
+        level,
+        savedAt: Date.now(),
+        blockly: payload.blockly,
+        targetBlocks,
+        source: payload.source || 'unknown'
+      };
+      localStorage.setItem(solutionKey(world, level), JSON.stringify(storedPayload));
 
       const overrides = getStoredTargetBlockOverrides();
       overrides[levelOverrideKey(world, level)] = {
@@ -366,6 +446,25 @@
     });
   }
 
+  function consumePendingTeacherAction(){
+    try{
+      const raw = sessionStorage.getItem(TEACHER_ACTION_KEY);
+      if (!raw) return;
+      const action = JSON.parse(raw);
+      if (action?.action !== 'loadBest') return;
+      const { world, level } = detectWorldLevel();
+      if (normalizeWorldId(action.world) !== normalizeWorldId(world)) return;
+      if (normalizeLevelId(action.level) !== normalizeLevelId(level)) return;
+      sessionStorage.removeItem(TEACHER_ACTION_KEY);
+      window.setTimeout(()=>{
+        const ok = loadBestSolution(false);
+        if (!ok) toast('已進入關卡，但目前無法自動載入最佳解法。請再按一次「載入最佳解法」。');
+      }, 450);
+    }catch(err){
+      console.warn('讀取教師待執行動作失敗', err);
+    }
+  }
+
   function init(){
     if (!canUseDeveloperTools()) {
       hidePanel();
@@ -373,6 +472,7 @@
     }
     injectPanel();
     setupKeyboardShortcut();
+    consumePendingTeacherAction();
   }
 
   if (document.readyState === 'loading') {
