@@ -232,7 +232,7 @@ app.get('/', (req, res) => {
 
 // ✅ API 路由清單，方便老師檢查後端功能
 app.get('/api', (req, res) => {
-  res.json({ ok: true, service: 'magic-maze-backend', message: '後端 API 正常運作。遊戲前端請使用 GitHub Pages 開啟。', endpoints: ['GET /api/health','POST /api/auth/student','POST /api/auth/teacher','GET /api/progress/me','PUT /api/progress/level','GET /api/leaderboard','GET /api/teacher/progress'] });
+  res.json({ ok: true, service: 'magic-maze-backend', message: '後端 API 正常運作。遊戲前端請使用 GitHub Pages 開啟。', endpoints: ['GET /api/health','POST /api/auth/student','POST /api/auth/teacher','GET /api/progress/me','GET /api/progress/class','PUT /api/progress/level','GET /api/leaderboard','GET /api/teacher/progress'] });
 });
 
 app.get('/api/health', async (req, res) => {
@@ -315,6 +315,55 @@ app.get('/api/progress/me', requireAuth, async (req, res) => {
   const progress = await collections.progress.findOne({ userId: req.user.userId }, { projection: { _id: 0 } });
   const merged = await mergeLeaderboardIntoProgressDoc(progress || fallback);
   res.json({ ok: true, progress: merged || fallback });
+});
+
+// ✅ 學生首頁「本班闖關總覽」使用：只允許學生讀取自己班級的進度。
+app.get('/api/progress/class', requireAuth, async (req, res) => {
+  if (req.user.role !== 'student') {
+    return res.status(403).json({ ok: false, message: '只有學生可以讀取本班進度。' });
+  }
+
+  const userId = normalizeStudentId(req.user.userId);
+  const classId = String(req.user.classId || userId?.slice(0, 3) || '').trim();
+  if (!userId || !/^\d{3}$/.test(classId)) {
+    return res.status(400).json({ ok: false, message: '找不到學生班級資料，請重新登入。' });
+  }
+
+  const query = buildClassQuery(classId);
+  const [progressDocs, userDocs] = await Promise.all([
+    collections.progress.find(query, { projection: { _id: 0 } }).sort({ classId: 1, seat: 1, userId: 1 }).toArray(),
+    collections.users.find({ ...query, role: 'student' }, { projection: { _id: 0 } }).sort({ classId: 1, seat: 1, userId: 1 }).toArray()
+  ]);
+
+  const byUser = new Map();
+  for (const doc of progressDocs) {
+    const normalized = normalizePublicProgressDoc(doc);
+    if (normalized && normalized.classId === classId) byUser.set(normalized.userId, normalized);
+  }
+
+  for (const user of userDocs) {
+    const normalized = normalizePublicProgressDoc({
+      userId: user.userId,
+      classId: user.classId,
+      seat: user.seat,
+      best: {},
+      meta: {},
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt
+    });
+    if (normalized && normalized.classId === classId && !byUser.has(normalized.userId)) byUser.set(normalized.userId, normalized);
+  }
+
+  if (!byUser.has(userId)) {
+    byUser.set(userId, { userId, classId, seat: String(req.user.seat || userId.slice(3, 5)), best: {}, meta: {} });
+  }
+
+  const normalized = (await Promise.all([...byUser.values()].map(item => mergeLeaderboardIntoProgressDoc(item))))
+    .filter(Boolean)
+    .filter(item => String(item.classId || '') === classId)
+    .sort((a, b) => String(a.seat || '').localeCompare(String(b.seat || '')) || String(a.userId || '').localeCompare(String(b.userId || '')));
+
+  res.json({ ok: true, classId, count: normalized.length, progress: normalized });
 });
 
 app.put('/api/progress/level', requireAuth, async (req, res) => {

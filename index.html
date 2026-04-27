@@ -988,6 +988,12 @@
         label: String(level.levelId || '').replace(/^L/i, 'L'),
         isBoss: false
       }));
+      normalLevels.push({
+        worldId,
+        levelId: 'boss',
+        label: 'Boss',
+        isBoss: true
+      });
       return normalLevels;
     });
   }
@@ -1064,11 +1070,15 @@
     const worldGroups = LEVELS.map(world => ({
       worldId: normalizeWorldId(world.worldId),
       worldName: getDisplayWorldName(world),
-      count: getHomeNormalLevels(world).length
+      count: getHomeNormalLevels(world).length + 1
     }));
 
     const headerTop = worldGroups.map(group => `<th class="world-head world-${group.worldId}" colspan="${group.count}">${group.worldName}</th>`).join('');
-    const headerBottom = LEVELS.flatMap(world => getHomeNormalLevels(world).map((level, idx) => `<th class="level-head">L${idx + 1}</th>`)).join('');
+    const headerBottom = LEVELS.flatMap(world => {
+      const normal = getHomeNormalLevels(world).map((level, idx) => `<th class="level-head">L${idx + 1}</th>`);
+      normal.push('<th class="level-head">Boss</th>');
+      return normal;
+    }).join('');
 
     const tableRows = classStudents.map(stu => {
       const isCurrent = stu.uid === s.userId;
@@ -1129,6 +1139,7 @@
       return;
     }
 
+    try{ await StorageAPI.syncClassProgressFromBackend(); }catch(err){ console.warn('登入後同步本班進度失敗：', err); }
     toast('登入成功！請選關開始。');
     renderSession();
     renderWorlds();
@@ -1169,9 +1180,25 @@
   document.getElementById('tabTeacher').onclick = ()=> switchLoginTab('teacher');
   document.getElementById('btnStudentLogin').onclick = handleStudentLogin;
   document.getElementById('btnTeacherLogin').onclick = handleTeacherLogin;
-  document.getElementById('btnClassRank').onclick = ()=>{
-    renderClassRank();
-    toast('已更新本班闖關總覽。');
+  document.getElementById('btnClassRank').onclick = async ()=>{
+    const s = StorageAPI.getSession();
+    if(!s || s.role !== 'student'){
+      renderClassRank();
+      toast('請先以學生登入後再更新本班進度。');
+      return;
+    }
+
+    try{
+      toast('正在從雲端更新本班進度…');
+      await StorageAPI.syncClassProgressFromBackend();
+      renderWorlds();
+      renderClassRank();
+      toast('✅ 已從 MongoDB 更新本班進度。');
+    }catch(err){
+      console.warn('更新本班進度失敗：', err);
+      renderClassRank();
+      toast(`⚠️ 雲端更新失敗，暫時顯示本機資料：${err.message || err}`);
+    }
   };
 
   document.getElementById('btnLogout').onclick = ()=>{
@@ -1203,7 +1230,7 @@
   (async()=>{
     try{
       const s = StorageAPI.getSession();
-      if(s?.role === 'student') await StorageAPI.syncMyProgressFromBackend();
+      if(s?.role === 'student') await StorageAPI.syncClassProgressFromBackend();
       if(s?.role === 'teacher') await StorageAPI.syncTeacherProgressFromBackend();
       renderSession();
       renderWorlds();

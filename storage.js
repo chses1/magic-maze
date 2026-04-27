@@ -283,6 +283,47 @@ window.StorageAPI = {
     return progress;
   },
 
+  async syncClassProgressFromBackend(){
+    const s = this.getSession();
+    if(!s?.token || s.role !== "student") {
+      throw new Error("學生登入狀態沒有後端 token，請回首頁重新登入學生帳號。");
+    }
+
+    try{ await this.flushPendingProgressToBackend?.(); }catch(_err){}
+
+    const data = await apiFetch("/api/progress/class");
+    const remoteMap = normalizeProgressArrayToMap(data.progress || []);
+    const classId = String(data.classId || s.classId || String(s.userId).slice(0,3));
+
+    try{
+      sessionStorage.setItem('mw_last_class_sync_result', JSON.stringify({
+        at: Date.now(),
+        classId,
+        apiCount: Array.isArray(data.progress) ? data.progress.length : 0,
+        renderedCount: Object.keys(remoteMap).length,
+        apiBase: API_BASE
+      }));
+    }catch(_err){}
+
+    const local = this.getProgress();
+    Object.keys(local).forEach(uid=>{
+      if(/^\d{5}$/.test(String(uid)) && String(uid).slice(0,3) === classId) delete local[uid];
+    });
+    Object.assign(local, remoteMap);
+
+    if(!local[s.userId]){
+      local[s.userId] = {
+        best: {},
+        meta: {},
+        classId: s.classId || String(s.userId).slice(0,3),
+        seat: s.seat || String(s.userId).slice(3,5),
+      };
+    }
+
+    this.saveProgress(local);
+    return local;
+  },
+
   async syncTeacherProgressFromBackend(classId = ""){
     const s = this.getSession();
     if(!s?.token || s.role !== "teacher") {
