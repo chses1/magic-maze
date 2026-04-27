@@ -817,7 +817,7 @@
 
       const passedNormalCount = Object.keys(best).filter(key => {
         const [w, l] = String(key).split('-');
-        return normalizeWorldId(w) === requiredWorldId && normalizeLevelId(l) !== 'BOSS';
+        return normalizeWorldId(w) === requiredWorldId && normalizeLevelId(l) !== 'boss';
       }).length;
 
       const bossPassed = !!getBestRecord(progress, userId, requiredWorldId, 'boss');
@@ -837,7 +837,7 @@
   function normalizeLevelId(levelId){
     const raw = String(levelId || '').trim();
     if(!raw) return '';
-    if(/^boss$/i.test(raw)) return 'BOSS';
+    if(/^boss$/i.test(raw)) return 'boss';
     const m = raw.match(/^level\s*(\d+)$/i);
     if(m) return `L${m[1]}`;
     return raw.toUpperCase();

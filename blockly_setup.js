@@ -395,7 +395,7 @@ ${elseCode}}
     if(!cfg) return '';
     return `
       <xml xmlns="https://developers.google.com/blockly/xml">
-        <block type="mw_start" x="20" y="20" deletable="false" movable="false"></block>
+        <block type="mw_start" x="20" y="20" deletable="false" movable="true"></block>
         <block type="${cfg.defType}" x="380" y="36"></block>
       </xml>
     `;
@@ -580,7 +580,7 @@ ${elseCode}}
     if(loadDefaultBlocks){
       const xmlText = `
         <xml xmlns="https://developers.google.com/blockly/xml">
-          <block type="mw_start" x="20" y="20" deletable="false" movable="false"></block>
+          <block type="mw_start" x="20" y="20" deletable="false" movable="true"></block>
         </xml>
       `;
       const xml = xmlTextToDom(xmlText);
@@ -662,16 +662,69 @@ ${elseCode}}
     }
   }
 
+  function getStartProgramBlockIds(workspace){
+    const ids = new Set();
+    if(!workspace?.getAllBlocks) return ids;
+    const startBlock = workspace.getAllBlocks(false).find(block => block?.type === "mw_start");
+    if(!startBlock) return ids;
+    function walk(block){
+      if(!block || ids.has(block.id)) return;
+      ids.add(block.id);
+      if(Array.isArray(block.inputList)){
+        block.inputList.forEach(input => {
+          const child = input?.connection?.targetBlock?.();
+          if(child) walk(child);
+        });
+      }
+      const nextBlock = block.getNextBlock?.();
+      if(nextBlock) walk(nextBlock);
+    }
+    walk(startBlock);
+    return ids;
+  }
+
   function workspaceToAsyncCode(workspace){
     const js = getJavaScriptGenerator();
     if(!js) return "return (async () => {})();";
-    const code = js.workspaceToCode(workspace);
-    const safe = code.trim() ? code : "/* 沒有積木 */\n";
-    return `
-      return (async () => {
-        ${safe}
-      })();
-    `;
+    if(!workspace?.getAllBlocks) return "/* 沒有積木 */\n";
+    const startProgramIds = getStartProgramBlockIds(workspace);
+    const keepIds = new Set(startProgramIds);
+
+    function keepWholeStack(block){
+      if(!block || keepIds.has(block.id)) return;
+      keepIds.add(block.id);
+      if(Array.isArray(block.inputList)){
+        block.inputList.forEach(input => {
+          const child = input?.connection?.targetBlock?.();
+          if(child) keepWholeStack(child);
+        });
+      }
+      const nextBlock = block.getNextBlock?.();
+      if(nextBlock) keepWholeStack(nextBlock);
+    }
+
+    // 函式定義可以放在旁邊；它本身不會直接移動角色，但起始積木下若有呼叫咒語，就需要保留函式內容。
+    workspace.getAllBlocks(false).forEach(block => {
+      if(/^mw_func_def_/i.test(String(block?.type || ''))) keepWholeStack(block);
+    });
+
+    const changed = [];
+    workspace.getAllBlocks(false).forEach(block => {
+      if(keepIds.has(block.id)) return;
+      try{
+        const wasEnabled = typeof block.isEnabled === 'function' ? block.isEnabled() : true;
+        changed.push([block, wasEnabled]);
+        block.setEnabled?.(false);
+      }catch(_err){}
+    });
+    let code = '';
+    try{ code = js.workspaceToCode(workspace); }
+    finally{
+      changed.forEach(([block, wasEnabled]) => {
+        try{ block.setEnabled?.(wasEnabled); }catch(_err){}
+      });
+    }
+    return code.trim() ? code : "/* 沒有接在起始積木下的可執行指令 */\n";
   }
 
   function exportXmlText(workspace){
@@ -754,9 +807,7 @@ ${elseCode}}
       }
     }
 
-    // ✅ 固定起始積木在「目前可視的可編輯區域」左上角。
-    // 關鍵修正：不要只用 x=20,y=20；草稿或序列化資料載入後，Blockly 可能已經改變視窗 viewLeft/viewTop。
-    placeStartBlockAtEditableTopLeft(workspace, startBlock);
+    // ✅ 預設建立在左上角，但不再強制拉回，讓學生可自行移動起始積木。
 
     topBlocks.slice(1).forEach((block, index)=>{
       try{
@@ -769,18 +820,10 @@ ${elseCode}}
       workspace.render?.();
       requestAnimationFrame?.(()=>{
         try{
-          placeStartBlockAtEditableTopLeft(workspace, startBlock);
           lockStartBlocks(workspace);
           workspace.render?.();
         }catch(_err){}
       });
-      setTimeout(()=>{
-        try{
-          placeStartBlockAtEditableTopLeft(workspace, startBlock);
-          lockStartBlocks(workspace);
-          workspace.render?.();
-        }catch(_err){}
-      }, 260);
     }catch(_err){}
 
     return startBlock;
@@ -790,7 +833,7 @@ ${elseCode}}
     if(!workspace?.getAllBlocks) return;
     workspace.getAllBlocks(false).forEach(block=>{
       if(block?.type === "mw_start"){
-        block.setMovable(false);
+        block.setMovable(true);
         block.setDeletable(false);
         block.setEditable?.(false);
       }

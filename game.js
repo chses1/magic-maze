@@ -2458,6 +2458,24 @@ window.GamePage = (()=>{
     }
   }
 
+  function refreshCodeCountBadge(){
+    if(!workspace || isBossLevel()) return;
+    const codeBlocks = getCurrentProgramBlockCount();
+    const targetBlocks = Number(level?.targetBlocks || level?.targetSteps || 0);
+    const currentEl = document.getElementById("codeCount");
+    const targetEl = document.getElementById("targetCodeCount");
+    const codeBadge = document.getElementById("codeBadge");
+    if(currentEl) currentEl.textContent = String(codeBlocks);
+    if(targetEl) targetEl.textContent = targetBlocks > 0 ? String(targetBlocks) : '—';
+    if(codeBadge){
+      const overTarget = targetBlocks > 0 && codeBlocks > targetBlocks;
+      codeBadge.style.borderColor = overTarget ? "rgba(220,38,38,.45)" : "";
+      codeBadge.style.background = overTarget ? "rgba(254,226,226,.85)" : "";
+      if(currentEl) currentEl.style.color = overTarget ? "#dc2626" : "";
+      if(targetEl) targetEl.style.color = overTarget ? "#dc2626" : "";
+    }
+  }
+
   function scoreAndStars(){
     const timeMs = Math.max(0, Date.now()-startAt);
     const rewardCount = (openedItemChest ? 1 : 0) + (openedEquipmentChest ? 1 : 0);
@@ -3004,6 +3022,12 @@ window.GamePage = (()=>{
     applyStaticUIText();
     ensureInfoPanels();
     workspace = BlocklySetup.createWorkspace("blocklyDiv", normalizeWorldId(worldId || pack.w?.worldId || "W1"), { levelId: normalizeLevelId(levelId || pack.lv?.levelId || ""), availableSpellSymbols: getSpellObstacleSymbolsFromMap(pack.lv?.map) });
+    try{
+      workspace.addChangeListener((event)=>{
+        if(event && event.isUiEvent) return;
+        refreshCodeCountBadge();
+      });
+    }catch(_err){}
     bindUI();
     bindMazeAutoFit();
     bindMazeGestureZoom();
@@ -3060,10 +3084,9 @@ window.GamePage = (()=>{
     if (!hasDraft) {
       maybeShowWorld4HintSpell();
     }
-    // ✅ 草稿／提示積木載入後，再固定起始積木位置。
-    BlocklySetup?.ensureStartBlock?.(workspace);
-    setTimeout(()=> BlocklySetup?.ensureStartBlock?.(workspace), 120);
-    setTimeout(()=> BlocklySetup?.ensureStartBlock?.(workspace), 420);
+    // ✅ 草稿／提示積木載入後，只刷新目前程式碼數，不再強制移動起始積木。
+    refreshCodeCountBadge();
+    setTimeout(()=> refreshCodeCountBadge(), 120);
     // 不再自動載入 levels.js 內嵌的最佳解法，避免學生一進關卡就看到答案。
     // 若開發測試需要，請改用快捷工具手動載入。
     applyMainContrast();
