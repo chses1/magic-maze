@@ -300,7 +300,7 @@
     ['player','boss'].forEach(side => {
       const el = getPortraitEl(side);
       if (!el) return;
-      el.classList.remove('status-hit','status-heal','status-seal','dodge-player','dodge-boss');
+      el.classList.remove('status-hit','status-heal','status-seal','status-shield','dodge-player','dodge-boss');
     });
     if (bossState) {
       bossState.playerStatusFx = '';
@@ -320,10 +320,11 @@
     [['player', bossState.playerStatusFx], ['boss', bossState.bossStatusFx]].forEach(([side, status]) => {
       const el = getPortraitEl(side);
       if (!el) return;
-      el.classList.remove('status-hit','status-heal','status-seal');
+      el.classList.remove('status-hit','status-heal','status-seal','status-shield');
       if (status === 'hit') el.classList.add('status-hit');
       if (status === 'heal') el.classList.add('status-heal');
       if (status === 'seal') el.classList.add('status-seal');
+      if (status === 'shield') el.classList.add('status-shield');
     });
   }
 
@@ -960,7 +961,8 @@
       awaitingBossContinue: false,
       continuingBossTurn: false,
       playerStatusFx: '',
-      bossStatusFx: ''
+      bossStatusFx: '',
+      bossSupportUsed: { heal:false, seal:false, shield:false }
     };
     const openingArmor = getBossArmorForPhase(1);
     if (openingArmor > 0) {
@@ -1141,6 +1143,74 @@
     return pattern[index % pattern.length];
   }
 
+  function getBossSupportCandidates(){
+    if (!bossState) return [];
+    bossState.bossSupportUsed ??= { heal:false, seal:false, shield:false };
+    const used = bossState.bossSupportUsed;
+    const candidates = [];
+    if (!used.heal && bossState.bossHp > 0 && bossState.bossHp <= Math.ceil(bossState.bossMaxHp * 0.72)) {
+      candidates.push({ type:'heal', label:'生命回流', icon:'💚', hint:'Boss 會恢復生命。' });
+    }
+    if (!used.seal && bossState.turn >= 2) {
+      candidates.push({ type:'seal', label:'封印咒文', icon:'🔒', hint:'Boss 會封住玩家的蓄力。' });
+    }
+    if (!used.shield && bossState.bossArmor <= 10) {
+      candidates.push({ type:'shield', label:'護盾魔法', icon:'🟡', hint:'Boss 會展開防護。' });
+    }
+    return candidates;
+  }
+
+  function pickBossSupportAction(){
+    const candidates = getBossSupportCandidates();
+    if (!candidates.length) return null;
+    const bossHpRate = bossState.bossHp / Math.max(1, bossState.bossMaxHp);
+    const baseRate = bossHpRate <= 0.45 ? 0.42 : 0.28;
+    if (!rollChance(baseRate)) return null;
+    return candidates[Math.floor(Math.random() * candidates.length)];
+  }
+
+  function bossUseSupportAction(action){
+    if (!action || !bossState || bossState.finished) return false;
+    bossState.bossSupportUsed ??= { heal:false, seal:false, shield:false };
+    bossState.bossSupportUsed[action.type] = true;
+    bossState.lastBossAction = action.label;
+
+    if (action.type === 'heal') {
+      const amount = Math.max(6, Math.round(config.stats.basicDamage * 1.35 + bossState.phase * 2));
+      const before = Number(bossState.bossHp || 0);
+      bossState.bossHp = Math.min(bossState.bossMaxHp, before + amount);
+      const healed = bossState.bossHp - before;
+      bossState.fxText = `💚 ${config.bossShortName}施放生命回流，恢復 ${healed} 點生命！`;
+      pushBossLog(`<strong>${config.bossShortName}輔助魔法：</strong>生命回流，恢復 ${healed} 點生命（本場限用一次）。`);
+      showHealFx('boss', healed);
+      setBattleBanner(`${config.bossShortName}：生命回流`, `Boss 恢復 ${healed} 點生命`);
+      return true;
+    }
+
+    if (action.type === 'seal') {
+      const lostPower = Math.max(0, Number(bossState.playerPower || 0));
+      bossState.playerPower = 0;
+      bossState.nextBasicWeakMultiplier = Math.max(Number(bossState.nextBasicWeakMultiplier || 0), 0.72);
+      bossState.fxText = `🔒 ${config.bossShortName}施放封印咒文，你的蓄力被清空，下一次普攻變弱！`;
+      pushBossLog(`<strong>${config.bossShortName}輔助魔法：</strong>封印咒文，清除玩家蓄力 ${lostPower}，並削弱下一次普通攻擊（本場限用一次）。`);
+      showFreezeFx('player', 1);
+      setBattleBanner(`${config.bossShortName}：封印咒文`, '蓄力清空，下一次普通攻擊變弱');
+      return true;
+    }
+
+    if (action.type === 'shield') {
+      const gain = Math.max(6, Math.round(config.stats.defendShield * 0.9 + bossState.phase * 2));
+      bossState.bossArmor = Math.max(0, Number(bossState.bossArmor || 0) + gain);
+      bossState.fxText = `🟡 ${config.bossShortName}施放護盾魔法，防護 +${gain}！`;
+      pushBossLog(`<strong>${config.bossShortName}輔助魔法：</strong>護盾魔法，防護 +${gain}（本場限用一次）。`);
+      showGuardFx('boss', gain, false);
+      setPortraitStatus('boss', 'shield');
+      setBattleBanner(`${config.bossShortName}：護盾魔法`, `Boss 防護 +${gain}`);
+      return true;
+    }
+    return false;
+  }
+
   function syncBossPhase(){
     if (!bossState) return;
     const nextPhase = getBossPhase();
@@ -1156,6 +1226,10 @@
 
   function getBossIntentPreview(){
     if (!bossState) return { icon:'❔', label:'未知', hint:'準備載入中…' };
+    const candidates = getBossSupportCandidates();
+    if (candidates.length) {
+      return { icon:'✨', label:'可能使用輔助魔法', hint:`${config.bossShortName}除了攻擊，也可能隨機使用補血、封印或護盾；每種本場最多一次。` };
+    }
     return bossPatternAction(bossState.bossPatternIndex, getBossPhase());
   }
 
@@ -1304,6 +1378,11 @@
       bossState.lastBossAction = '被控制，無法行動';
       bossState.fxText = `❄️ ${config.bossShortName}被控制住，這回合無法行動！`;
       pushBossLog(`<strong>${config.bossShortName}：</strong>被道具效果困住，這回合無法行動！`);
+      return;
+    }
+
+    const supportAction = pickBossSupportAction();
+    if (supportAction && bossUseSupportAction(supportAction)) {
       return;
     }
 
@@ -1525,6 +1604,7 @@
         : `🛡️ 你架起防禦姿態，護盾 +${actualGain}，下次閃避率提升！`;
       pushBossLog(`<strong>玩家：</strong>${perfectGuard ? '完美防禦' : '進入防禦姿態'}，護盾增加 ${actualGain}，下次閃避率提升。`);
       showGuardFx('player', actualGain, perfectGuard);
+      setPortraitStatus('player', 'shield');
       setBattleBanner(perfectGuard ? '完美防禦！' : '防禦姿態！', `護盾 +${actualGain}`);
     } else if (actionKey === 'focus') {
       bossState.playerPower += config.stats.focusGain;
@@ -1576,6 +1656,7 @@
       }
       if (shieldGained > 0) {
         showGuardFx('player', shieldGained, false);
+        setPortraitStatus('player', 'shield');
         setBattleBanner(`${card.title}！`, `護盾 +${shieldGained}`);
       }
       if (requestedFreezeTurns > prevFreezeTurns) {
@@ -1605,6 +1686,7 @@
   async function continueBossAfterPlayer(){
     if (!bossState || bossState.finished || !bossState.awaitingBossContinue || bossState.continuingBossTurn) return;
     bossState.awaitingBossContinue = false;
+    clearPortraitStatuses();
     bossState.continuingBossTurn = true;
     setBattleBanner(`${config.bossShortName}準備行動`, 'Boss 後行，請觀察結果');
     render();

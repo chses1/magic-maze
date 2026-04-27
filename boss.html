@@ -412,10 +412,12 @@
     .portrait.status-hit::before{opacity:1;border:5px solid rgba(239,68,68,.88);box-shadow:0 0 22px rgba(239,68,68,.42);}
     .portrait.status-heal::before{opacity:1;border:5px solid rgba(34,197,94,.9);box-shadow:0 0 24px rgba(34,197,94,.46);animation:statusPulseGreen .82s ease-in-out 2;}
     .portrait.status-seal::before{opacity:1;border:5px solid rgba(56,189,248,.92);box-shadow:0 0 24px rgba(56,189,248,.5);animation:statusPulseBlue .82s ease-in-out 2;}
+    .portrait.status-shield::before{opacity:1;border:5px solid rgba(250,204,21,.96);box-shadow:0 0 26px rgba(250,204,21,.56);animation:statusPulseYellow .82s ease-in-out 2;}
     .portrait.dodge-player img{animation:dodgeRetreatPlayer .42s ease-out;}
     .portrait.dodge-boss img{animation:dodgeRetreatBoss .42s ease-out;}
     @keyframes statusPulseGreen{0%,100%{transform:scale(1);opacity:.9;}50%{transform:scale(1.035);opacity:1;}}
     @keyframes statusPulseBlue{0%,100%{transform:scale(1);opacity:.9;}50%{transform:scale(1.035);opacity:1;}}
+    @keyframes statusPulseYellow{0%,100%{transform:scale(1);opacity:.9;}50%{transform:scale(1.035);opacity:1;}}
     @keyframes dodgeRetreatPlayer{0%{transform:translateX(0) scale(1.08);}45%{transform:translateX(-24px) scale(1.03);}100%{transform:translateX(0) scale(1.08);}}
     @keyframes dodgeRetreatBoss{0%{transform:translateX(0) scale(1.08);}45%{transform:translateX(24px) scale(1.03);}100%{transform:translateX(0) scale(1.08);}}
 
