@@ -435,16 +435,68 @@ window.GamePage = (()=>{
     return list[(idx + 1) % list.length];
   }
 
-  function formatWorldInventory(worldId, build){
-    const items = build?.itemsByWorld?.[worldId] || [];
-    const equips = build?.equipmentsByWorld?.[worldId] || [];
+  function escapeHtml(value){
+    return String(value == null ? '' : value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function getCurrentWorldInventory(build, worldId){
+    const wid = normalizeWorldId(worldId || world?.worldId || 'W1');
+    const allItems = build?.itemsByWorld || {};
+    const allEquips = build?.equipmentsByWorld || {};
+    return {
+      worldId: wid,
+      items: Array.isArray(allItems[wid]) ? allItems[wid] : [],
+      equipments: Array.isArray(allEquips[wid]) ? allEquips[wid] : [],
+      hpBonus: Number(build?.hpBonus || 0),
+      atkBonus: Number(build?.atkBonus || 0),
+      defBonus: Number(build?.defBonus || 0)
+    };
+  }
+
+  function formatCharacterStatusHtml(worldId, build){
+    const inv = getCurrentWorldInventory(build, worldId);
+    const items = inv.items.map(escapeHtml);
+    const equips = inv.equipments.map(escapeHtml);
     return `
-      <div class="stage-stars-reward">
-        目前本世界已取得道具：${items.length ? items.join('、') : '尚未取得'}<br>
-        目前本世界已取得裝備：${equips.length ? equips.join('、') : '尚未取得'}<br>
-        玩家加成：生命 +${Number(build?.hpBonus || 0)}、攻擊 +${Number(build?.atkBonus || 0)}、防禦 +${Number(build?.defBonus || 0)}
+      <div class="player-status-card" id="playerStatusCard">
+        <div class="player-status-title">🧙 角色狀態</div>
+        <div class="player-status-stats">
+          <span>❤️ 生命 +${inv.hpBonus}</span>
+          <span>⚔️ 攻擊 +${inv.atkBonus}</span>
+          <span>🛡️ 防禦 +${inv.defBonus}</span>
+        </div>
+        <div class="player-status-line">🎁 本世界道具：${items.length ? items.join('、') : '尚未取得'}</div>
+        <div class="player-status-line">🧰 本世界裝備：${equips.length ? equips.join('、') : '尚未取得'}</div>
       </div>
     `;
+  }
+
+  function formatWorldInventory(worldId, build){
+    return formatCharacterStatusHtml(worldId, build);
+  }
+
+  function updateCharacterStatusPanel(){
+    try{
+      const stageTop = document.querySelector('.stageTop');
+      if (!stageTop) return;
+      let host = document.getElementById('playerStatusPanelHost');
+      if (!host) {
+        host = document.createElement('div');
+        host.id = 'playerStatusPanelHost';
+        host.className = 'player-status-host';
+        stageTop.appendChild(host);
+      }
+      const session = getSessionSafe();
+      const build = getPlayerBuildSummary(session?.userId);
+      host.innerHTML = formatCharacterStatusHtml(world?.worldId || 'W1', build);
+    }catch(err){
+      console.warn('updateCharacterStatusPanel failed', err);
+    }
   }
 
   function getMazeBaseScale(){
@@ -1161,6 +1213,46 @@ window.GamePage = (()=>{
         color: #6f5419;
         font-weight: 800;
       }
+      .player-status-host {
+        flex: 1 1 280px;
+        min-width: min(100%, 260px);
+      }
+      .player-status-card {
+        padding: 9px 12px;
+        border-radius: 16px;
+        background: #fff9ea;
+        border: 1px solid #e5cf9d;
+        color: #5f4716;
+        box-shadow: 0 6px 14px rgba(120, 91, 23, .08);
+        font-size: 12px;
+        line-height: 1.35;
+        font-weight: 800;
+      }
+      .player-status-title {
+        font-size: 14px;
+        font-weight: 900;
+        color: #51350d;
+        margin-bottom: 5px;
+      }
+      .player-status-stats {
+        display:flex;
+        flex-wrap:wrap;
+        gap:5px;
+        margin-bottom:5px;
+      }
+      .player-status-stats span {
+        display:inline-flex;
+        align-items:center;
+        padding:3px 7px;
+        border-radius:999px;
+        background:#fff;
+        border:1px solid rgba(229,207,157,.72);
+      }
+      .player-status-line {
+        white-space:nowrap;
+        overflow:hidden;
+        text-overflow:ellipsis;
+      }
       .result-card { background: #fff; border: 2px solid #dce7ff; border-radius: 16px; padding: 14px 16px; line-height: 1.7; }
       .result-card h3 { margin: 0 0 8px; font-size: 20px; }
       .result-good { border-color: #bfe3c5; background: #f4fff6; }
@@ -1721,6 +1813,7 @@ window.GamePage = (()=>{
 
   function fillInfoPanels(){
     ensureInfoPanels();
+    // 角色狀態改放在「通關成功結果畫面」中，避免平常遊戲畫面太擁擠。
   }
 
   
@@ -2951,6 +3044,7 @@ window.GamePage = (()=>{
             <span class="result-badge">時間：${Math.round(timeMs/1000)} 秒</span>
           </div>
           ${rewardSummary.length ? `<div class="stage-current-reward" style="margin-top:12px;display:block;">${rewardSummary.join('<br>')}</div>` : ''}
+          ${formatCharacterStatusHtml(world.worldId, updatedBuild)}
           <div style="margin-top:8px;">${improved ? "🎉 已刷新最佳紀錄！" : "紀錄已更新。"}</div>`
         ));
 
