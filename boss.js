@@ -292,6 +292,51 @@
     window.setTimeout(() => el.classList.remove(className), duration);
   }
 
+  function getPortraitEl(side = 'boss'){
+    return document.querySelector(side === 'player' ? '.portrait.player-portrait' : '.portrait.boss-portrait');
+  }
+
+  function clearPortraitStatuses(){
+    ['player','boss'].forEach(side => {
+      const el = getPortraitEl(side);
+      if (!el) return;
+      el.classList.remove('status-hit','status-heal','status-seal','dodge-player','dodge-boss');
+    });
+    if (bossState) {
+      bossState.playerStatusFx = '';
+      bossState.bossStatusFx = '';
+    }
+  }
+
+  function setPortraitStatus(side = 'boss', status = ''){
+    if (!bossState || !status) return;
+    if (side === 'player') bossState.playerStatusFx = status;
+    else bossState.bossStatusFx = status;
+    applyPortraitStatusClasses();
+  }
+
+  function applyPortraitStatusClasses(){
+    if (!bossState) return;
+    [['player', bossState.playerStatusFx], ['boss', bossState.bossStatusFx]].forEach(([side, status]) => {
+      const el = getPortraitEl(side);
+      if (!el) return;
+      el.classList.remove('status-hit','status-heal','status-seal');
+      if (status === 'hit') el.classList.add('status-hit');
+      if (status === 'heal') el.classList.add('status-heal');
+      if (status === 'seal') el.classList.add('status-seal');
+    });
+  }
+
+  function portraitDodge(side = 'boss', duration = 420){
+    const el = getPortraitEl(side);
+    if (!el) return;
+    const className = side === 'player' ? 'dodge-player' : 'dodge-boss';
+    el.classList.remove(className);
+    void el.offsetWidth;
+    el.classList.add(className);
+    window.setTimeout(() => el.classList.remove(className), duration);
+  }
+
   function spawnFloatText(text, type = 'damage', side = 'boss'){
     const layer = fxNode('floatingTextLayer');
     if (!layer) return;
@@ -321,6 +366,7 @@
     replayFxClass(fxNode('battleSlash'), 'fx-show-slash', 340);
     replayFxClass(fxNode(target === 'boss' ? 'bossFlash' : 'playerFlash'), 'fx-show-flash', 340);
     portraitHit(target, 300);
+    setPortraitStatus(target, 'hit');
     stageShake(280);
     spawnFloatText(`${isCrit ? '暴擊 ' : ''}-${amount}`, 'damage', target);
   }
@@ -333,6 +379,7 @@
 
   function showHealFx(target = 'player', amount = 0){
     replayFxClass(fxNode(target === 'boss' ? 'bossAura' : 'playerAura'), 'fx-show-aura', 700);
+    setPortraitStatus(target, 'heal');
     spawnFloatText(`+${amount}`, 'heal', target);
   }
 
@@ -348,6 +395,7 @@
       portrait.classList.add('boss-frozen');
       window.setTimeout(() => portrait.classList.remove('boss-frozen'), 1100);
     }
+    setPortraitStatus(target, 'seal');
     spawnFloatText(`冰凍 ${turns} 回合`, 'freeze', target);
   }
 
@@ -358,6 +406,7 @@
 
   function showDodgeFx(target = 'boss'){
     replayFxClass(fxNode(target === 'boss' ? 'bossFlash' : 'playerFlash'), 'fx-show-flash', 260);
+    portraitDodge(target, 420);
     spawnFloatText('閃避', 'guard', target);
   }
 
@@ -907,7 +956,11 @@
       lastPlayerRoll: '尚未觸發',
       lastBossRoll: '尚未觸發',
       playerCharacter: getPlayerCharacterMeta(),
-      actionHintShown: {}
+      actionHintShown: {},
+      awaitingBossContinue: false,
+      continuingBossTurn: false,
+      playerStatusFx: '',
+      bossStatusFx: ''
     };
     const openingArmor = getBossArmorForPhase(1);
     if (openingArmor > 0) {
@@ -1198,6 +1251,8 @@
       bossState.fxText = '💨 你成功閃避了這次攻擊！';
       bossState.playerDodgeBonus = 0;
       bossState.tempBossDamageBonus = 0;
+      showDodgeFx('player');
+      setBattleBanner('成功閃避！', '你向後退開，躲開了這次攻擊');
       return { damage, isCrit, isDodged };
     }
 
@@ -1426,6 +1481,7 @@
 
   async function playerBossAction(actionKey){
     if (!bossState || bossState.finished || bossState.busy) return;
+    clearPortraitStatuses();
     bossState.busy = true;
 
     const mechanics = getBossMechanics();
@@ -1539,17 +1595,26 @@
       return;
     }
 
-    // ✅ 回合節奏：玩家先出招並顯示結果，再輪到 Boss 後行。
-    await sleep(850);
-    if (!bossState || bossState.finished) return;
+    // ✅ 回合節奏：玩家先出招，停在結果畫面；老師或學生點一下戰況框後，Boss 才後行。
+    bossState.awaitingBossContinue = true;
+    bossState.busy = true;
+    setBattleBanner('玩家行動完成', '請先看完玩家行動結果，再點擊這個戰況框讓 Boss 後行。');
+    render();
+  }
+
+  async function continueBossAfterPlayer(){
+    if (!bossState || bossState.finished || !bossState.awaitingBossContinue || bossState.continuingBossTurn) return;
+    bossState.awaitingBossContinue = false;
+    bossState.continuingBossTurn = true;
     setBattleBanner(`${config.bossShortName}準備行動`, 'Boss 後行，請觀察結果');
     render();
-    await sleep(450);
+    await sleep(350);
 
     bossTakeTurn();
     render();
-    await sleep(850);
+    await sleep(650);
     if (bossState.playerHp <= 0) {
+      bossState.continuingBossTurn = false;
       finishBossBattle(false);
       return;
     }
@@ -1557,6 +1622,7 @@
     decayPlayerShield();
     bossState.turn += 1;
     bossState.busy = false;
+    bossState.continuingBossTurn = false;
     render();
   }
 
@@ -1729,6 +1795,11 @@
         if (event.target === modal) closeActionModal();
       };
     }
+
+    const battleBanner = document.querySelector('.battle-banner');
+    if (battleBanner) {
+      battleBanner.onclick = () => continueBossAfterPlayer();
+    }
   }
 
   async function applyTheme(){
@@ -1831,7 +1902,13 @@
     const fxEl = document.getElementById('fxText');
     if (fxEl) fxEl.textContent = bossState.fxText || `${bossState.lastPlayerAction}｜${bossState.lastBossAction}`;
     const fxSubEl = document.getElementById('fxSubText');
-    if (fxSubEl) fxSubEl.textContent = `玩家：${bossState.lastPlayerAction}｜Boss：${bossState.lastBossAction}`;
+    if (fxSubEl) fxSubEl.textContent = bossState.awaitingBossContinue
+      ? `玩家：${bossState.lastPlayerAction}｜點擊戰況框後 Boss 才會行動`
+      : `玩家：${bossState.lastPlayerAction}｜Boss：${bossState.lastBossAction}`;
+
+    const battleBanner = document.querySelector('.battle-banner');
+    if (battleBanner) battleBanner.classList.toggle('is-clickable', !!bossState.awaitingBossContinue);
+    applyPortraitStatusClasses();
 
     bindButtons();
 
