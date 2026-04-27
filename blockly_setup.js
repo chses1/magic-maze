@@ -589,6 +589,7 @@ ${elseCode}}
       if(worldId === "W4"){
         enforceWorld4SingleSpell(workspace, opts.levelId || "", { reposition:true });
       }
+      scheduleStartBlockAtEditableTopLeft(workspace);
     }
 
     installLongPressTooltips(workspace, containerId);
@@ -779,10 +780,33 @@ ${elseCode}}
 
   function placeStartBlockAtEditableTopLeft(workspace, startBlock){
     if(!workspace || !startBlock) return;
+    try{ Blockly.svgResize?.(workspace); }catch(_err){}
     try{ workspace.render?.(); }catch(_err){}
     const target = getWorkspaceVisibleTargetXY(workspace, 18);
     moveBlockStackTo(startBlock, target.x, target.y);
     try{ workspace.render?.(); }catch(_err){}
+  }
+
+  function placeCurrentStartBlockAtEditableTopLeft(workspace){
+    if(!workspace || !window.Blockly) return null;
+    const allBlocks = typeof workspace.getAllBlocks === "function" ? workspace.getAllBlocks(false) : [];
+    const startBlock = allBlocks.find(block => block?.type === "mw_start") || null;
+    if(!startBlock) return null;
+    placeStartBlockAtEditableTopLeft(workspace, startBlock);
+    lockStartBlocks(workspace);
+    return startBlock;
+  }
+
+  function scheduleStartBlockAtEditableTopLeft(workspace){
+    // ✅ Blockly 在 iPad / Safari 縮放版面時，剛 inject 完的 workspace metrics 可能還沒準備好。
+    //    只設定 XML 的 x=20,y=20 會被工作區自動捲動影響，導致「當開始執行」跑到偏右下方。
+    //    因此進關卡建立預設積木後，用數個短延遲等 Blockly 完成排版，再放到目前可編輯區左上角。
+    if(!workspace) return;
+    [0, 60, 180, 360].forEach(delay => {
+      window.setTimeout?.(() => {
+        placeCurrentStartBlockAtEditableTopLeft(workspace);
+      }, delay);
+    });
   }
 
   function ensureStartBlock(workspace){
@@ -902,6 +926,8 @@ ${elseCode}}
     getWorld4AvailableSpellConfigs,
     getWorld4HintSpellConfig,
     loadWorld4PresetSpell,
-    enforceWorld4SingleSpell
+    enforceWorld4SingleSpell,
+    placeCurrentStartBlockAtEditableTopLeft,
+    scheduleStartBlockAtEditableTopLeft
   };
 })();
