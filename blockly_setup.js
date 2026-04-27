@@ -687,44 +687,44 @@ ${elseCode}}
     const js = getJavaScriptGenerator();
     if(!js) return "return (async () => {})();";
     if(!workspace?.getAllBlocks) return "/* 沒有積木 */\n";
-    const startProgramIds = getStartProgramBlockIds(workspace);
-    const keepIds = new Set(startProgramIds);
 
-    function keepWholeStack(block){
-      if(!block || keepIds.has(block.id)) return;
-      keepIds.add(block.id);
-      if(Array.isArray(block.inputList)){
-        block.inputList.forEach(input => {
-          const child = input?.connection?.targetBlock?.();
-          if(child) keepWholeStack(child);
-        });
-      }
-      const nextBlock = block.getNextBlock?.();
-      if(nextBlock) keepWholeStack(nextBlock);
+    const allBlocks = workspace.getAllBlocks(false);
+    const startBlock = allBlocks.find(block => block?.type === "mw_start") || null;
+    const firstExecutable = startBlock?.getNextBlock?.() || null;
+
+    if(!startBlock || !firstExecutable){
+      return "/* 沒有接在起始積木下的可執行指令 */\n";
     }
 
-    // 函式定義可以放在旁邊；它本身不會直接移動角色，但起始積木下若有呼叫咒語，就需要保留函式內容。
-    workspace.getAllBlocks(false).forEach(block => {
-      if(/^mw_func_def_/i.test(String(block?.type || ''))) keepWholeStack(block);
-    });
-
-    const changed = [];
-    workspace.getAllBlocks(false).forEach(block => {
-      if(keepIds.has(block.id)) return;
+    function blockToCodeText(block){
+      if(!block) return '';
       try{
-        const wasEnabled = typeof block.isEnabled === 'function' ? block.isEnabled() : true;
-        changed.push([block, wasEnabled]);
-        block.setEnabled?.(false);
-      }catch(_err){}
-    });
-    let code = '';
-    try{ code = js.workspaceToCode(workspace); }
-    finally{
-      changed.forEach(([block, wasEnabled]) => {
-        try{ block.setEnabled?.(wasEnabled); }catch(_err){}
-      });
+        const generated = js.blockToCode(block);
+        if(Array.isArray(generated)) return String(generated[0] || '');
+        return String(generated || '');
+      }catch(err){
+        console.warn('blockToCode failed', block?.type, err);
+        return '';
+      }
     }
-    return code.trim() ? code : "/* 沒有接在起始積木下的可執行指令 */\n";
+
+    // ✅ 重要修正：不要再用 workspaceToCode(workspace)。
+    // workspaceToCode 會掃描整個工作區的所有 top-level blocks，
+    // 因此「沒有接在起始積木下」的散落指令仍可能被產生並執行。
+    // 這裡改成只從起始積木的下一塊開始產生主程式碼。
+    const mainCode = blockToCodeText(firstExecutable);
+
+    // 函式定義可以放在旁邊；它本身只是宣告，不會直接移動角色。
+    // 保留函式定義是為了讓起始積木底下的「施放咒語」呼叫能正常運作。
+    const functionCode = allBlocks
+      .filter(block => /^mw_func_def_/i.test(String(block?.type || '')))
+      .filter(block => !block.getParent?.())
+      .map(blockToCodeText)
+      .filter(Boolean)
+      .join('\n');
+
+    const code = `${functionCode}\n${mainCode}`.trim();
+    return code ? `${code}\n` : "/* 沒有接在起始積木下的可執行指令 */\n";
   }
 
   function exportXmlText(workspace){
