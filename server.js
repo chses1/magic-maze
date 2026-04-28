@@ -435,6 +435,20 @@ app.get('/api/leaderboard', requireAuth, async (req, res) => {
   res.json({ ok: true, leaderboard: list });
 });
 
+app.get('/api/teacher/classes', requireAuth, requireTeacher, async (req, res) => {
+  const [progressClasses, userClasses] = await Promise.all([
+    collections.progress.distinct('classId'),
+    collections.users.distinct('classId', { role: 'student' })
+  ]);
+
+  const classIds = [...new Set([...(progressClasses || []), ...(userClasses || [])]
+    .map(classId => String(classId || '').trim())
+    .filter(classId => /^\d{3}$/.test(classId)))]
+    .sort((a, b) => a.localeCompare(b));
+
+  res.json({ ok: true, classIds });
+});
+
 app.get('/api/teacher/progress', requireAuth, requireTeacher, async (req, res) => {
   const classId = String(req.query.classId || '').trim();
   const query = buildClassQuery(classId);

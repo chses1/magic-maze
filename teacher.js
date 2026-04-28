@@ -6,7 +6,9 @@ window.TeacherPage = (()=>{
   const LEVEL_TARGET_BLOCK_OVERRIDE_KEY = 'mw_published_level_overrides_v1';
   const LEVEL_EDIT_OVERRIDE_KEY = 'mw_teacher_level_edits_v1';
   const TEACHER_TOOLS_COLLAPSED_KEY = 'mw_teacher_tools_collapsed_v1';
-  const TEACHER_PROGRESS_AUTO_SYNC_MS = 5000;
+  const TEACHER_PROGRESS_AUTO_SYNC_MS = 30000;
+  const TEACHER_DEFAULT_CLASS_KEY = 'mw_teacher_default_class_v1';
+  const TEACHER_KNOWN_CLASSES_KEY = 'mw_teacher_known_classes_v1';
 
   let teacherProgressSyncTimer = null;
   let teacherProgressSyncBusy = false;
@@ -142,7 +144,104 @@ window.TeacherPage = (()=>{
   }
 
   function getCurrentFilterClass(){
-    return String(document.getElementById('filterClass')?.value || 'all').trim();
+    const selected = String(document.getElementById('filterClass')?.value || '').trim();
+    if(selected) return selected;
+    return getDefaultTeacherClassId();
+  }
+
+  function getLocalClassIds(){
+    try{
+      const progress = StorageAPI.getProgress?.() || {};
+      return [...new Set(Object.keys(progress)
+        .filter(uid => /^\d{5}$/.test(uid))
+        .map(uid => uid.slice(0,3)))]
+        .sort((a,b)=> a.localeCompare(b));
+    }catch(_err){
+      return [];
+    }
+  }
+
+  function getStoredKnownClasses(){
+    try{
+      const raw = localStorage.getItem(TEACHER_KNOWN_CLASSES_KEY);
+      const list = raw ? JSON.parse(raw) : [];
+      return Array.isArray(list) ? list.filter(cid => /^\d{3}$/.test(String(cid))).sort((a,b)=> a.localeCompare(b)) : [];
+    }catch(_err){
+      return [];
+    }
+  }
+
+  function saveKnownClasses(classIds = []){
+    const safe = [...new Set((Array.isArray(classIds) ? classIds : [])
+      .map(cid => String(cid || '').trim())
+      .filter(cid => /^\d{3}$/.test(cid)))]
+      .sort((a,b)=> a.localeCompare(b));
+    try{ localStorage.setItem(TEACHER_KNOWN_CLASSES_KEY, JSON.stringify(safe)); }catch(_err){}
+    return safe;
+  }
+
+  function getDefaultTeacherClassId(){
+    try{
+      const saved = String(localStorage.getItem(TEACHER_DEFAULT_CLASS_KEY) || '').trim();
+      if(/^\d{3}$/.test(saved)) return saved;
+    }catch(_err){}
+    const fromKnown = getStoredKnownClasses()[0];
+    if(fromKnown) return fromKnown;
+    const fromLocal = getLocalClassIds()[0];
+    if(fromLocal) return fromLocal;
+    return '301';
+  }
+
+  function rememberDefaultTeacherClass(classId){
+    const cid = String(classId || '').trim();
+    if(!/^\d{3}$/.test(cid)) return;
+    try{ localStorage.setItem(TEACHER_DEFAULT_CLASS_KEY, cid); }catch(_err){}
+  }
+
+  function getKnownClassIds(){
+    return [...new Set([...getStoredKnownClasses(), ...getLocalClassIds()])].sort((a,b)=> a.localeCompare(b));
+  }
+
+  function setFilterClassOptions(classIds = [], preferredClass = ''){
+    const filterSelect = document.getElementById('filterClass');
+    if(!filterSelect) return getDefaultTeacherClassId();
+
+    const safeClasses = [...new Set((Array.isArray(classIds) ? classIds : [])
+      .map(cid => String(cid || '').trim())
+      .filter(cid => /^\d{3}$/.test(cid)))]
+      .sort((a,b)=> a.localeCompare(b));
+
+    const current = String(preferredClass || filterSelect.value || getDefaultTeacherClassId()).trim();
+    const manualAllSelected = current === 'all';
+    const fallback = safeClasses.includes(current) ? current : (safeClasses[0] || (/^\d{3}$/.test(current) ? current : '301'));
+    const selected = manualAllSelected ? 'all' : fallback;
+
+    filterSelect.innerHTML = ['<option value="all">全部學生（手動選擇）</option>']
+      .concat(safeClasses.map(classId => '<option value="' + classId + '">' + classId + ' 班</option>'))
+      .join('');
+
+    if(!manualAllSelected && !safeClasses.includes(fallback)){
+      const opt = document.createElement('option');
+      opt.value = fallback;
+      opt.textContent = fallback + ' 班（預設）';
+      filterSelect.appendChild(opt);
+    }
+
+    filterSelect.value = selected;
+    if(selected !== 'all') rememberDefaultTeacherClass(selected);
+    return selected;
+  }
+
+  async function refreshTeacherClassOptionsFromCloud(preferredClass = ''){
+    if(!isTeacherLoggedIn()) return setFilterClassOptions(getKnownClassIds(), preferredClass);
+    try{
+      const data = await StorageAPI.apiFetch('/api/teacher/classes');
+      const classIds = saveKnownClasses(data.classIds || []);
+      return setFilterClassOptions(classIds.length ? classIds : getKnownClassIds(), preferredClass);
+    }catch(err){
+      console.warn('讀取班級清單失敗，改用本機已知班級：', err);
+      return setFilterClassOptions(getKnownClassIds(), preferredClass);
+    }
   }
 
   async function refreshTeacherProgressFromCloud(options = {}){
@@ -150,16 +249,16 @@ window.TeacherPage = (()=>{
     if(teacherProgressSyncBusy) return false;
 
     const silent = options.silent === true;
-    const classId = getCurrentFilterClass();
+    const classId = String(options.classId || getCurrentFilterClass()).trim();
     teacherProgressSyncBusy = true;
     setTeacherSyncBadge('成績同步中…');
 
     try{
       const remoteMap = await StorageAPI.syncTeacherProgressFromBackend(classId);
       render();
-      const count = Object.keys(remoteMap || {}).filter(uid => /^\d{5}$/.test(uid)).length;
+      const count = Object.keys(remoteMap || {}).filter(uid => /^\d{5}$/.test(uid) && (!classId || classId === 'all' || String(uid).slice(0,3) === classId)).length;
       const timeText = new Date().toLocaleTimeString('zh-TW', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
-      setTeacherSyncBadge(`已同步 ${timeText}｜雲端 ${count} 人｜每 5 秒`);
+      setTeacherSyncBadge(`已同步 ${timeText}｜雲端 ${count} 人｜每 30 秒`);
       if(!silent) toast('✅ 已從 MongoDB 更新學生通關成績。');
       return true;
     }catch(err){
@@ -516,7 +615,7 @@ window.TeacherPage = (()=>{
       return;
     }
 
-    const filterClass = String(document.getElementById('filterClass')?.value || '').trim();
+    let filterClass = String(document.getElementById('filterClass')?.value || '').trim();
     const sortMode = String(document.getElementById('sortMode')?.value || 'seat');
     const progress = StorageAPI.getProgress();
     const allLevels = getAllDisplayLevels();
@@ -527,11 +626,8 @@ window.TeacherPage = (()=>{
       .map(uid => uid.slice(0,3)))].sort((a,b)=> a.localeCompare(b));
     const filterSelect = document.getElementById('filterClass');
     if(filterSelect){
-      const currentValue = filterClass || 'all';
-      filterSelect.innerHTML = ['<option value="all">全部學生</option>']
-        .concat(allClassIds.map(classId => `<option value="${classId}">${classId} 班</option>`))
-        .join('');
-      filterSelect.value = allClassIds.includes(currentValue) || currentValue === 'all' ? currentValue : 'all';
+      const currentValue = filterClass || getDefaultTeacherClassId();
+      filterClass = setFilterClassOptions([...new Set([...getKnownClassIds(), ...allClassIds])], currentValue);
     }
 
     const allStudents = Object.keys(progress)
@@ -1425,8 +1521,9 @@ window.LEVELS = ${JSON.stringify(exported, null, 2)};
         setBadge();
         return;
       }
-      toast('教師登入成功，正在同步雲端資料…');
-      await refreshTeacherProgressFromCloud({ silent:true });
+      toast('教師登入成功，正在同步目前班級雲端資料…');
+      const selectedClass = await refreshTeacherClassOptionsFromCloud(getDefaultTeacherClassId());
+      await refreshTeacherProgressFromCloud({ silent:true, classId:selectedClass });
       setBadge();
       startTeacherProgressAutoSync();
       loadSelectedLevelIntoEditor();
@@ -1454,11 +1551,12 @@ window.LEVELS = ${JSON.stringify(exported, null, 2)};
     const sortModeEl = document.getElementById('sortMode');
     if(filterClassEl) filterClassEl.onchange = async ()=>{
       if(!requireTeacherOrBlock('切換班級顯示')) return;
+      const selected = String(filterClassEl.value || getDefaultTeacherClassId()).trim();
+      if(selected !== 'all') rememberDefaultTeacherClass(selected);
       render();
-      await refreshTeacherProgressFromCloud({ silent:true });
+      await refreshTeacherProgressFromCloud({ silent:true, classId:selected });
       const btnClearAll = document.getElementById('btnClearAll');
       if(btnClearAll){
-        const selected = String(filterClassEl.value || 'all').trim();
         btnClearAll.textContent = (selected && selected !== 'all')
           ? `清除 ${selected} 班學生總分`
           : '清除全部學生總分';
@@ -1543,15 +1641,16 @@ window.LEVELS = ${JSON.stringify(exported, null, 2)};
     initTeacherToolsCollapse();
     updateControlsLock();
     if(isTeacherLoggedIn()){
-      toast('正在從 MongoDB 讀取學生資料…');
-      await refreshTeacherProgressFromCloud({ silent:true });
+      toast('正在從 MongoDB 讀取目前班級資料…');
+      const selectedClass = await refreshTeacherClassOptionsFromCloud(getDefaultTeacherClassId());
+      await refreshTeacherProgressFromCloud({ silent:true, classId:selectedClass });
       startTeacherProgressAutoSync();
     }
     render();
     if(isTeacherLoggedIn()) loadSelectedLevelIntoEditor();
 
     document.addEventListener('visibilitychange', ()=>{
-      if(!document.hidden && isTeacherLoggedIn()) refreshTeacherProgressFromCloud({ silent:true });
+      if(!document.hidden && isTeacherLoggedIn()) refreshTeacherProgressFromCloud({ silent:true, classId:getCurrentFilterClass() });
     });
   }
 
