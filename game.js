@@ -279,6 +279,9 @@ window.GamePage = (()=>{
   // ✅ 三星防作弊：記錄本次執行是否從「乾淨起點狀態」開始。
   // 失敗後保留角色位置方便學生觀察，但不能靠反覆按執行累積位移來拿三星。
   let currentRunStartedFromCleanStart = false;
+  // ✅ 一次挑戰只能執行一次：避免學生利用第二次執行承接角色位置或已改變的地圖狀態。
+  // 只有按「重設關卡／重來」才會解除鎖定。
+  let runLockedUntilReset = false;
 
   const PROGRAM_STORE_KEY = "maze_saved_programs_v1";
   const WORLD4_HINT_ONCE_KEY = "mw_world4_hint_seen_v1";
@@ -1550,6 +1553,33 @@ window.GamePage = (()=>{
     return themes[key] || themes.W1;
   }
 
+  function updateRunButtonState(){
+    const btnRun = document.getElementById("btnRun");
+    if (!btnRun || isBossLevel()) return;
+
+    if (runLockedUntilReset) {
+      btnRun.disabled = true;
+      btnRun.textContent = UI.buttons.run;
+      btnRun.title = "本次挑戰已執行完畢，請按「重設關卡」後再重新執行。";
+      btnRun.style.opacity = "0.45";
+      btnRun.style.cursor = "not-allowed";
+      btnRun.style.filter = "grayscale(1)";
+      btnRun.style.background = "#9ca3af";
+      btnRun.style.color = "#f8fafc";
+      btnRun.style.border = "1px solid #94a3b8";
+      btnRun.style.transform = "none";
+    } else {
+      btnRun.disabled = false;
+      btnRun.textContent = UI.buttons.run;
+      btnRun.title = "";
+      btnRun.style.opacity = "1";
+      btnRun.style.cursor = "pointer";
+      btnRun.style.filter = "";
+      btnRun.style.transform = "";
+      // 顏色交給 applyMainContrast 依世界主題重新套用。
+    }
+  }
+
   function applyMainContrast(){
     const theme = getWorldUiTheme(world?.worldId);
     const titleEl = document.getElementById('title');
@@ -1640,6 +1670,7 @@ window.GamePage = (()=>{
       btnExit.style.color = '#8b2c2c';
       btnExit.style.border = '2px solid #e4aaaa';
     }
+    updateRunButtonState();
     if (toastEl) {
       toastEl.style.background = theme.toastBg;
       toastEl.style.color = '#fff';
@@ -1710,6 +1741,7 @@ window.GamePage = (()=>{
     if (btnStep) btnStep.textContent = '步進';
     if (btnReset) btnReset.textContent = UI.buttons.reset;
     if (btnExit) btnExit.textContent = UI.buttons.exit;
+    updateRunButtonState();
   }
 
   function worldCardsHtml(){
@@ -2689,7 +2721,9 @@ window.GamePage = (()=>{
     collectedItemName = "";
     collectedEquipmentName = "";
     currentRunStartedFromCleanStart = false;
+    runLockedUntilReset = false;
     resetRunState();
+    updateRunButtonState();
     showResult("");
     // 保留玩家手動調整的迷宮縮放比例；重設關卡時只重新套用目前比例，不自動還原。
     applyMazeScale();
@@ -2906,6 +2940,17 @@ window.GamePage = (()=>{
   async function runProgram(options = {}){
     if (isBossLevel()) return;
     if(running) return;
+
+    if (runLockedUntilReset) {
+      toast('本次挑戰已執行完畢，請先按「重設關卡」再重新執行。');
+      updateRunButtonState();
+      return;
+    }
+
+    // ✅ 只要開始執行，就先鎖住按鈕。成功、失敗或安全停止後都不能直接再次執行；
+    // 必須按「重設關卡」讓角色、寶箱、咒語改變的地圖一起回到初始狀態。
+    runLockedUntilReset = true;
+    updateRunButtonState();
 
     const requestedStepMode = !!options.stepMode;
 
