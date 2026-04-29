@@ -1569,6 +1569,8 @@ window.GamePage = (()=>{
       btnRun.style.border = "1px solid #94a3b8";
       btnRun.style.transform = "none";
     } else {
+      // ✅ 解鎖時要把鎖定狀態寫入的灰色 inline style 全部恢復，
+      // 否則按「重設關卡」雖然可以點，但外觀仍會停在反白灰色。
       btnRun.disabled = false;
       btnRun.textContent = UI.buttons.run;
       btnRun.title = "";
@@ -1576,10 +1578,13 @@ window.GamePage = (()=>{
       btnRun.style.cursor = "pointer";
       btnRun.style.filter = "";
       btnRun.style.transform = "";
-      // 顏色交給 applyMainContrast 依世界主題重新套用。
+      btnRun.style.background = "linear-gradient(135deg, #6e6df6, #53c3ef)";
+      btnRun.style.color = "#fff";
+      btnRun.style.border = "none";
+      btnRun.style.fontWeight = "900";
+      btnRun.style.textShadow = "none";
     }
   }
-
   function applyMainContrast(){
     const theme = getWorldUiTheme(world?.worldId);
     const titleEl = document.getElementById('title');
