@@ -382,7 +382,6 @@ ${elseCode}}
     if(worldId === "W4"){
       const spellConfigs = getWorld4AvailableSpellConfigs(levelId, opts);
       spellConfigs.forEach(cfg => {
-        contents.push({kind:"block", type:cfg.defType});
         contents.push({kind:"block", type:cfg.callType});
       });
     }
@@ -399,6 +398,70 @@ ${elseCode}}
         <block type="${cfg.defType}" x="380" y="36"></block>
       </xml>
     `;
+  }
+
+  function getWorld4SpellTurnSequence(cfg){
+    const type = String(cfg?.defType || '');
+    const map = {
+      mw_func_def_fire: ['left', 'right', 'right', 'left'],
+      mw_func_def_rain: ['right', 'left', 'left', 'right'],
+      mw_func_def_purify: ['left', 'left', 'right', 'right'],
+      mw_func_def_fly: ['right', 'right', 'left', 'left']
+    };
+    return map[type] || [];
+  }
+
+  function lockWorld4SpellStack(block){
+    if(!block) return;
+    const seen = new Set();
+    function walk(current){
+      if(!current || seen.has(current.id)) return;
+      seen.add(current.id);
+      current.setDeletable?.(false);
+      current.setMovable?.(false);
+      current.setEditable?.(false);
+      if(Array.isArray(current.inputList)){
+        current.inputList.forEach(input => {
+          const child = input?.connection?.targetBlock?.();
+          if(child) walk(child);
+        });
+      }
+      const next = current.getNextBlock?.();
+      if(next) walk(next);
+    }
+    walk(block);
+  }
+
+  function rebuildWorld4SpellBody(workspace, defBlock, cfg){
+    if(!workspace || !defBlock || !cfg) return false;
+    const sequence = getWorld4SpellTurnSequence(cfg);
+    if(!sequence.length) return false;
+
+    const input = typeof defBlock.getInput === 'function' ? defBlock.getInput('DO') : null;
+    const target = input?.connection?.targetBlock?.() || null;
+    if(target){
+      try{ target.dispose(true); }catch(_err){}
+    }
+
+    let previous = null;
+    sequence.forEach(dir => {
+      const turnBlock = workspace.newBlock?.('mw_turn');
+      if(!turnBlock) return;
+      try{ turnBlock.setFieldValue(dir, 'DIR'); }catch(_err){}
+      turnBlock.initSvg?.();
+      turnBlock.render?.();
+
+      if(previous?.nextConnection && turnBlock.previousConnection){
+        try{ previous.nextConnection.connect(turnBlock.previousConnection); }catch(_err){}
+      }else if(input?.connection && turnBlock.previousConnection){
+        try{ input.connection.connect(turnBlock.previousConnection); }catch(_err){}
+      }
+      previous = turnBlock;
+    });
+
+    lockWorld4SpellStack(defBlock);
+    try{ defBlock.render?.(); }catch(_err){}
+    return true;
   }
 
   function enforceWorld4SingleSpell(workspace, levelId, opts = {}){
@@ -423,9 +486,14 @@ ${elseCode}}
     }
 
     if(defBlock){
-      defBlock.setMovable?.(true);
       defBlock.setDeletable?.(false);
-      defBlock.setEditable?.(true);
+      defBlock.setMovable?.(false);
+      defBlock.setEditable?.(false);
+      if(opts.rebuild !== false){
+        rebuildWorld4SpellBody(workspace, defBlock, cfg);
+      }else{
+        lockWorld4SpellStack(defBlock);
+      }
       if(opts.reposition !== false){
         try{
           const xy = typeof defBlock.getRelativeToSurfaceXY === 'function' ? defBlock.getRelativeToSurfaceXY() : {x:0,y:0};

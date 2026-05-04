@@ -2545,7 +2545,7 @@ window.GamePage = (()=>{
     // 1. 必須拿到兩個寶箱
     // 2. 程式碼數必須達標
     // 3. 本次通關必須是從起點、初始方向、未拿鑰匙、未開寶箱、步數/撞牆數都為 0 的狀態開始
-    // 4. 不可撞牆
+    // 4. 撞牆 2 次以內仍可三星
     // 這樣學生仍可在失敗後保留位置觀察，但不能重複執行短積木一路累積到三星。
     if (
       gotBothRewards &&
@@ -2553,7 +2553,7 @@ window.GamePage = (()=>{
       codeBlocks > 0 &&
       codeBlocks <= targetBlocks &&
       startedFromCleanStart &&
-      bumps === 0
+      bumps <= 2
     ) stars = 3;
 
     const base = 1200;
@@ -3166,9 +3166,9 @@ window.GamePage = (()=>{
     });
 
     resetLevel();
-    const hasDraft = loadProgramDraft();
-    if (!hasDraft) {
-      maybeShowWorld4HintSpell();
+    loadProgramDraft();
+    if (normalizeWorldId(world.worldId) === 'W4') {
+      BlocklySetup?.enforceWorld4SingleSpell?.(workspace, normalizeLevelId(level.levelId || ''), { reposition:false });
     }
     // ✅ 草稿／提示積木載入後，只刷新目前程式碼數，不再強制移動起始積木。
     refreshCodeCountBadge();
