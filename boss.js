@@ -33,7 +33,7 @@
       winText: '你成功擊敗魔法教授，第一世界正式通關！',
       nextText: '進入第二世界第 1 關',
       nextWorld: 'world2',
-      bodyBg: "url('img/world1_bg_magic_academy.png') center/cover no-repeat fixed",
+      bodyBg: "url('img/world1_bg_magic_academy.jpeg') center/cover no-repeat fixed",
       arenaBg: "transparent",
       bossImg: 'img/world1_boss_professor.png',
       stats: { playerMaxHp: 24, bossMaxHp: 36, basicDamage: 4, defendShield: 7, focusGain: 3 },
@@ -131,7 +131,7 @@
       winText: '你成功擊敗時光館長，第三世界正式通關！',
       nextText: '進入第四世界第 1 關',
       nextWorld: 'world4',
-      bodyBg: "url('img/world3_bg_time_library.png') center/cover no-repeat fixed",
+      bodyBg: "url('img/world3_bg_time_library.jpeg') center/cover no-repeat fixed",
       arenaBg: "transparent",
       bossImg: 'img/world3_boss_librarian.png',
       stats: { playerMaxHp: 24, bossMaxHp: 66, basicDamage: 6, defendShield: 9, focusGain: 3 },
@@ -181,7 +181,7 @@
       winText: '你成功擊敗機械主宰，第四世界正式通關！',
       nextText: '返回首頁',
       nextWorld: null,
-      bodyBg: "url('img/world4_bg_mech_castle.png') center/cover no-repeat fixed",
+      bodyBg: "url('img/world4_bg_mech_castle.jpeg') center/cover no-repeat fixed",
       arenaBg: "transparent",
       bossImg: 'img/world4_boss_mech_overlord.png',
       stats: { playerMaxHp: 24, bossMaxHp: 86, basicDamage: 7, defendShield: 10, focusGain: 3 },
@@ -250,6 +250,7 @@
   };
 
   const TEACHER_BOSS_SIM_KEY = 'mw_teacher_boss_sim_v1';
+  const IMAGE_PROBE_TIMEOUT_MS = 2500;
   const WORLD_EQUIPMENT_OPTIONS = {
     world1: ['頭盔', '劍', '盔甲', '盾牌'],
     world2: ['頭盔', '盾牌', '盔甲', '劍'],
@@ -841,8 +842,18 @@
         const testUrl = new URL(candidate, location.href).toString();
         const loaded = await new Promise((resolve) => {
           const img = new Image();
-          img.onload = () => resolve(testUrl);
-          img.onerror = () => resolve('');
+          let settled = false;
+          const finish = (value) => {
+            if (settled) return;
+            settled = true;
+            window.clearTimeout(timer);
+            img.onload = null;
+            img.onerror = null;
+            resolve(value);
+          };
+          const timer = window.setTimeout(() => finish(''), IMAGE_PROBE_TIMEOUT_MS);
+          img.onload = () => finish(testUrl);
+          img.onerror = () => finish('');
           img.src = testUrl;
         });
         if (loaded) return loaded;
