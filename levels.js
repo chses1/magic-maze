@@ -154,19 +154,19 @@ window.LEVELS = [
         "startDir": 2,
         "map": [
           "NNNNNNNNNNN",
-          "NS.TNN..Q.N",
-          "N.NNNN.NN.N",
-          "N..KNN.NN.N",
-          "NNN.NN.NN.N",
-          "N...NN.NN.N",
-          "N.NNNN.NN.N",
-          "NG..NNC..DN",
-          "NNN.NNN.O.N",
-          "N..QNNN...N",
+          "NS..NNN..QN",
+          "N.NNNNN.NNN",
+          "N..KNNN...N",
+          "NNN.NNNNN.N",
+          "N...NNN..CN",
+          "N.NNNNN.NNN",
+          "NG..NNN...N",
+          "NNN.NNNNN.N",
+          "N..QNNND..N",
           "NNNNNNNNNNN"
         ],
-        "bestXml": "{\"blocks\":{\"languageVersion\":0,\"blocks\":[{\"type\":\"mw_start\",\"id\":\"x=j/.=+[^@d7_ht9zD.L\",\"x\":20,\"y\":20,\"deletable\":false,\"movable\":false,\"editable\":false,\"next\":{\"block\":{\"type\":\"mw_repeat_times\",\"id\":\"1^k0mRv:im6YA`(tbuVS\",\"fields\":{\"TIMES\":\"2\"},\"inputs\":{\"DO\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"h.d6uC,6i_5[%rR+k~Ys\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"$`z.vz++xWmUrxK!_$r*\",\"next\":{\"block\":{\"type\":\"mw_turn\",\"id\":\"PvLc$6Rp5K7lL1l[f)Qy\",\"fields\":{\"DIR\":\"left\"},\"next\":{\"block\":{\"type\":\"mw_repeat_times\",\"id\":\"2K7]Q=N]IV0~8,D0jpAx\",\"fields\":{\"TIMES\":\"2\"},\"inputs\":{\"DO\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"1:|ZP.J[;IFm^Bs]^(?y\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"]56c/E?)E$RCu*qmfe@,\",\"next\":{\"block\":{\"type\":\"mw_turn\",\"id\":\"Du;1M6j%iRHEId6lu[cX\",\"fields\":{\"DIR\":\"right\"}}}}}}}},\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"Ie22O$Mtw}eO%3#S+tbB\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"p(GA1^KPs,i2h~~NYyZy\",\"next\":{\"block\":{\"type\":\"mw_turn\",\"id\":\"R^2GOqksH^G_Zwy.!!%W\",\"fields\":{\"DIR\":\"left\"}}}}}}}}}}}}}}}},\"next\":{\"block\":{\"type\":\"mw_repeat_times\",\"id\":\"rLHcAe`/$`ACCE:=;(|v\",\"fields\":{\"TIMES\":\"6\"},\"inputs\":{\"DO\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"-4n85w}J!Y#c1U{%eZ(o\"}}},\"next\":{\"block\":{\"type\":\"mw_turn\",\"id\":\".}l;uOnZmBPj-elwgnJ=\",\"fields\":{\"DIR\":\"left\"},\"next\":{\"block\":{\"type\":\"mw_repeat_times\",\"id\":\")gc}7@aP2kB^ns,9tmtZ\",\"fields\":{\"TIMES\":\"3\"},\"inputs\":{\"DO\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"Bgnjf@Yn-d$R)@n~EFR-\"}}}}}}}}}}}}]}}",
-        "targetBlocks": 16
+        "bestXml": "{\"blocks\":{\"languageVersion\":0,\"blocks\":[{\"type\":\"mw_start\",\"id\":\"!]a0wXX,x[6?Kr|-kFQT\",\"x\":-290,\"y\":-330,\"deletable\":false,\"editable\":false,\"next\":{\"block\":{\"type\":\"mw_repeat_times\",\"id\":\"?!oEu@Da6oiy?ZpLNdL,\",\"fields\":{\"TIMES\":\"4\"},\"inputs\":{\"DO\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"#G}|f9?sN$-0IdnX$$Ut\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"1{4xog]9G~/r.OG)`W8e\",\"next\":{\"block\":{\"type\":\"mw_turn\",\"id\":\"Y/=o!)5A-_/q0Q,^%eB0\",\"fields\":{\"DIR\":\"left\"},\"next\":{\"block\":{\"type\":\"mw_repeat_times\",\"id\":\"-|NYMhcJT3Du*E~K(ve7\",\"fields\":{\"TIMES\":\"2\"},\"inputs\":{\"DO\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"?^/9wg8/vnr6$:b;/8rY\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\":I^fel@g#I@0K;X,2dQr\",\"next\":{\"block\":{\"type\":\"mw_turn\",\"id\":\"NdB$?+|j|doT*gNlr41G\",\"fields\":{\"DIR\":\"right\"}}}}}}}},\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"J?hAKS5Hsi}aD~k5,koC\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"|*Mlc3S_HQE)2p%eou}_\",\"next\":{\"block\":{\"type\":\"mw_turn\",\"id\":\"+x4C2qSUV4dGM1wGIw~!\",\"fields\":{\"DIR\":\"left\"}}}}}}}}}}}}}}}}}}}]}}",
+        "targetBlocks": 11
       },
       {
         "levelId": "L3",
@@ -202,19 +202,19 @@ window.LEVELS = [
         "startDir": 2,
         "map": [
           "NNNNNNNNNNN",
-          "NS........N",
+          "NS.....D..N",
           "N.NNNN..N.N",
-          "N...GNQ.N.N",
-          "N...PND.N.N",
+          "N..G.N..N.N",
+          "N...PNQ.N.N",
           "N.NNNNNNN.N",
-          "N.NRCNP...N",
-          "N.N.QNKR..N",
+          "N.N.PNQ...N",
+          "N.N..N.K.RN",
           "N.N..NNNN.N",
-          "N.........N",
+          "N..RC.....N",
           "NNNNNNNNNNN"
         ],
-        "bestXml": "{\"blocks\":{\"languageVersion\":0,\"blocks\":[{\"type\":\"mw_start\",\"id\":\"oAvbQOFhTE|4R7k6ve2i\",\"x\":-309,\"y\":-448,\"deletable\":false,\"editable\":false,\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"V~UY4UEvE-)gbkqEaQFn\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"(W|L*A:(;;@akVL{c;%,\",\"next\":{\"block\":{\"type\":\"mw_turn\",\"id\":\"a=_GsRgl3i.`wld{U{er\",\"fields\":{\"DIR\":\"left\"},\"next\":{\"block\":{\"type\":\"mw_repeat_times\",\"id\":\";7P`zV!dfz!c1qOkIEl_\",\"fields\":{\"TIMES\":\"3\"},\"inputs\":{\"DO\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"Q[7ZPuJyLC-[[`Om^pB:\"}}},\"next\":{\"block\":{\"type\":\"mw_turn\",\"id\":\"0R^aP[N29}GK|Q[2F(k^\",\"fields\":{\"DIR\":\"right\"},\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"s}o8XrFF+#qM]ehB.dd.\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"9|YoH;b$Y4?S7NCt_-lL\",\"next\":{\"block\":{\"type\":\"mw_turn\",\"id\":\"W_ZC{jJXA.g$Cp[KMy${\",\"fields\":{\"DIR\":\"left\"},\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"2XTO#XG8K6//St,:KW(8\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"_d^mf8*OX#/+vYM?qG}}\",\"next\":{\"block\":{\"type\":\"mw_turn\",\"id\":\"-@e+pU/`at,gIT8s?YmL\",\"fields\":{\"DIR\":\"right\"},\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\".0|ywjqv#znL|mn9BL.d\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"a`lR=K[c^uf9KQ*av-RY\"}}}}}}}}}}}}}}}}}}}}}}}}}}}]}}",
-        "targetBlocks": 14
+        "bestXml": "{\"blocks\":{\"languageVersion\":0,\"blocks\":[{\"type\":\"mw_start\",\"id\":\"+beQTB;U[BwSt#@?6O#e\",\"x\":-317,\"y\":-448,\"deletable\":false,\"editable\":false,\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"$1:}-M=Mj^ijv-`b3PvM\",\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"B9MF=[1,Jg6^zx56%Is[\",\"next\":{\"block\":{\"type\":\"mw_turn\",\"id\":\"kGw:)T],F(9{BFRd]Nh]\",\"fields\":{\"DIR\":\"left\"},\"next\":{\"block\":{\"type\":\"mw_repeat_times\",\"id\":\";Z)g@aKlfZ$0QB)RwhLX\",\"fields\":{\"TIMES\":\"4\"},\"inputs\":{\"DO\":{\"block\":{\"type\":\"mw_repeat_times\",\"id\":\"9+{lZgT|w$L]vXgmxmfS\",\"fields\":{\"TIMES\":\"3\"},\"inputs\":{\"DO\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"CUiyG;18*sTmWsaEJlCi\"}}},\"next\":{\"block\":{\"type\":\"mw_turn\",\"id\":\"BjJU)NM(,3@Y_(=,pjR[\",\"fields\":{\"DIR\":\"right\"},\"next\":{\"block\":{\"type\":\"mw_move_forward\",\"id\":\"y6`R#HrnWvxG{l1bn84B\"}}}}}}}}}}}}}}}}]}}",
+        "targetBlocks": 8
       }
     ]
   },
