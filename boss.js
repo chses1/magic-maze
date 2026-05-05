@@ -257,6 +257,12 @@
     world3: ['頭盔', '盾牌', '盔甲', '劍'],
     world4: ['頭盔', '盾牌', '盔甲', '劍']
   };
+  const EQUIPMENT_EFFECTS = {
+    '頭盔': { defBonus: 1 },
+    '盔甲': { defBonus: 2 },
+    '盾牌': { defBonus: 2 },
+    '劍': { atkBonus: 2 }
+  };
 
   let teacherBossSimOverride = null;
   let pendingActionPreview = null;
@@ -444,19 +450,21 @@
 
   function getPlayerBuild(){
     const session = getSessionSafe();
-    if (!session?.userId) return { itemsByWorld:{}, equipmentsByWorld:{}, hpBonus:0, atkBonus:0, defBonus:0 };
+    if (!session?.userId) return { itemsByWorld:{}, equipmentsByWorld:{}, threeStarLevels:{}, equipmentLevels:{}, hpBonus:0, atkBonus:0, defBonus:0 };
     try{
       const progress = StorageAPI?.getProgress?.() || {};
       const meta = progress?.[session.userId]?.meta || {};
       return {
         itemsByWorld: meta.itemsByWorld || {},
         equipmentsByWorld: meta.equipmentsByWorld || {},
+        threeStarLevels: meta.threeStarLevels || {},
+        equipmentLevels: meta.equipmentLevels || {},
         hpBonus: Number(meta.hpBonus || 0),
         atkBonus: Number(meta.atkBonus || 0),
         defBonus: Number(meta.defBonus || 0)
       };
     }catch(_err){
-      return { itemsByWorld:{}, equipmentsByWorld:{}, hpBonus:0, atkBonus:0, defBonus:0 };
+      return { itemsByWorld:{}, equipmentsByWorld:{}, threeStarLevels:{}, equipmentLevels:{}, hpBonus:0, atkBonus:0, defBonus:0 };
     }
   }
 
@@ -577,19 +585,56 @@
     return (WORLD_EQUIPMENT_OPTIONS[worldId] || ['頭盔', '劍', '盔甲', '盾牌']).slice();
   }
 
+  function worldIdToNumber(value){
+    const raw = String(value || '').trim();
+    const m = raw.match(/(?:world|w)\s*(\d+)/i);
+    return m ? Number(m[1] || 0) : 0;
+  }
+
+  function normalizeBossWorldKey(value){
+    const n = worldIdToNumber(value);
+    return n > 0 ? `W${n}` : String(value || '').trim().toUpperCase();
+  }
+
+  function getCurrentWorldKey(){
+    return normalizeBossWorldKey(worldId);
+  }
+
+  function getCurrentWorldNumber(){
+    return worldIdToNumber(worldId);
+  }
+
+  function getWorldNumberFromLevelKey(levelKey){
+    return worldIdToNumber(String(levelKey || '').split('-')[0]);
+  }
+
+  function countThreeStarsForWorldRange(threeStarLevels, predicate){
+    return Object.keys(threeStarLevels || {}).filter(key => {
+      if (!threeStarLevels[key]) return false;
+      return predicate(getWorldNumberFromLevelKey(key));
+    }).length;
+  }
+
   function calculateEquipmentBonuses(equipments){
     const result = { atkBonus: 0, defBonus: 0 };
     (Array.isArray(equipments) ? equipments : []).forEach(name => {
-      const effect = {
-        '頭盔': { defBonus: 1 },
-        '盔甲': { defBonus: 2 },
-        '盾牌': { defBonus: 2 },
-        '劍': { atkBonus: 2 }
-      }[String(name || '').trim()] || {};
+      const effect = EQUIPMENT_EFFECTS[String(name || '').trim()] || {};
       result.atkBonus += Number(effect.atkBonus || 0);
       result.defBonus += Number(effect.defBonus || 0);
     });
     return result;
+  }
+
+  function calculatePreviousEquipmentBonusesByWorld(equipmentsByWorld){
+    const currentNumber = getCurrentWorldNumber();
+    const previousEquipments = [];
+    Object.keys(equipmentsByWorld || {}).forEach(key => {
+      const n = worldIdToNumber(key);
+      if (n > 0 && currentNumber > 0 && n < currentNumber) {
+        previousEquipments.push(...(Array.isArray(equipmentsByWorld[key]) ? equipmentsByWorld[key] : []));
+      }
+    });
+    return calculateEquipmentBonuses(previousEquipments);
   }
 
   function buildTeacherBossOverride(payload){
@@ -598,15 +643,24 @@
     const items = (Array.isArray(payload?.items) ? payload.items : []).map(v => String(v || '').trim()).filter(v => safeItems.includes(v));
     const equipments = (Array.isArray(payload?.equipments) ? payload.equipments : []).map(v => String(v || '').trim()).filter(v => safeEquips.includes(v));
     const simulatedThreeStars = Math.max(0, Math.min(4, Number(payload?.simulatedThreeStars || 0) || 0));
+    const maxPreviousThreeStars = Math.max(0, (getCurrentWorldNumber() - 1) * 4);
+    const previousThreeStars = Math.max(0, Math.min(maxPreviousThreeStars, Number(payload?.previousThreeStars || 0) || 0));
+    const previousAtkBonus = Math.max(0, Number(payload?.previousAtkBonus || 0) || 0);
+    const previousDefBonus = Math.max(0, Number(payload?.previousDefBonus || 0) || 0);
     const equipBonus = calculateEquipmentBonuses(equipments);
     return {
-      worldKey: worldId.replace(/^world/i, 'W'),
+      worldKey: getCurrentWorldKey(),
       items,
       equipments,
       simulatedThreeStars,
-      hpBonus: simulatedThreeStars * 4,
-      atkBonus: equipBonus.atkBonus,
-      defBonus: equipBonus.defBonus
+      previousThreeStars,
+      previousAtkBonus,
+      previousDefBonus,
+      currentHpBonus: simulatedThreeStars * 4,
+      previousHpBonus: previousThreeStars * 4,
+      hpBonus: (previousThreeStars + simulatedThreeStars) * 4,
+      atkBonus: previousAtkBonus + equipBonus.atkBonus,
+      defBonus: previousDefBonus + equipBonus.defBonus
     };
   }
 
@@ -636,13 +690,35 @@
 
   function getRealWorldInventoryForTeacherTool(){
     const build = getPlayerBuild();
-    const worldKey = worldId.replace(/^world/i, 'W').toUpperCase();
+    const worldKey = getCurrentWorldKey();
+    const currentNumber = getCurrentWorldNumber();
+    const threeStarKeys = Object.keys(build.threeStarLevels || {});
+    const totalEstimatedThreeStars = Math.round(Number(build.hpBonus || 0) / 4);
+    const maxPreviousThreeStars = Math.max(0, (currentNumber - 1) * 4);
+    let currentThreeStars = countThreeStarsForWorldRange(build.threeStarLevels, n => n === currentNumber);
+    let previousThreeStars = countThreeStarsForWorldRange(build.threeStarLevels, n => n > 0 && n < currentNumber);
+    if (threeStarKeys.length === 0 && totalEstimatedThreeStars > 0) {
+      previousThreeStars = Math.max(0, Math.min(maxPreviousThreeStars, totalEstimatedThreeStars));
+      currentThreeStars = Math.max(0, Math.min(4, totalEstimatedThreeStars - previousThreeStars));
+    }
+    const currentEquipBonus = calculateEquipmentBonuses(build.equipmentsByWorld?.[worldKey] || []);
+    let previousEquipBonus = calculatePreviousEquipmentBonusesByWorld(build.equipmentsByWorld);
+    if (Object.keys(build.equipmentsByWorld || {}).length === 0 && (Number(build.atkBonus || 0) > 0 || Number(build.defBonus || 0) > 0)) {
+      previousEquipBonus = {
+        atkBonus: Math.max(0, Number(build.atkBonus || 0) - currentEquipBonus.atkBonus),
+        defBonus: Math.max(0, Number(build.defBonus || 0) - currentEquipBonus.defBonus)
+      };
+    }
     return {
       items: (build.itemsByWorld?.[worldKey] || []).slice(),
       equipments: (build.equipmentsByWorld?.[worldKey] || []).slice(),
       hpBonus: Number(build.hpBonus || 0),
       atkBonus: Number(build.atkBonus || 0),
-      defBonus: Number(build.defBonus || 0)
+      defBonus: Number(build.defBonus || 0),
+      currentThreeStars,
+      previousThreeStars,
+      previousAtkBonus: previousEquipBonus.atkBonus,
+      previousDefBonus: previousEquipBonus.defBonus
     };
   }
 
@@ -654,7 +730,7 @@
     if (!override) return '目前使用學生實際進度。';
     const items = override.items.length ? override.items.join('、') : '未取得';
     const equips = override.equipments.length ? override.equipments.join('、') : '未取得';
-    return `模擬三星關卡：${override.simulatedThreeStars}／4｜生命 +${override.hpBonus}｜攻擊 +${override.atkBonus}｜防禦 +${override.defBonus}<br>模擬道具：${items}<br>模擬裝備：${equips}`;
+    return `前面世界累積：三星 ${override.previousThreeStars || 0} 關，生命 +${override.previousHpBonus || 0}，攻擊 +${override.previousAtkBonus || 0}，防禦 +${override.previousDefBonus || 0}<br>本世界模擬：三星 ${override.simulatedThreeStars}／4，生命 +${override.currentHpBonus || 0}<br>Boss 實際套用：生命 +${override.hpBonus}｜攻擊 +${override.atkBonus}｜防禦 +${override.defBonus}<br>本世界道具：${items}<br>本世界裝備：${equips}`;
   }
 
   function syncTeacherBossToolUi(){
@@ -671,7 +747,7 @@
     saveTeacherBossOverride(teacherBossSimOverride);
     bossState = createBossState();
     if (teacherBossSimOverride) {
-      bossState.log.unshift(`教師模擬已套用：三星 ${teacherBossSimOverride.simulatedThreeStars}／4，道具 ${teacherBossSimOverride.items.length || 0} 個，裝備 ${teacherBossSimOverride.equipments.length || 0} 件。`);
+      bossState.log.unshift(`教師模擬已套用：前面世界三星 ${teacherBossSimOverride.previousThreeStars || 0} 關，本世界三星 ${teacherBossSimOverride.simulatedThreeStars}／4，道具 ${teacherBossSimOverride.items.length || 0} 個，裝備 ${teacherBossSimOverride.equipments.length || 0} 件。`);
       bossState.fxText = '🧪 教師模擬狀態已更新';
     } else {
       bossState.log.unshift('已恢復學生實際進度狀態。');
@@ -687,7 +763,10 @@
     const defaultOverride = readTeacherBossOverride() || buildTeacherBossOverride({
       items: real.items,
       equipments: real.equipments,
-      simulatedThreeStars: estimateThreeStarsFromHpBonus(real.hpBonus)
+      simulatedThreeStars: real.currentThreeStars ?? estimateThreeStarsFromHpBonus(real.hpBonus),
+      previousThreeStars: real.previousThreeStars || 0,
+      previousAtkBonus: real.previousAtkBonus || 0,
+      previousDefBonus: real.previousDefBonus || 0
     });
     teacherBossSimOverride = readTeacherBossOverride() || null;
 
@@ -711,6 +790,7 @@
       .teacher-boss-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
       .teacher-boss-field{display:flex;flex-direction:column;gap:6px}
       .teacher-boss-field label{margin:0;font-size:12px;color:#d9e7ff}
+      .teacher-boss-field input[type="number"]{min-height:38px;border-radius:12px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.94);padding:8px 10px;font-size:15px;font-weight:800;color:#17213a}
       .teacher-boss-checks{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:10px;border-radius:14px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10)}
       .teacher-boss-check{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:#fff}
       .teacher-boss-check input{width:16px;height:16px;margin:0}
@@ -732,13 +812,27 @@
       <div class="teacher-boss-head">
         <div>
           <h3>🧪 教師 Boss 測試工具</h3>
-          <p>可直接模擬本世界已取得的道具、裝備與三星關卡數，方便測試不同難度。</p>
+          <p>可模擬前面世界累積加成，以及本世界已取得的道具、裝備與三星關卡數。</p>
         </div>
         <div class="teacher-boss-head-actions">
           <button type="button" class="teacher-boss-mini-btn" id="teacherBossToggle" aria-expanded="true" title="最小化或展開">－</button>
         </div>
       </div>
       <div class="teacher-boss-body" id="teacherBossBody">
+      <div class="teacher-boss-grid">
+        <div class="teacher-boss-field">
+          <label for="teacherBossPrevStars">前面世界累積三星關卡數</label>
+          <input id="teacherBossPrevStars" type="number" min="0" max="${Math.max(0, (getCurrentWorldNumber() - 1) * 4)}" step="1" value="${defaultOverride.previousThreeStars || 0}">
+        </div>
+        <div class="teacher-boss-field">
+          <label>前面世界裝備加成</label>
+          <div class="teacher-boss-grid" style="grid-template-columns:1fr 1fr;margin-top:0;">
+            <input id="teacherBossPrevAtk" type="number" min="0" max="99" step="1" value="${defaultOverride.previousAtkBonus || 0}" aria-label="前面世界攻擊加成">
+            <input id="teacherBossPrevDef" type="number" min="0" max="99" step="1" value="${defaultOverride.previousDefBonus || 0}" aria-label="前面世界防禦加成">
+          </div>
+          <div class="teacher-boss-summary">左：攻擊加成；右：防禦加成。</div>
+        </div>
+      </div>
       <div class="teacher-boss-grid">
         <div class="teacher-boss-field">
           <label for="teacherBossStars">本世界三星關卡數（0～4）</label>
@@ -791,6 +885,9 @@
 
     const collect = () => ({
       simulatedThreeStars: document.getElementById('teacherBossStars')?.value,
+      previousThreeStars: document.getElementById('teacherBossPrevStars')?.value,
+      previousAtkBonus: document.getElementById('teacherBossPrevAtk')?.value,
+      previousDefBonus: document.getElementById('teacherBossPrevDef')?.value,
       items: Array.from(itemWrap.querySelectorAll('input:checked')).map(el => el.value),
       equipments: Array.from(equipWrap.querySelectorAll('input:checked')).map(el => el.value)
     });
@@ -798,9 +895,12 @@
     document.getElementById('teacherBossApply').onclick = () => applyTeacherBossSimulation(collect());
     document.getElementById('teacherBossReset').onclick = () => {
       document.getElementById('teacherBossStars').value = '0';
+      document.getElementById('teacherBossPrevStars').value = '0';
+      document.getElementById('teacherBossPrevAtk').value = '0';
+      document.getElementById('teacherBossPrevDef').value = '0';
       itemWrap.querySelectorAll('input').forEach(el => { el.checked = false; });
       equipWrap.querySelectorAll('input').forEach(el => { el.checked = false; });
-      applyTeacherBossSimulation({ simulatedThreeStars: 0, items: [], equipments: [] });
+      applyTeacherBossSimulation({ simulatedThreeStars: 0, previousThreeStars: 0, previousAtkBonus: 0, previousDefBonus: 0, items: [], equipments: [] });
     };
     document.getElementById('teacherBossUseReal').onclick = () => {
       teacherBossSimOverride = null;
