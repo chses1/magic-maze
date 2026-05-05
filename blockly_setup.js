@@ -411,14 +411,14 @@ ${elseCode}}
     return map[type] || [];
   }
 
-  function lockWorld4SpellStack(block){
+  function lockWorld4SpellStack(block, opts = {}){
     if(!block) return;
     const seen = new Set();
     function walk(current){
       if(!current || seen.has(current.id)) return;
       seen.add(current.id);
       current.setDeletable?.(false);
-      current.setMovable?.(false);
+      current.setMovable?.(current === block ? opts.rootMovable !== false : false);
       current.setEditable?.(false);
       if(Array.isArray(current.inputList)){
         current.inputList.forEach(input => {
@@ -464,6 +464,22 @@ ${elseCode}}
     return true;
   }
 
+  function getWorld4SpellDefaultXY(workspace){
+    const fallback = { x: 380, y: 36 };
+    try{
+      const allBlocks = typeof workspace?.getAllBlocks === 'function' ? workspace.getAllBlocks(false) : [];
+      const startBlock = allBlocks.find(block => block?.type === 'mw_start') || null;
+      if(!startBlock || typeof startBlock.getRelativeToSurfaceXY !== 'function') return fallback;
+      const xy = startBlock.getRelativeToSurfaceXY();
+      return {
+        x: Number(xy.x || 0) + 360,
+        y: Number(xy.y || 0)
+      };
+    }catch(_err){
+      return fallback;
+    }
+  }
+
   function enforceWorld4SingleSpell(workspace, levelId, opts = {}){
     if(!workspace) return false;
     const cfg = getWorld4HintSpellConfig(levelId) || getWorld4SpellConfig(levelId);
@@ -479,30 +495,31 @@ ${elseCode}}
         if(block){
           block.initSvg?.();
           block.render?.();
-          block.moveBy?.(380, 36);
           defBlock = block;
         }
       }catch(_err){}
     }
 
+    ensureStartBlock(workspace);
+
     if(defBlock){
       defBlock.setDeletable?.(false);
-      defBlock.setMovable?.(false);
+      defBlock.setMovable?.(true);
       defBlock.setEditable?.(false);
       if(opts.rebuild !== false){
         rebuildWorld4SpellBody(workspace, defBlock, cfg);
       }else{
-        lockWorld4SpellStack(defBlock);
+        lockWorld4SpellStack(defBlock, { rootMovable:true });
       }
       if(opts.reposition !== false){
         try{
+          const target = getWorld4SpellDefaultXY(workspace);
           const xy = typeof defBlock.getRelativeToSurfaceXY === 'function' ? defBlock.getRelativeToSurfaceXY() : {x:0,y:0};
-          defBlock.moveBy?.(380 - Number(xy.x || 0), 36 - Number(xy.y || 0));
+          defBlock.moveBy?.(target.x - Number(xy.x || 0), target.y - Number(xy.y || 0));
         }catch(_err){}
       }
     }
 
-    ensureStartBlock(workspace);
     lockStartBlocks(workspace);
     return true;
   }
