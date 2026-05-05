@@ -26,7 +26,7 @@ window.GamePage = (()=>{
       }
     },
     W2: {
-      worldBg: "img/world2_bg_runic_forest.png",
+      worldBg: "img/world2_bg_runic_forest.jpeg",
       boss: "img/world2_boss_wolf_king.png",
       cards: {
         potion: "img/world2_item_01_healing_potion.png",

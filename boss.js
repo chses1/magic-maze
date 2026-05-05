@@ -82,7 +82,7 @@
       winText: '你成功擊敗森林狼王，第二世界正式通關！',
       nextText: '進入第三世界第 1 關',
       nextWorld: 'world3',
-      bodyBg: "url('img/world2_bg_runic_forest.png') center/cover no-repeat fixed",
+      bodyBg: "url('img/world2_bg_runic_forest.jpeg') center/cover no-repeat fixed",
       arenaBg: "transparent",
       bossImg: 'img/world2_boss_wolf_king.png',
       stats: { playerMaxHp: 24, bossMaxHp: 50, basicDamage: 5, defendShield: 8, focusGain: 3 },
