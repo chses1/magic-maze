@@ -22,6 +22,12 @@
     return role === 'teacher' || role === 'student';
   }
 
+  function shouldAutoShowTeacherTools(){
+    if (!isTeacherMode()) return false;
+    const flag = String(qs('teacherTools') || qs('tools') || '').trim().toLowerCase();
+    return flag === '1' || flag === 'true' || flag === 'teacher';
+  }
+
   function qs(name){
     try { return new URL(location.href).searchParams.get(name); } catch(e){ return null; }
   }
@@ -473,6 +479,9 @@
     injectPanel();
     setupKeyboardShortcut();
     consumePendingTeacherAction();
+    if (shouldAutoShowTeacherTools()) {
+      window.setTimeout(showPanel, 250);
+    }
   }
 
   if (document.readyState === 'loading') {

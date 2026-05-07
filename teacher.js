@@ -939,7 +939,7 @@ window.TeacherPage = (()=>{
   }
 
   async function openSelectedLevel(picked){
-    const queryBase = `world=${encodeURIComponent(picked.world)}&from=teacher`;
+    const queryBase = `world=${encodeURIComponent(picked.world)}&from=teacher&teacherTools=1`;
     if(isBossLevel(picked.level)){
       await goToAppPage('boss.html', `${queryBase}&level=boss`);
       return;
