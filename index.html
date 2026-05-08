@@ -27,15 +27,29 @@
     body.home-page{
       margin:0;
       color:var(--home-text);
+      min-height:100vh;
+      min-height:100dvh;
+      background:#090b12;
+      overflow-x:hidden;
+    }
+
+    body.home-page::before{
+      content:"";
+      position:fixed;
+      inset:0;
+      z-index:0;
+      pointer-events:none;
       background:
         linear-gradient(180deg, rgba(7,10,18,.16) 0%, rgba(7,10,18,.34) 100%),
-        #090b12 url('img/index.jpeg') center center / contain no-repeat fixed;
-      overflow-x:hidden;
+        url('img/index.jpeg') center center / contain no-repeat;
+      transform:translateZ(0);
     }
 
     .home-shell{
       min-height:100vh;
+      min-height:100dvh;
       position:relative;
+      z-index:1;
       padding:18px;
       display:flex;
       flex-direction:column;
