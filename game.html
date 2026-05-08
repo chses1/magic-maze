@@ -6,9 +6,13 @@
   <title>魔法迷宮｜遊戲</title>
   <link rel="stylesheet" href="styles.css" />
 
-  <!-- Blockly CDN（主程式 + 繁中語系） -->
+  <!-- Blockly CDN（主程式 + 語系） -->
   <script src="https://unpkg.com/blockly/blockly.min.js"></script>
-  <script src="https://unpkg.com/blockly/msg/zh-hant.js"></script>
+  <script src="i18n.js"></script>
+  <script>
+    const __mmBlocklyLang = window.MagicMazeI18n?.getLang?.() === 'en' ? 'en' : 'zh-hant';
+    document.write(`<script src="https://unpkg.com/blockly/msg/${__mmBlocklyLang}.js"><\/script>`);
+  </script>
 
   <script src="levels.js"></script>
   <script src="storage.js"></script>
@@ -56,7 +60,7 @@
       <div class="card editorCard">
         <div class="editorHead">
           <h2 class="editorTitle">積木工作區</h2>
-          <span class="badge editorCodeBadge" id="codeBadge">目前程式碼數／目標程式碼數：<strong id="codeCount">0</strong>/<strong id="targetCodeCount">0</strong></span>
+          <span class="badge editorCodeBadge" id="codeBadge"><span id="codeBadgeLabel">目前程式碼數／目標程式碼數：</span><strong id="codeCount">0</strong>/<strong id="targetCodeCount">0</strong></span>
         </div>
         <div class="blocklyWrap">
           <div id="blocklyDiv"></div>
@@ -77,9 +81,12 @@
 
   // ✅ 右上角顯示身分
   const badge = document.getElementById("sessionBadge");
+  const pageLang = window.MagicMazeI18n?.getLang?.() || 'zh';
+  document.documentElement.lang = pageLang === 'en' ? 'en' : 'zh-Hant';
+  document.title = pageLang === 'en' ? 'Magic Maze | Game' : '魔法迷宮｜遊戲';
   badge.textContent = (s.role === "teacher")
-    ? "👩‍🏫 教師模式（已解鎖全關；Ctrl+Shift+T 開啟快捷工具）"
-    : `學生：${s.userId}（Ctrl+Shift+T 可開啟開發快捷工具）`;
+    ? (pageLang === 'en' ? "Teacher Mode (all levels unlocked)" : "👩‍🏫 教師模式（已解鎖全關；Ctrl+Shift+T 開啟快捷工具）")
+    : (pageLang === 'en' ? `Student: ${s.userId}` : `學生：${s.userId}（Ctrl+Shift+T 可開啟開發快捷工具）`);
 
   window.GamePage.init();
 </script>

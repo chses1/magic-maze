@@ -86,6 +86,38 @@
       transform:translateY(0);
     }
 
+    .home-lang-toggle{
+      position:fixed;
+      right:18px;
+      top:18px;
+      z-index:6;
+      display:flex;
+      gap:6px;
+      padding:6px;
+      border-radius:999px;
+      background:rgba(255,255,255,.76);
+      border:1px solid rgba(255,255,255,.68);
+      box-shadow:0 10px 24px rgba(67,35,10,.16);
+      backdrop-filter:blur(10px);
+    }
+
+    .home-lang-toggle button{
+      border:0;
+      border-radius:999px;
+      padding:8px 12px;
+      background:transparent;
+      color:#7a4b18;
+      font-size:14px;
+      font-weight:900;
+      cursor:pointer;
+    }
+
+    .home-lang-toggle button.active{
+      background:linear-gradient(135deg,#fff7d6,#ffd166);
+      color:#4f2d08;
+      box-shadow:0 4px 12px rgba(161,98,7,.18);
+    }
+
     .home-stage{
       flex:1;
       min-height:300px;
@@ -575,6 +607,10 @@
 </head>
 <body class="home-page">
   <div class="home-shell">
+    <div class="home-lang-toggle" aria-label="Language">
+      <button type="button" id="btnLangZh">中文</button>
+      <button type="button" id="btnLangEn">English</button>
+    </div>
     <div class="home-status" id="sessionBadge" hidden>尚未登入</div>
 
     <div class="home-stage" id="homeStage" tabindex="0" aria-label="點擊開啟登入視窗">
@@ -696,19 +732,57 @@
     </div>
   </div>
 
+<script src="i18n.js"></script>
 <script>
+  const I18N = window.MagicMazeI18n;
+  let currentLang = I18N.getLang();
+  const HOME_TEXT = {
+    start: { zh: '開始遊戲', en: 'Start Game' },
+    logout: { zh: '登出', en: 'Log Out' },
+    switchLogin: { zh: '切換登入', en: 'Switch Login' },
+    worldsTitle: { zh: '世界與關卡', en: 'Worlds and Levels' },
+    classTitle: { zh: '本班闖關總覽', en: 'Class Progress' },
+    refreshClass: { zh: '更新本班進度', en: 'Refresh Class Progress' },
+    none: { zh: '未通關', en: 'Not cleared' },
+    oneStar: { zh: '1 星', en: '1 star' },
+    twoStar: { zh: '2 星', en: '2 stars' },
+    threeStar: { zh: '3 星', en: '3 stars' },
+    rankLogin: { zh: '請先以學生登入後再查看。', en: 'Log in as a student to view this.' },
+    loginTitle: { zh: '登入冒險大廳', en: 'Adventure Lobby Login' },
+    loginIntro: { zh: '學生可輸入五碼班級座號並選擇角色，教師可輸入教師密碼進入教師視窗。', en: 'Students enter a 5-digit class and seat number, then choose a character. Teachers enter the teacher password.' },
+    studentTab: { zh: '學生登入', en: 'Student Login' },
+    teacherTab: { zh: '教師登入', en: 'Teacher Login' },
+    studentId: { zh: '班級座號五碼數字', en: '5-digit class and seat number' },
+    studentPlaceholder: { zh: '例如 30105', en: 'Example: 30105' },
+    chooseCharacter: { zh: '選擇角色', en: 'Choose Character' },
+    boyName: { zh: '冒險少年', en: 'Adventurer' },
+    boyDesc: { zh: '劍士造型，適合勇者冒險感。', en: 'A brave swordfighter look for classic adventure.' },
+    girlName: { zh: '精靈法師', en: 'Elf Mage' },
+    girlDesc: { zh: '法杖造型，適合法術冒險感。', en: 'A staff-wielding mage look for magical adventure.' },
+    loginAndPick: { zh: '登入並選關', en: 'Log In and Pick a Level' },
+    guideTitle: { zh: '操作說明', en: 'How to Start' },
+    guideBody: { zh: '1. 輸入前三碼班級＋後兩碼座號。<br>2. 選擇男角色或女角色。<br>3. 登入成功後，下方會出現世界與關卡。<br>4. 點選關卡後即可進入遊戲。', en: '1. Enter the first 3 digits for class and the last 2 digits for seat number.<br>2. Choose a character.<br>3. After login, worlds and levels will appear below.<br>4. Select a level to enter the game.' },
+    teacherCode: { zh: '教師密碼', en: 'Teacher Password' },
+    teacherPlaceholder: { zh: '請輸入教師密碼', en: 'Enter teacher password' },
+    teacherLoginBtn: { zh: '登入教師視窗', en: 'Open Teacher View' },
+    teacherFeatureTitle: { zh: '教師功能', en: 'Teacher Tools' },
+    teacherFeatureBody: { zh: '教師登入後會進入教師後台，可查看全班成績、管理關卡、開啟教師工具與編輯地圖。', en: 'Teachers can view class results, manage levels, open teacher tools, and edit maps.' },
+    footerHint: { zh: '登入視窗風格已與首頁背景一致，可直接作為首頁使用。', en: 'This login window is ready to use as the game home screen.' }
+  };
+
+  function ht(key){ return I18N.pick(HOME_TEXT[key], currentLang); }
   const HOME_WORLD_NAME = {
-    W1: '世界1｜魔法學院（序列）',
-    W2: '世界2｜符文森林（迴圈）',
-    W3: '世界3｜時光圖書館（條件式）',
-    W4: '世界4｜機械城堡（函式）'
+    W1: { zh: '世界1｜魔法學院（序列）', en: 'World 1 | Magic Academy (Sequence)' },
+    W2: { zh: '世界2｜符文森林（迴圈）', en: 'World 2 | Rune Forest (Loops)' },
+    W3: { zh: '世界3｜時光圖書館（條件式）', en: 'World 3 | Time Library (Conditionals)' },
+    W4: { zh: '世界4｜機械城堡（函式）', en: 'World 4 | Mechanical Castle (Functions)' }
   };
 
   const HOME_BOSS_LABEL = {
-    W1: '🧙‍🏫 第5關：教授 Boss 戰',
-    W2: '🐺 第5關：狼王 Boss 戰',
-    W3: '📚 第5關：館長 Boss 戰',
-    W4: '🤖 第5關：機械主宰 Boss 戰'
+    W1: { zh: '🧙‍🏫 第5關：教授 Boss 戰', en: '🧙‍🏫 Level 5: Professor Boss Battle' },
+    W2: { zh: '🐺 第5關：狼王 Boss 戰', en: '🐺 Level 5: Wolf King Boss Battle' },
+    W3: { zh: '📚 第5關：館長 Boss 戰', en: '📚 Level 5: Librarian Boss Battle' },
+    W4: { zh: '🤖 第5關：機械主宰 Boss 戰', en: '🤖 Level 5: Mechanical Overlord Boss Battle' }
   };
 
   const WORLD_THEME = {
@@ -752,6 +826,61 @@
 
   const toast = (msg)=> document.getElementById('toast').textContent = msg || '';
   const teacherToast = (msg)=> document.getElementById('teacherToast').textContent = msg || '';
+
+  function setText(selector, text){
+    const el = document.querySelector(selector);
+    if(el) el.textContent = text;
+  }
+
+  function setHtml(selector, html){
+    const el = document.querySelector(selector);
+    if(el) el.innerHTML = html;
+  }
+
+  function applyHomeLanguage(){
+    currentLang = I18N.getLang();
+    document.documentElement.lang = currentLang === 'en' ? 'en' : 'zh-Hant';
+    document.title = currentLang === 'en' ? 'Magic Maze | Home Login' : '程式迷宮大冒險｜首頁登入';
+    document.getElementById('btnLangZh')?.classList.toggle('active', currentLang === 'zh');
+    document.getElementById('btnLangEn')?.classList.toggle('active', currentLang === 'en');
+    setText('#btnStartGame', ht('start'));
+    setText('#btnLogout', ht('logout'));
+    setText('#btnReopenLogin', ht('switchLogin'));
+    setText('.home-worlds-card h2', ht('worldsTitle'));
+    setText('.class-progress-head h2', ht('classTitle'));
+    setText('#btnClassRank', ht('refreshClass'));
+    const legend = document.querySelectorAll('.class-legend-item');
+    [ht('none'), ht('oneStar'), ht('twoStar'), ht('threeStar'), 'Boss'].forEach((text, idx)=>{
+      if(legend[idx]){
+        const dot = legend[idx].querySelector('.class-dot');
+        legend[idx].textContent = text;
+        if(dot) legend[idx].prepend(dot);
+      }
+    });
+    setText('#rankArea', ht('rankLogin'));
+    setText('#loginTitle', ht('loginTitle'));
+    setText('.home-modal-head p', ht('loginIntro'));
+    setText('#tabStudent', ht('studentTab'));
+    setText('#tabTeacher', ht('teacherTab'));
+    setText('#studentPanel .login-box:nth-child(1) h4', ht('studentTab'));
+    setText('label[for="studentId"]', ht('studentId'));
+    document.getElementById('studentId')?.setAttribute('placeholder', ht('studentPlaceholder'));
+    setText('.character-picker > label', ht('chooseCharacter'));
+    setText('[data-character="boy"] .character-name', ht('boyName'));
+    setText('[data-character="boy"] .character-desc', ht('boyDesc'));
+    setText('[data-character="girl"] .character-name', ht('girlName'));
+    setText('[data-character="girl"] .character-desc', ht('girlDesc'));
+    setText('#btnStudentLogin', ht('loginAndPick'));
+    setText('#studentPanel .login-box:nth-child(2) h4', ht('guideTitle'));
+    setHtml('#studentPanel .home-helper', ht('guideBody'));
+    setText('#teacherPanel .login-box:nth-child(1) h4', ht('teacherTab'));
+    setText('label[for="teacherCode"]', ht('teacherCode'));
+    document.getElementById('teacherCode')?.setAttribute('placeholder', ht('teacherPlaceholder'));
+    setText('#btnTeacherLogin', ht('teacherLoginBtn'));
+    setText('#teacherPanel .login-box:nth-child(2) h4', ht('teacherFeatureTitle'));
+    setText('#teacherPanel .home-helper', ht('teacherFeatureBody'));
+    setText('.home-sub-actions .home-helper', ht('footerHint'));
+  }
 
   function openLoginModal(defaultTab = 'student'){
     document.getElementById('loginModal').hidden = false;
@@ -856,7 +985,7 @@
 
   function getDisplayWorldName(world){
     const worldId = normalizeWorldId(world.worldId);
-    return HOME_WORLD_NAME[worldId] || world.worldName || world.worldId;
+    return I18N.pick(HOME_WORLD_NAME[worldId], currentLang) || world.worldName || world.worldId;
   }
 
   function getHomeNormalLevels(world){
@@ -865,7 +994,7 @@
       const n = levels.length + 1;
       levels.push({
         levelId: `L${n}`,
-        name: `第${n}關：敬請期待`,
+        name: currentLang === 'en' ? `Level ${n}: Coming Soon` : `第${n}關：敬請期待`,
         placeholder: true
       });
     }
@@ -880,7 +1009,7 @@
 
   function buildBossButtonLabel(world){
     const worldId = normalizeWorldId(world.worldId);
-    return HOME_BOSS_LABEL[worldId] || '👑 第5關：Boss 戰';
+    return I18N.pick(HOME_BOSS_LABEL[worldId], currentLang) || (currentLang === 'en' ? '👑 Level 5: Boss Battle' : '👑 第5關：Boss 戰');
   }
 
   function renderWorlds(){
@@ -893,7 +1022,7 @@
     wrap.innerHTML = '';
 
     if(!s || (!isTeacher && !userId)){
-      wrap.innerHTML = '<div class="home-empty">請先登入學生帳號後再選關。</div>';
+      wrap.innerHTML = `<div class="home-empty">${currentLang === 'en' ? 'Please log in as a student before choosing a level.' : '請先登入學生帳號後再選關。'}</div>`;
       return;
     }
 
@@ -919,7 +1048,7 @@
       title.style.alignItems = 'center';
       title.style.gap = '8px';
       title.innerHTML = `<div style="color:${theme.title};"><b>${getDisplayWorldName(world)}</b></div>
-                         <div class="badge" style="background:${theme.badgeBg};border:${theme.badgeBd};color:${theme.title};">${isTeacher ? '教師可進入' : (worldUnlocked ? '已解鎖' : '未解鎖')}</div>`;
+                         <div class="badge" style="background:${theme.badgeBg};border:${theme.badgeBd};color:${theme.title};">${isTeacher ? (currentLang === 'en' ? 'Teacher access' : '教師可進入') : (worldUnlocked ? (currentLang === 'en' ? 'Unlocked' : '已解鎖') : (currentLang === 'en' ? 'Locked' : '未解鎖'))}</div>`;
       wCard.appendChild(title);
 
       const list = document.createElement('div');
@@ -949,14 +1078,19 @@
           }
         }
 
-        btn.textContent = isTeacher ? `👩‍🏫 ${lv.name}` : lv.name;
+        const levelLabel = currentLang === 'en'
+          ? (I18N.getLevelName(world.worldId, lv.levelId, lv.name) || lv.name)
+          : lv.name;
+        btn.textContent = isTeacher ? `👩‍🏫 ${levelLabel}` : levelLabel;
         if(!isTeacher && best){
-          btn.textContent = `${lv.name}｜★${best.stars} 分${best.score}`;
+          btn.textContent = currentLang === 'en'
+            ? `${levelLabel} | ★${best.stars} Score ${best.score}`
+            : `${levelLabel}｜★${best.stars} 分${best.score}`;
         }
 
         btn.onclick = ()=>{
           if(!canPlay) return;
-          location.href = `game.html?world=${encodeURIComponent(world.worldId)}&level=${encodeURIComponent(lv.levelId)}`;
+          location.href = I18N.withLang(`game.html?world=${encodeURIComponent(world.worldId)}&level=${encodeURIComponent(lv.levelId)}`, currentLang);
         };
 
         list.appendChild(btn);
@@ -967,7 +1101,7 @@
         bossBtn.classList.add('level-btn', 'boss-btn');
         bossBtn.textContent = buildBossButtonLabel(world);
         bossBtn.onclick = ()=>{
-          location.href = `boss.html?world=${encodeURIComponent(world.worldId)}&level=boss`;
+          location.href = I18N.withLang(`boss.html?world=${encodeURIComponent(world.worldId)}&level=boss`, currentLang);
         };
         list.appendChild(bossBtn);
       }
@@ -1013,7 +1147,7 @@
 
   function getRecordStatus(record, isBoss = false){
     if(!record){
-      return { statusClass:'none', main:'－', sub:'', title:'尚未通關' };
+      return { statusClass:'none', main:'-', sub:'', title: currentLang === 'en' ? 'Not cleared yet' : '尚未通關' };
     }
     const stars = Number(record.stars || 0);
     const score = Number(record.score || 0);
@@ -1031,7 +1165,9 @@
       statusClass,
       main: isBoss ? 'B' : `${Math.max(stars, 1)}★`,
       sub: score > 0 ? String(score) : '',
-      title: `星數：${stars || 0}｜分數：${score || 0}｜步數：${steps || 0}${timeMs > 0 ? `｜${(timeMs / 1000).toFixed(1)}秒` : ''}`
+      title: currentLang === 'en'
+        ? `Stars: ${stars || 0} | Score: ${score || 0} | Steps: ${steps || 0}${timeMs > 0 ? ` | ${(timeMs / 1000).toFixed(1)}s` : ''}`
+        : `星數：${stars || 0}｜分數：${score || 0}｜步數：${steps || 0}${timeMs > 0 ? `｜${(timeMs / 1000).toFixed(1)}秒` : ''}`
     };
   }
 
@@ -1039,7 +1175,7 @@
     const s = StorageAPI.getSession();
     const area = document.getElementById('rankArea');
     if(!s || s.role !== 'student'){
-      area.innerHTML = '<div class="home-empty">請先以學生登入後再查看本班闖關總覽。</div>';
+      area.innerHTML = `<div class="home-empty">${currentLang === 'en' ? 'Log in as a student to view class progress.' : '請先以學生登入後再查看本班闖關總覽。'}</div>`;
       return;
     }
 
@@ -1063,7 +1199,7 @@
       .sort((a,b)=> b.total - a.total || b.passed - a.passed || a.seat.localeCompare(b.seat));
 
     if(classStudents.length === 0){
-      area.innerHTML = '<div class="home-empty">目前這個班級還沒有闖關紀錄。</div>';
+      area.innerHTML = `<div class="home-empty">${currentLang === 'en' ? 'This class has no level records yet.' : '目前這個班級還沒有闖關紀錄。'}</div>`;
       return;
     }
 
@@ -1098,8 +1234,8 @@
         <tr class="${isCurrent ? 'home-current-student' : ''}">
           <td class="student-col">
             <div class="student-meta">
-              <div class="student-name">${classId}-${stu.seat}${isCurrent ? '（目前）' : ''}</div>
-              <div class="student-sub">通關 ${stu.passed} 關｜總分 ${stu.total}</div>
+              <div class="student-name">${classId}-${stu.seat}${isCurrent ? (currentLang === 'en' ? ' (You)' : '（目前）') : ''}</div>
+              <div class="student-sub">${currentLang === 'en' ? `Cleared ${stu.passed} | Total ${stu.total}` : `通關 ${stu.passed} 關｜總分 ${stu.total}`}</div>
             </div>
           </td>
           ${cells}
@@ -1112,9 +1248,9 @@
         <table class="class-progress-board">
           <thead>
             <tr>
-              <th class="student-col" rowspan="2">學生</th>
+              <th class="student-col" rowspan="2">${currentLang === 'en' ? 'Student' : '學生'}</th>
               ${headerTop}
-              <th class="total-col" rowspan="2">總分</th>
+              <th class="total-col" rowspan="2">${currentLang === 'en' ? 'Total' : '總分'}</th>
             </tr>
             <tr>${headerBottom}</tr>
           </thead>
@@ -1127,20 +1263,20 @@
   async function handleStudentLogin(){
     const studentId = document.getElementById('studentId').value.trim();
     if(!/^\d{5}$/.test(studentId)){
-      toast('學號請輸入 5 位數，例如 30105');
+      toast(currentLang === 'en' ? 'Please enter 5 digits, for example 30105.' : '學號請輸入 5 位數，例如 30105');
       return;
     }
 
     const character = document.getElementById('selectedCharacter')?.value || 'boy';
-    toast("正在連線登入，請稍候…");
+    toast(currentLang === 'en' ? 'Logging in, please wait...' : "正在連線登入，請稍候…");
     const s = await Auth.loginStudent({ studentId, character });
     if(!s){
-      toast('登入失敗：請確認後端是否已啟動，或學號格式是否正確。');
+      toast(currentLang === 'en' ? 'Login failed. Please check the server or student ID format.' : '登入失敗：請確認後端是否已啟動，或學號格式是否正確。');
       return;
     }
 
     try{ await StorageAPI.syncClassProgressFromBackend(); }catch(err){ console.warn('登入後同步本班進度失敗：', err); }
-    toast('登入成功！請選關開始。');
+    toast(currentLang === 'en' ? 'Login successful. Choose a level to start.' : '登入成功！請選關開始。');
     renderSession();
     renderWorlds();
     renderClassRank();
@@ -1149,13 +1285,13 @@
 
   async function handleTeacherLogin(){
     const teacherCode = document.getElementById('teacherCode').value.trim();
-    teacherToast("正在驗證教師密碼，請稍候…");
+    teacherToast(currentLang === 'en' ? 'Checking teacher password...' : "正在驗證教師密碼，請稍候…");
     const s = await Auth.loginTeacher({ teacherCode });
     if(!s){
-      teacherToast('教師密碼錯誤，請重新輸入。');
+      teacherToast(currentLang === 'en' ? 'Incorrect teacher password.' : '教師密碼錯誤，請重新輸入。');
       return;
     }
-    teacherToast('登入成功，正在前往教師視窗…');
+    teacherToast(currentLang === 'en' ? 'Login successful. Opening teacher view...' : '登入成功，正在前往教師視窗…');
     location.href = 'teacher.html';
   }
 
@@ -1180,30 +1316,42 @@
   document.getElementById('tabTeacher').onclick = ()=> switchLoginTab('teacher');
   document.getElementById('btnStudentLogin').onclick = handleStudentLogin;
   document.getElementById('btnTeacherLogin').onclick = handleTeacherLogin;
+  document.getElementById('btnLangZh').onclick = ()=>{
+    I18N.setLang('zh');
+    applyHomeLanguage();
+    renderWorlds();
+    renderClassRank();
+  };
+  document.getElementById('btnLangEn').onclick = ()=>{
+    I18N.setLang('en');
+    applyHomeLanguage();
+    renderWorlds();
+    renderClassRank();
+  };
   document.getElementById('btnClassRank').onclick = async ()=>{
     const s = StorageAPI.getSession();
     if(!s || s.role !== 'student'){
       renderClassRank();
-      toast('請先以學生登入後再更新本班進度。');
+      toast(currentLang === 'en' ? 'Log in as a student before refreshing class progress.' : '請先以學生登入後再更新本班進度。');
       return;
     }
 
     try{
-      toast('正在從雲端更新本班進度…');
+      toast(currentLang === 'en' ? 'Refreshing class progress from the cloud...' : '正在從雲端更新本班進度…');
       await StorageAPI.syncClassProgressFromBackend();
       renderWorlds();
       renderClassRank();
-      toast('✅ 已從 MongoDB 更新本班進度。');
+      toast(currentLang === 'en' ? 'Class progress has been refreshed.' : '✅ 已從 MongoDB 更新本班進度。');
     }catch(err){
       console.warn('更新本班進度失敗：', err);
       renderClassRank();
-      toast(`⚠️ 雲端更新失敗，暫時顯示本機資料：${err.message || err}`);
+      toast(currentLang === 'en' ? `Cloud refresh failed. Showing local data: ${err.message || err}` : `⚠️ 雲端更新失敗，暫時顯示本機資料：${err.message || err}`);
     }
   };
 
   document.getElementById('btnLogout').onclick = ()=>{
     Auth.logout();
-    toast('已登出。');
+    toast(currentLang === 'en' ? 'Logged out.' : '已登出。');
     teacherToast('');
     document.getElementById('teacherCode').value = '';
     renderSession();
@@ -1222,6 +1370,7 @@
   });
 
   bindCharacterPicker();
+  applyHomeLanguage();
   renderSession();
   renderWorlds();
   renderClassRank();

@@ -2,6 +2,9 @@
 // game.js
 // 第一世界 UI ＋ Boss 戰整合版（單色背景、修正積木執行）
 window.GamePage = (()=>{
+  const I18N = window.MagicMazeI18n;
+  const GAME_LANG = I18N?.getLang?.() || "zh";
+  const isEnglish = GAME_LANG === "en";
   const DIRS = [
     {dx:0, dy:-1, emoji:"↑"},
     {dx:1, dy:0, emoji:"→"},
@@ -57,7 +60,7 @@ window.GamePage = (()=>{
     }
   };
 
-  const WORLD_COPY = {
+  const WORLD_COPY_ZH = {
     W1: {
       introTitle: "第一世界：魔法學院",
       introBody: "你將在魔法學院中學會最基礎的程式控制，透過前進與轉向走出迷宮，並蒐集四個魔法道具。",
@@ -164,6 +167,95 @@ window.GamePage = (()=>{
     }
   };
 
+  const WORLD_COPY_EN = {
+    W1: {
+      introTitle: "World 1: Magic Academy",
+      introBody: "Learn basic program control in the Magic Academy. Use move and turn blocks to solve mazes and collect four magical items.",
+      bossHint: "After clearing the normal levels, you will challenge the first boss: the Professor.",
+      cardsTitle: "Items in This World",
+      cardsRule: "Each normal level gives one item. Each item can be used once as a card in the Boss Battle.",
+      bossTitle: "Professor",
+      bossBody: "The final test of the Magic Academy has begun. Bring the items you collected and challenge the Professor.",
+      bossStageTitle: "Boss Battle: Professor",
+      bossStageIntro: "You have passed every Magic Academy trial. Now use your collected items to challenge the Professor.",
+      rewards: [
+        { key: "potion", title: "Mana Crystal", desc: "Restores magic and powers up the next attack." },
+        { key: "dagger", title: "Novice Wand", desc: "Casts a basic spell to deal direct damage." },
+        { key: "shield", title: "Academy Robe", desc: "Adds protection and reduces damage." },
+        { key: "freeze", title: "Seal Scroll", desc: "Seals the enemy's next action for a short time." },
+      ],
+      levelRewards: ["Mana Crystal","Novice Wand","Academy Robe","Seal Scroll"],
+      rewardDescs: ["Restores magic and powers up the next attack.","Casts a basic spell to deal direct damage.","Adds protection and reduces damage.","Seals the enemy's next action for a short time."],
+      bossReward: "Path to World 2",
+      bossRewardDesc: "Defeat the Professor to unlock World 2."
+    },
+    W2: {
+      introTitle: "World 2: Rune Forest",
+      introBody: "In Rune Forest, you will use loops and repeated routes while collecting four survival items.",
+      bossHint: "After clearing the normal levels, you will challenge the second boss: the Wolf King.",
+      cardsTitle: "Items in This World",
+      cardsRule: "Each item can be used once in the Wolf King battle. Watch the attack rhythm before choosing.",
+      bossTitle: "Wolf King",
+      bossBody: "The guardian deep in the forest is waiting. Use the items from the maze to break through its attacks.",
+      bossStageTitle: "Boss Battle: Wolf King",
+      bossStageIntro: "You have passed every Rune Forest trial. Now use your collected items to challenge the Wolf King.",
+      rewards: [
+        { key: "potion", title: "Healing Potion", desc: "Immediately restores health." },
+        { key: "dagger", title: "Dagger Strike", desc: "A quick attack that deals strong damage." },
+        { key: "shield", title: "Wooden Shield", desc: "Immediately grants a large shield." },
+        { key: "freeze", title: "Frozen Vine", desc: "Stops the Boss from acting for a short time." },
+      ],
+      levelRewards: ["Healing Potion","Dagger Strike","Wooden Shield","Frozen Vine"],
+      rewardDescs: ["Immediately restores health.","A quick attack that deals strong damage.","Immediately grants a large shield.","Stops the Boss from acting for a short time."],
+      bossReward: "Path to World 3",
+      bossRewardDesc: "Defeat the Wolf King to unlock World 3."
+    },
+    W3: {
+      introTitle: "World 3: Time Library",
+      introBody: "In the Time Library, you will learn conditionals, check whether paths are open, and collect items about time and knowledge.",
+      bossHint: "After clearing the normal levels, you will challenge the third boss: the Librarian.",
+      cardsTitle: "Items in This World",
+      cardsRule: "These items are good at disruption and prediction, helping you control the battle rhythm.",
+      bossTitle: "Librarian",
+      bossBody: "The guardian Librarian has awakened in the deepest stacks. Use time items to read the attack pattern.",
+      bossStageTitle: "Boss Battle: Librarian",
+      bossStageIntro: "You have passed every Time Library trial. Now use your collected items to challenge the Librarian.",
+      rewards: [
+        { key: "potion", title: "Time Hourglass", desc: "Restores health and delays enemy action." },
+        { key: "dagger", title: "Magic Quill", desc: "Writes a counterspell to deal damage." },
+        { key: "shield", title: "Prophecy Page", desc: "Foresees danger and grants a shield." },
+        { key: "freeze", title: "Time Key", desc: "Locks time and limits the enemy's next step." },
+      ],
+      levelRewards: ["Time Hourglass","Magic Quill","Prophecy Page","Time Key"],
+      rewardDescs: ["Restores health and delays enemy action.","Writes a counterspell to deal damage.","Foresees danger and grants a shield.","Locks time and limits the enemy's next step."],
+      bossReward: "Path to World 4",
+      bossRewardDesc: "Defeat the Librarian to unlock World 4."
+    },
+    W4: {
+      introTitle: "World 4: Mechanical Castle",
+      introBody: "In the Mechanical Castle, you will learn functions and reusable routes for complex maze patterns.",
+      bossHint: "After clearing the normal levels, you will challenge the final boss: the Mechanical Overlord.",
+      cardsTitle: "Items in This World",
+      cardsRule: "These items focus on charging, burst damage, and shutdown control for the final Boss Battle.",
+      bossTitle: "Mechanical Overlord",
+      bossBody: "The core controller deep in the castle has activated. Bring every mechanical item to the final battle.",
+      bossStageTitle: "Boss Battle: Mechanical Overlord",
+      bossStageIntro: "You have passed every Mechanical Castle trial. Now use your collected items to challenge the Mechanical Overlord.",
+      rewards: [
+        { key: "potion", title: "Gear Core", desc: "Restores health and powers up the next attack." },
+        { key: "dagger", title: "Steam Gauntlet", desc: "A heavy strike that deals major damage." },
+        { key: "shield", title: "Spell Chip", desc: "Deploys a barrier and grants a shield." },
+        { key: "freeze", title: "Clockwork Key", desc: "Jams the gears and briefly shuts down the enemy." },
+      ],
+      levelRewards: ["Gear Core","Steam Gauntlet","Spell Chip","Clockwork Key"],
+      rewardDescs: ["Restores health and powers up the next attack.","A heavy strike that deals major damage.","Deploys a barrier and grants a shield.","Jams the gears and briefly shuts down the enemy."],
+      bossReward: "Final Clear Certificate",
+      bossRewardDesc: "Defeat the Mechanical Overlord to complete the whole adventure."
+    }
+  };
+
+  const WORLD_COPY = isEnglish ? WORLD_COPY_EN : WORLD_COPY_ZH;
+
   function getWorldAssets(worldId = world?.worldId){
     return WORLD_ASSETS[normalizeWorldId(worldId)] || WORLD_ASSETS.W1;
   }
@@ -192,26 +284,27 @@ window.GamePage = (()=>{
       const cards = getCardData(worldKey);
       const cardList = [cards.potion, cards.dagger, cards.shield, cards.freeze];
       for (let i = 0; i < 4; i++) {
+        const levelTitle = isEnglish ? (I18N?.getLevelName?.(worldKey, `L${i+1}`, `Level ${i+1}`) || `Level ${i+1}`) : `第${i+1}關`;
         map[`${worldSlug}-level${i+1}`] = {
-          title: `第${i+1}關`,
-          intro: "請用程式積木控制角色穿越迷宮，先拿鑰匙，再走到出口門。",
-          hint: "請先觀察路線，再用積木排出正確順序。",
+          title: levelTitle,
+          intro: isEnglish ? "Use code blocks to guide your character through the maze. Get the key first, then reach the exit door." : "請用程式積木控制角色穿越迷宮，先拿鑰匙，再走到出口門。",
+          hint: isEnglish ? "Look at the route first, then arrange the blocks in the correct order." : "請先觀察路線，再用積木排出正確順序。",
           reward: cardList[i].title,
           rewardDesc: cardList[i].desc,
           rewardImg: cardList[i].img,
-          success: "你成功走出迷宮了！",
-          fail: "這次還沒成功，再試一次吧！"
+          success: isEnglish ? "You escaped the maze!" : "你成功走出迷宮了！",
+          fail: isEnglish ? "Not quite yet. Try again!" : "這次還沒成功，再試一次吧！"
         };
       }
       map[`${worldSlug}-boss`] = {
         title: copy.bossStageTitle,
         intro: copy.bossStageIntro,
-        hint: "提示：看準 Boss 的攻擊節奏，再決定要攻擊、防禦或使用道具。",
+        hint: isEnglish ? "Tip: Watch the Boss attack rhythm, then choose attack, defend, or use an item." : "提示：看準 Boss 的攻擊節奏，再決定要攻擊、防禦或使用道具。",
         reward: copy.bossReward,
         rewardDesc: copy.bossRewardDesc,
         rewardImg: getWorldAssets(worldKey).boss,
-        success: `你擊敗了${copy.bossTitle}！`,
-        fail: `${copy.bossTitle}仍然站在你面前，再準備一下後重來吧！`
+        success: isEnglish ? `You defeated the ${copy.bossTitle}!` : `你擊敗了${copy.bossTitle}！`,
+        fail: isEnglish ? `The ${copy.bossTitle} is still standing. Prepare and try again!` : `${copy.bossTitle}仍然站在你面前，再準備一下後重來吧！`
       };
     });
     return map;
@@ -220,42 +313,42 @@ window.GamePage = (()=>{
   const LEVEL_COPY = buildLevelCopyMap();
 
   const DEFAULT_COPY = {
-    title: "迷宮試煉",
-    intro: "請用程式積木控制角色穿越迷宮，先拿鑰匙，再走到出口門。",
-    hint: "請先觀察路線，再用積木排出正確順序。",
-    reward: "神秘獎勵",
-    rewardDesc: "完成本關後可解鎖新的冒險內容。",
+    title: isEnglish ? "Maze Trial" : "迷宮試煉",
+    intro: isEnglish ? "Use code blocks to guide your character through the maze. Get the key first, then reach the exit door." : "請用程式積木控制角色穿越迷宮，先拿鑰匙，再走到出口門。",
+    hint: isEnglish ? "Look at the route first, then arrange the blocks in the correct order." : "請先觀察路線，再用積木排出正確順序。",
+    reward: isEnglish ? "Mystery Reward" : "神秘獎勵",
+    rewardDesc: isEnglish ? "Clear this level to unlock new adventure content." : "完成本關後可解鎖新的冒險內容。",
     rewardImg: WORLD_ASSETS.W1.cards.potion,
-    success: "你成功完成試煉了！",
-    fail: "這次還沒成功，再試一次吧！"
+    success: isEnglish ? "You cleared the trial!" : "你成功完成試煉了！",
+    fail: isEnglish ? "Not quite yet. Try again!" : "這次還沒成功，再試一次吧！"
   };
 
 
   const UI = {
     buttons: {
-      run: "執行程式",
-      pause: "暫停 / 繼續",
-      reset: "重設關卡",
-      exit: "離開關卡",
+      run: isEnglish ? "Run Program" : "執行程式",
+      pause: isEnglish ? "Pause / Resume" : "暫停 / 繼續",
+      reset: isEnglish ? "Reset Level" : "重設關卡",
+      exit: isEnglish ? "Exit Level" : "離開關卡",
     },
     common: {
-      startTip: "請用積木寫好程式後按「執行程式」",
-      running: "程式執行中…（可按暫停）",
-      notStarted: "還沒開始執行喔，先按「執行程式」",
-      paused: "已暫停，按一次可繼續執行。",
-      resumed: "已繼續執行！",
-      stopped: "已停止執行。",
-      wall: "前方有牆，角色無法前進！",
-      doorLocked: "門鎖住了！先拿鑰匙 🗝️",
-      doorOpen: "門打開了！🔓",
-      gotKey: "你拿到鑰匙了！",
-      gotCard: "你獲得了一個新道具！",
-      trap: "小心！你踩到陷阱了！本關步數懲罰 +3",
-      needFix: "再調整積木，試著拿到鑰匙後走到出口門 🚪",
-      winToast: "恭喜通關！你可以回首頁挑戰下一關。",
-      codeError: "程式錯誤：請檢查積木或重來一次。",
-      exitConfirm: "確定要離開這一關嗎？目前進度將不會保留。",
-      noLevel: "找不到關卡資料！"
+      startTip: isEnglish ? "Build your program with blocks, then press Run Program." : "請用積木寫好程式後按「執行程式」",
+      running: isEnglish ? "Program running... You can pause it." : "程式執行中…（可按暫停）",
+      notStarted: isEnglish ? "Not started yet. Press Run Program first." : "還沒開始執行喔，先按「執行程式」",
+      paused: isEnglish ? "Paused. Press again to continue." : "已暫停，按一次可繼續執行。",
+      resumed: isEnglish ? "Resumed!" : "已繼續執行！",
+      stopped: isEnglish ? "Stopped." : "已停止執行。",
+      wall: isEnglish ? "There is a wall ahead. The character cannot move forward!" : "前方有牆，角色無法前進！",
+      doorLocked: isEnglish ? "The door is locked. Get the key first." : "門鎖住了！先拿鑰匙 🗝️",
+      doorOpen: isEnglish ? "The door opened!" : "門打開了！🔓",
+      gotKey: isEnglish ? "You got the key!" : "你拿到鑰匙了！",
+      gotCard: isEnglish ? "You got a new item!" : "你獲得了一個新道具！",
+      trap: isEnglish ? "Careful! You stepped on a trap. Step penalty +3." : "小心！你踩到陷阱了！本關步數懲罰 +3",
+      needFix: isEnglish ? "Adjust your blocks and try to get the key before reaching the door." : "再調整積木，試著拿到鑰匙後走到出口門 🚪",
+      winToast: isEnglish ? "Level cleared! Return home to challenge the next level." : "恭喜通關！你可以回首頁挑戰下一關。",
+      codeError: isEnglish ? "Program error: check your blocks or reset the level." : "程式錯誤：請檢查積木或重來一次。",
+      exitConfirm: isEnglish ? "Leave this level? Your current block progress will be saved first." : "確定要離開這一關嗎？系統會先保存你目前的積木進度。",
+      noLevel: isEnglish ? "Level data not found!" : "找不到關卡資料！"
     }
   };
   let workspace = null;
@@ -309,7 +402,7 @@ window.GamePage = (()=>{
   let mazeScale = 1;
   let mazeManualScale = 1;
 
-  const LEGEND_CARDS = [
+  const LEGEND_CARDS_ZH = [
     { icon: '🗝️', title: '鑰匙', desc: '先拿到鑰匙，鎖住的出口門才會打開。' },
     { icon: '🚪🔒', title: '鎖住的出口門', desc: '門就是出口；沒有鑰匙時不能通過。' },
     { icon: '🎁', title: '道具寶箱', desc: '拿到本關道具，Boss 戰時就能使用一次。' },
@@ -318,6 +411,16 @@ window.GamePage = (()=>{
     { icon: '🌀', title: '同色傳送門', desc: '藍、紫、紅傳送門會把角色送到同顏色的另一個位置。' },
     { icon: '🧊', title: '特殊地形', desc: '冰塊、河流、妖怪、火焰目前都會擋路，之後可再搭配對應咒語。' }
   ];
+  const LEGEND_CARDS_EN = [
+    { icon: '🗝️', title: 'Key', desc: 'Get the key first to unlock the exit door.' },
+    { icon: '🚪🔒', title: 'Locked Exit Door', desc: 'The door is the exit. You cannot pass without the key.' },
+    { icon: '🎁', title: 'Item Chest', desc: 'Collect the level item so it can be used once in the Boss Battle.' },
+    { icon: '🧰', title: 'Equipment Chest', desc: 'Equipment increases attack or defense in Boss Battles.' },
+    { icon: '🕳️', title: 'Trap', desc: 'Traps add a penalty and may send you back or teleport you.' },
+    { icon: '🌀', title: 'Matching Portal', desc: 'Blue, purple, and red portals send you to the matching color.' },
+    { icon: '🧊', title: 'Special Terrain', desc: 'Ice, rivers, monsters, and flames block the way for now.' }
+  ];
+  const LEGEND_CARDS = isEnglish ? LEGEND_CARDS_EN : LEGEND_CARDS_ZH;
 
   function getSessionSafe(){
     try{
@@ -606,7 +709,7 @@ window.GamePage = (()=>{
     infoEl.innerHTML = `
       <div class="legendIcon">${item.icon}</div>
       <div class="legendText">
-        <div class="legendTitle">圖示說明｜${item.title}</div>
+        <div class="legendTitle">${isEnglish ? 'Icon Guide' : '圖示說明'}｜${item.title}</div>
         <div class="legendDesc">${item.desc}</div>
       </div>
       <div class="legendDots" aria-hidden="true">${dots}</div>
@@ -632,6 +735,128 @@ window.GamePage = (()=>{
     const el = document.getElementById("toast");
     if (el) el.textContent = msg;
   };
+
+  function ensureGameDialogStyles(){
+    if (document.getElementById('mm-game-dialog-style')) return;
+    const style = document.createElement('style');
+    style.id = 'mm-game-dialog-style';
+    style.textContent = `
+      .mm-dialog-mask{
+        position:fixed;
+        inset:0;
+        z-index:10000;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        padding:18px;
+        background:rgba(9,15,30,.42);
+        backdrop-filter:blur(6px);
+      }
+      .mm-dialog{
+        width:min(430px,100%);
+        border-radius:22px;
+        background:rgba(255,255,248,.98);
+        border:1px solid rgba(120,130,75,.22);
+        box-shadow:0 24px 60px rgba(0,0,0,.28);
+        color:#263018;
+        padding:20px;
+      }
+      .mm-dialog-title{
+        margin:0 0 10px;
+        font-size:22px;
+        line-height:1.2;
+        font-weight:900;
+        color:#27320f;
+      }
+      .mm-dialog-message{
+        font-size:15px;
+        line-height:1.65;
+        color:#3f4b26;
+        font-weight:700;
+      }
+      .mm-dialog-actions{
+        display:flex;
+        justify-content:flex-end;
+        gap:10px;
+        margin-top:18px;
+      }
+      .mm-dialog-actions button{
+        border:0;
+        border-radius:999px;
+        min-width:92px;
+        padding:12px 18px;
+        font-size:15px;
+        font-weight:900;
+        cursor:pointer;
+      }
+      .mm-dialog-cancel{background:#e0ec7f;color:#263018;}
+      .mm-dialog-confirm{background:#68752e;color:#fff;}
+    `;
+    document.head.appendChild(style);
+  }
+
+  function showGameConfirm({ title, message, cancelText, confirmText } = {}){
+    ensureGameDialogStyles();
+    return new Promise(resolve => {
+      const mask = document.createElement('div');
+      mask.className = 'mm-dialog-mask';
+      mask.setAttribute('role', 'dialog');
+      mask.setAttribute('aria-modal', 'true');
+      mask.innerHTML = `
+        <div class="mm-dialog">
+          <h3 class="mm-dialog-title">${title || (isEnglish ? 'Leave Level?' : '離開關卡？')}</h3>
+          <div class="mm-dialog-message">${message || ''}</div>
+          <div class="mm-dialog-actions">
+            <button type="button" class="mm-dialog-cancel">${cancelText || (isEnglish ? 'Cancel' : '取消')}</button>
+            <button type="button" class="mm-dialog-confirm">${confirmText || (isEnglish ? 'Leave' : '離開')}</button>
+          </div>
+        </div>
+      `;
+      const close = (value)=>{
+        mask.remove();
+        resolve(value);
+      };
+      mask.querySelector('.mm-dialog-cancel')?.addEventListener('click', ()=> close(false));
+      mask.querySelector('.mm-dialog-confirm')?.addEventListener('click', ()=> close(true));
+      mask.addEventListener('click', event => {
+        if (event.target === mask) close(false);
+      });
+      mask.addEventListener('keydown', event => {
+        if (event.key === 'Escape') close(false);
+      });
+      document.body.appendChild(mask);
+      window.setTimeout(()=> mask.querySelector('.mm-dialog-cancel')?.focus(), 0);
+    });
+  }
+
+  function showGameMessage({ title, message, buttonText } = {}){
+    ensureGameDialogStyles();
+    return new Promise(resolve => {
+      const mask = document.createElement('div');
+      mask.className = 'mm-dialog-mask';
+      mask.setAttribute('role', 'dialog');
+      mask.setAttribute('aria-modal', 'true');
+      mask.innerHTML = `
+        <div class="mm-dialog">
+          <h3 class="mm-dialog-title">${title || (isEnglish ? 'Notice' : '提醒')}</h3>
+          <div class="mm-dialog-message">${message || ''}</div>
+          <div class="mm-dialog-actions">
+            <button type="button" class="mm-dialog-confirm">${buttonText || 'OK'}</button>
+          </div>
+        </div>
+      `;
+      const close = ()=>{
+        mask.remove();
+        resolve(true);
+      };
+      mask.querySelector('.mm-dialog-confirm')?.addEventListener('click', close);
+      mask.addEventListener('keydown', event => {
+        if (event.key === 'Escape' || event.key === 'Enter') close();
+      });
+      document.body.appendChild(mask);
+      window.setTimeout(()=> mask.querySelector('.mm-dialog-confirm')?.focus(), 0);
+    });
+  }
 
   function qs(name){
     const url = new URL(location.href);
@@ -731,8 +956,8 @@ window.GamePage = (()=>{
     const subtitleEl = document.getElementById("subtitle");
     if (!subtitleEl || !level) return;
     subtitleEl.textContent = isBossLevel()
-      ? `Boss 戰過關標準：擊敗 Boss`
-      : `過關標準：一星=過關、二星=拿到2個寶箱、三星=拿到2個寶箱且達成目標程式碼數`;
+      ? (isEnglish ? `Boss clear goal: defeat the Boss` : `Boss 戰過關標準：擊敗 Boss`)
+      : (isEnglish ? `Clear goals: 1 star = clear, 2 stars = collect 2 chests, 3 stars = collect 2 chests and meet the target block count` : `過關標準：一星=過關、二星=拿到2個寶箱、三星=拿到2個寶箱且達成目標程式碼數`);
   }
 
   function getLevelCopy(worldId, levelId){
@@ -940,13 +1165,16 @@ window.GamePage = (()=>{
   
   function getWorldDisplayName(worldId){
     const key = normalizeWorldId(worldId);
-    if (key === "W1") return "魔法學院";
-    if (key === "W2") return "符文森林";
+    const translated = I18N?.getShortWorldName?.(key);
+    if (translated) return translated;
+    if (key === "W1") return isEnglish ? "Magic Academy" : "魔法學院";
+    if (key === "W2") return isEnglish ? "Rune Forest" : "符文森林";
     return String(world?.worldName || worldId || "世界");
   }
 
   function getCleanLevelTitle(){
     const raw = String(level?.name || getLevelCopy(world?.worldId, level?.levelId).title || '').trim();
+    if (isEnglish) return I18N?.getLevelName?.(world?.worldId, level?.levelId, '') || (/boss/i.test(raw) ? 'Boss Battle' : 'Level');
     if (!raw) return '關卡';
     if (/boss/i.test(raw)) return 'Boss 戰';
     return raw.replace(/^第\s*\d+\s*關\s*[:：]\s*/, '').trim();
@@ -1746,6 +1974,14 @@ window.GamePage = (()=>{
     if (btnStep) btnStep.textContent = '步進';
     if (btnReset) btnReset.textContent = UI.buttons.reset;
     if (btnExit) btnExit.textContent = UI.buttons.exit;
+    const editorTitle = document.querySelector(".editorTitle");
+    if (editorTitle) editorTitle.textContent = isEnglish ? "Block Workspace" : "積木工作區";
+    const codeBadgeLabel = document.getElementById("codeBadgeLabel");
+    if (codeBadgeLabel) codeBadgeLabel.textContent = isEnglish ? "Current blocks / Target blocks: " : "目前程式碼數／目標程式碼數：";
+    const editorHint = document.querySelector(".editorHint");
+    if (editorHint) editorHint.textContent = isEnglish
+      ? "Tip: Start with Move Forward and Turn Left/Right. Later, use Repeat blocks to reduce your block count."
+      : "小提醒：先用「向前走」與「左/右轉」，進階再用「重複」減少積木數量。";
     updateRunButtonState();
   }
 
@@ -2702,7 +2938,7 @@ window.GamePage = (()=>{
     const copy = getLevelCopy(world.worldId, level.levelId);
 
     applyMainContrast();
-    document.getElementById("title").textContent = `${getWorldDisplayName(world.worldId)} ➜ ${getCleanLevelTitle()}`;
+    document.getElementById("title").textContent = `${getWorldDisplayName(world.worldId)} -> ${getCleanLevelTitle()}`;
     refreshSubtitleText();
 
     fillInfoPanels();
@@ -2947,7 +3183,7 @@ window.GamePage = (()=>{
     if(running) return;
 
     if (runLockedUntilReset) {
-      toast('本次挑戰已執行完畢，請先按「重設關卡」再重新執行。');
+      toast(isEnglish ? 'This attempt has finished. Press Reset Level before running again.' : '本次挑戰已執行完畢，請先按「重設關卡」再重新執行。');
       updateRunButtonState();
       return;
     }
@@ -2968,7 +3204,7 @@ window.GamePage = (()=>{
     stepMode = requestedStepMode;
     if (!requestedStepMode) stepCredits = 0;
     showResult("");
-    toast(requestedStepMode ? "步進模式進行中…" : UI.common.running);
+    toast(requestedStepMode ? (isEnglish ? "Step mode running..." : "步進模式進行中…") : UI.common.running);
     if (!startAt) startClock();
 
     const api = makeAPI(expectedGeneration);
@@ -2983,10 +3219,10 @@ window.GamePage = (()=>{
       const {score, stars} = scoreAndStars();
       const copy = getLevelCopy(world.worldId, level.levelId);
       showInlineRunFeedback(
-        "這次還沒成功",
-        "程式跑完了，但角色還沒走到出口門。請看目前角色位置，調整接下來的積木。"
+        isEnglish ? "Not Clear Yet" : "這次還沒成功",
+        isEnglish ? "The program finished, but the character did not reach the exit door. Check the current position and adjust your blocks." : "程式跑完了，但角色還沒走到出口門。請看目前角色位置，調整接下來的積木。"
       );
-      toast("程式已停止：請觀察目前位置，再調整積木。");
+      toast(isEnglish ? "Program stopped. Check the current position and adjust your blocks." : "程式已停止：請觀察目前位置，再調整積木。");
     }catch(err){
       if(err?.message === "WIN"){
         stopTimers();
@@ -3007,37 +3243,37 @@ window.GamePage = (()=>{
         // ✅ 道具/裝備/三星加成已先寫入 localStorage，再同步到 MongoDB，避免教師後台看不到完整資料。
         try{
           StorageAPI.syncLevelRecordToBackend?.(levelKey(), record)
-            ?.then(()=> toast('✅ 成績已同步到後端資料庫。'))
-            ?.catch(err=> toast(`⚠️ 成績已存在本機，但後端同步失敗：${err.message || err}`));
+            ?.then(()=> toast(isEnglish ? 'Score synced to the database.' : '✅ 成績已同步到後端資料庫。'))
+            ?.catch(err=> toast(isEnglish ? `Score saved locally, but database sync failed: ${err.message || err}` : `⚠️ 成績已存在本機，但後端同步失敗：${err.message || err}`));
         }catch(_err){}
         const copy = getLevelCopy(world.worldId, level.levelId);
 
         const starDesc = stars === 3
-          ? '三星通關！'
+          ? (isEnglish ? 'Three-star clear!' : '三星通關！')
           : stars === 2
-            ? '二星通關！'
-            : '一星通關！';
+            ? (isEnglish ? 'Two-star clear!' : '二星通關！')
+            : (isEnglish ? 'One-star clear!' : '一星通關！');
 
         const rewardSummary = [];
-        if (openedItemChest && collectedItemName) rewardSummary.push(`🎁 道具：<b>${collectedItemName}</b>`);
-        if (openedEquipmentChest && collectedEquipmentName) rewardSummary.push(`🛡️ 裝備：<b>${collectedEquipmentName}</b>`);
+        if (openedItemChest && collectedItemName) rewardSummary.push(`🎁 ${isEnglish ? 'Item' : '道具'}：<b>${collectedItemName}</b>`);
+        if (openedEquipmentChest && collectedEquipmentName) rewardSummary.push(`🛡️ ${isEnglish ? 'Equipment' : '裝備'}：<b>${collectedEquipmentName}</b>`);
 
         clearProgramDraft(world.worldId, level.levelId);
         showCharacterOutcomeImage(true);
 
         showResult(buildResultCard(
           "good",
-          "通關成功！",
+          isEnglish ? "Level Clear!" : "通關成功！",
           `${copy.success}<br>${starDesc}`,
           `<div class="result-stats">
             <span class="result-badge">★${stars}</span>
-            <span class="result-badge">分數：${score}</span>
-            <span class="result-badge">程式碼：${codeBlocks}/${targetBlocks || "—"}</span>
-            <span class="result-badge">時間：${Math.round(timeMs/1000)} 秒</span>
+            <span class="result-badge">${isEnglish ? 'Score' : '分數'}：${score}</span>
+            <span class="result-badge">${isEnglish ? 'Blocks' : '程式碼'}：${codeBlocks}/${targetBlocks || "—"}</span>
+            <span class="result-badge">${isEnglish ? 'Time' : '時間'}：${Math.round(timeMs/1000)} ${isEnglish ? 's' : '秒'}</span>
           </div>
-          ${(!startedFromCleanStart && stars < 3) ? '<div class="stage-current-reward" style="margin-top:10px;display:block;">⚠️ 本次不是從起點完整執行，所以不列入三星判定。請按「重來」後一次完成，即可挑戰三星。</div>' : ''}
+          ${(!startedFromCleanStart && stars < 3) ? `<div class="stage-current-reward" style="margin-top:10px;display:block;">${isEnglish ? 'This run did not start from the beginning, so it does not count for three stars. Press Reset and finish in one full run to try for three stars.' : '⚠️ 本次不是從起點完整執行，所以不列入三星判定。請按「重來」後一次完成，即可挑戰三星。'}</div>` : ''}
           ${rewardSummary.length ? `<div class="stage-current-reward" style="margin-top:12px;display:block;">${rewardSummary.join('<br>')}</div>` : ''}
-          <div style="margin-top:8px;">${improved ? "🎉 已刷新最佳紀錄！" : "紀錄已更新。"}</div>`
+          <div style="margin-top:8px;">${improved ? (isEnglish ? "New best record!" : "🎉 已刷新最佳紀錄！") : (isEnglish ? "Record updated." : "紀錄已更新。")}</div>`
         ));
 
         toast(UI.common.winToast);
@@ -3047,15 +3283,15 @@ window.GamePage = (()=>{
       }else if(err?.message === "SAFE_STOP_TOO_MANY_BUMPS"){
         resetRunState();
         showInlineRunFeedback(
-          "安全停止",
-          `角色已撞牆達 ${MAX_BUMPS_BEFORE_SAFE_STOP} 次，系統已自動停止。請看目前位置與方向，再修改積木。`
+          isEnglish ? "Safety Stop" : "安全停止",
+          isEnglish ? `The character bumped into walls ${MAX_BUMPS_BEFORE_SAFE_STOP} times, so the system stopped automatically. Check the position and direction, then edit your blocks.` : `角色已撞牆達 ${MAX_BUMPS_BEFORE_SAFE_STOP} 次，系統已自動停止。請看目前位置與方向，再修改積木。`
         );
-        toast(`安全停止：撞牆達 ${MAX_BUMPS_BEFORE_SAFE_STOP} 次，已保留目前迷宮位置。`);
+        toast(isEnglish ? `Safety stop: ${MAX_BUMPS_BEFORE_SAFE_STOP} wall bumps. Current maze position has been kept.` : `安全停止：撞牆達 ${MAX_BUMPS_BEFORE_SAFE_STOP} 次，已保留目前迷宮位置。`);
       }else{
         resetRunState();
         showInlineRunFeedback(
-          "程式執行發生錯誤",
-          `請檢查積木是否完整。錯誤：${String(err?.message || err)}`
+          isEnglish ? "Program Error" : "程式執行發生錯誤",
+          isEnglish ? `Check whether your blocks are complete. Error: ${String(err?.message || err)}` : `請檢查積木是否完整。錯誤：${String(err?.message || err)}`
         );
         toast(UI.common.codeError);
       }
@@ -3074,16 +3310,24 @@ window.GamePage = (()=>{
       resetLevel();
     };
 
-    if (btnExit) btnExit.onclick = ()=>{
-      if(!confirm("確定要離開這一關嗎？系統會先保存你目前的積木進度。")) return;
+    if (btnExit) btnExit.onclick = async ()=>{
+      const ok = await showGameConfirm({
+        title: isEnglish ? 'Leave Level?' : '離開關卡？',
+        message: UI.common.exitConfirm,
+        cancelText: isEnglish ? 'Cancel' : '取消',
+        confirmText: isEnglish ? 'Leave' : '離開'
+      });
+      if(!ok) return;
       const saved = saveProgramDraft();
       forceStopCurrentRun();
       const exitTarget = getExitTargetPage();
-      const exitLabel = exitTarget === "teacher.html" ? "教師介面" : "選擇關卡頁面";
+      const exitLabel = exitTarget === "teacher.html"
+        ? (isEnglish ? "teacher view" : "教師介面")
+        : (isEnglish ? "level select page" : "選擇關卡頁面");
       if (!isBossLevel()) {
         toast(saved
-          ? `已保存目前積木進度，返回${exitLabel}中…`
-          : `這一關目前沒有可保存的積木，直接返回${exitLabel}。`);
+          ? (isEnglish ? `Block progress saved. Returning to the ${exitLabel}...` : `已保存目前積木進度，返回${exitLabel}中…`)
+          : (isEnglish ? `No block progress to save. Returning to the ${exitLabel}.` : `這一關目前沒有可保存的積木，直接返回${exitLabel}。`));
       }
       location.href = exitTarget;
     };
@@ -3095,13 +3339,18 @@ window.GamePage = (()=>{
     if (/^boss$/i.test(String(levelId || ''))) {
       const from = qs("from");
       const extra = from ? `&from=${encodeURIComponent(from)}` : "";
-      location.replace(`boss.html?world=${encodeURIComponent(worldId || 'world1')}${extra}`);
+      location.replace(`boss.html?world=${encodeURIComponent(worldId || 'world1')}${extra}&lang=${encodeURIComponent(GAME_LANG)}`);
       return;
     }
     const pack = findLevel(worldId, levelId);
     if(!pack){
-      alert(UI.common.noLevel);
-      location.href = "index.html";
+      showGameMessage({
+        title: isEnglish ? 'Level Not Found' : '找不到關卡',
+        message: UI.common.noLevel,
+        buttonText: 'OK'
+      }).then(()=> {
+        location.href = `index.html?lang=${encodeURIComponent(GAME_LANG)}`;
+      });
       return;
     }
 
@@ -3122,8 +3371,13 @@ window.GamePage = (()=>{
     // ✅ 舊版學生登入狀態可能沒有後端 token；沒有 token 就無法寫入 MongoDB。
     const sessionForBackend = StorageAPI?.getSession?.();
     if (sessionForBackend?.role === 'student' && !sessionForBackend?.token) {
-      alert('目前是舊版登入狀態，成績無法寫入後端資料庫。請回首頁登出後重新登入一次。');
-      location.href = 'index.html';
+      showGameMessage({
+        title: isEnglish ? 'Please Log In Again' : '請重新登入',
+        message: isEnglish ? 'This is an old login session, so scores cannot be saved to the database. Please return home, log out, and log in again.' : '目前是舊版登入狀態，成績無法寫入後端資料庫。請回首頁登出後重新登入一次。',
+        buttonText: 'OK'
+      }).then(()=> {
+        location.href = `index.html?lang=${encodeURIComponent(GAME_LANG)}`;
+      });
       return;
     }
 
@@ -3132,7 +3386,7 @@ window.GamePage = (()=>{
       if (detail.ok) {
         console.log('成績已同步到 MongoDB：', detail.levelKey);
       } else if (detail.message) {
-        toast(`⚠️ 成績暫存本機：${detail.message}`);
+        toast(isEnglish ? `Score saved locally: ${detail.message}` : `⚠️ 成績暫存本機：${detail.message}`);
       }
     });
 
@@ -3144,8 +3398,8 @@ window.GamePage = (()=>{
       if (!html) return;
 
       resultWrap.innerHTML = html.replace(
-        /目前程式碼數／目標程式碼數：[0-9—]+\/[0-9—]+/g,
-        `目前程式碼數／目標程式碼數：${getCurrentProgramBlockCount()}/${targetBlocks}`
+        isEnglish ? /Current blocks \/ Target blocks: [0-9—]+\/[0-9—]+/g : /目前程式碼數／目標程式碼數：[0-9—]+\/[0-9—]+/g,
+        `${isEnglish ? 'Current blocks / Target blocks: ' : '目前程式碼數／目標程式碼數：'}${getCurrentProgramBlockCount()}/${targetBlocks}`
       );
     }
 

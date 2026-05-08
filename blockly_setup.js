@@ -1,18 +1,30 @@
 // blockly_setup.js
-// 需要在 game.html / teacher.html 載入：blockly.min.js + msg/zh-hant.js
+// 需要在 game.html / teacher.html 載入：blockly.min.js + 對應 msg 語系檔
 // 並在建立 workspace 前呼叫：Blockly.setLocale(Blockly.Msg)
 
 window.BlocklySetup = (()=>{
 
   let definitionsReady = false;
 
+  function getLang(){
+    return window.MagicMazeI18n?.getLang?.() || 'zh';
+  }
+
+  function isEnglish(){
+    return getLang() === 'en';
+  }
+
+  function tx(zh, en){
+    return isEnglish() ? en : zh;
+  }
+
   function applyKidFriendlyMsgs(){
     if (window.Blockly && Blockly.Msg) {
-      Blockly.Msg.CONTROLS_REPEAT_TITLE = "重複 %1 次";
-      Blockly.Msg.CONTROLS_REPEAT_INPUT_DO = "做";
-      Blockly.Msg.CONTROLS_IF_MSG_IF = "如果";
-      Blockly.Msg.CONTROLS_IF_MSG_THEN = "就";
-      Blockly.Msg.CONTROLS_IF_MSG_ELSE = "否則";
+      Blockly.Msg.CONTROLS_REPEAT_TITLE = tx("重複 %1 次", "repeat %1 times");
+      Blockly.Msg.CONTROLS_REPEAT_INPUT_DO = tx("做", "do");
+      Blockly.Msg.CONTROLS_IF_MSG_IF = tx("如果", "if");
+      Blockly.Msg.CONTROLS_IF_MSG_THEN = tx("就", "then");
+      Blockly.Msg.CONTROLS_IF_MSG_ELSE = tx("否則", "else");
     }
   }
 
@@ -91,30 +103,30 @@ window.BlocklySetup = (()=>{
       Blockly.defineBlocksWithJsonArray([
         {
           "type":"mw_start",
-          "message0":"當開始執行",
+          "message0":tx("當開始執行", "when run starts"),
           "nextStatement":null,
           "colour":BLOCK_COLORS.START,
-          "tooltip":"程式會從這裡開始往下執行。",
+          "tooltip":tx("程式會從這裡開始往下執行。", "The program starts here and runs downward."),
           "helpUrl":""
         },
-        { "type":"mw_move_forward","message0":"移動-向前","previousStatement":null,"nextStatement":null,"colour":BLOCK_COLORS.SEQUENCE },
+        { "type":"mw_move_forward","message0":tx("移動-向前", "move forward"),"previousStatement":null,"nextStatement":null,"colour":BLOCK_COLORS.SEQUENCE },
         {
           "type":"mw_turn",
-          "message0":"轉向－%1",
+          "message0":tx("轉向－%1", "turn %1"),
           "args0":[
-            {"type":"field_dropdown","name":"DIR","options":[["左方","left"],["右方","right"]]}
+            {"type":"field_dropdown","name":"DIR","options":[[tx("左方", "left"),"left"],[tx("右方", "right"),"right"]]}
           ],
           "previousStatement":null,
           "nextStatement":null,
           "colour":BLOCK_COLORS.SEQUENCE,
-          "tooltip":"選擇要往左方或右方轉向。",
+          "tooltip":tx("選擇要往左方或右方轉向。", "Choose whether to turn left or right."),
           "helpUrl":""
         },
-        { "type":"mw_turn_left","message0":"轉向－左方","previousStatement":null,"nextStatement":null,"colour":BLOCK_COLORS.SEQUENCE },
-        { "type":"mw_turn_right","message0":"轉向－右方","previousStatement":null,"nextStatement":null,"colour":BLOCK_COLORS.SEQUENCE },
+        { "type":"mw_turn_left","message0":tx("轉向－左方", "turn left"),"previousStatement":null,"nextStatement":null,"colour":BLOCK_COLORS.SEQUENCE },
+        { "type":"mw_turn_right","message0":tx("轉向－右方", "turn right"),"previousStatement":null,"nextStatement":null,"colour":BLOCK_COLORS.SEQUENCE },
         {
           "type":"mw_repeat_times",
-          "message0":"重複 %1 次 %2 做 %3",
+          "message0":tx("重複 %1 次 %2 做 %3", "repeat %1 times %2 do %3"),
           "args0":[
             {"type":"field_dropdown","name":"TIMES","options":[["2","2"],["3","3"],["4","4"],["5","5"],["6","6"],["7","7"],["8","8"],["9","9"],["10","10"]]},
             {"type":"input_dummy"},
@@ -123,12 +135,12 @@ window.BlocklySetup = (()=>{
           "previousStatement":null,
           "nextStatement":null,
           "colour":BLOCK_COLORS.LOOP,
-          "tooltip":"把裡面的動作重複執行指定次數。",
+          "tooltip":tx("把裡面的動作重複執行指定次數。", "Repeat the actions inside a chosen number of times."),
           "helpUrl":""
         },
         {
           "type":"mw_repeat_until_goal",
-          "message0":"重複直到抵達大門 %1 做 %2",
+          "message0":tx("重複直到抵達大門 %1 做 %2", "repeat until reaching the door %1 do %2"),
           "args0":[
             {"type":"input_dummy"},
             {"type":"input_statement","name":"DO"}
@@ -136,15 +148,15 @@ window.BlocklySetup = (()=>{
           "previousStatement":null,
           "nextStatement":null,
           "colour":BLOCK_COLORS.LOOP,
-          "tooltip":"一直重複執行，直到角色走到出口。",
+          "tooltip":tx("一直重複執行，直到角色走到出口。", "Keep repeating until the character reaches the exit."),
           "helpUrl":""
         },
-        { "type":"mw_path_ahead","message0":"前方有路？","output":"Boolean","colour":BLOCK_COLORS.CONDITION },
+        { "type":"mw_path_ahead","message0":tx("前方有路？", "path ahead?"),"output":"Boolean","colour":BLOCK_COLORS.CONDITION },
         {
           "type":"mw_if_path",
-          "message0":"如果 %1 有路 %2 就 %3 否則 %4",
+          "message0":tx("如果 %1 有路 %2 就 %3 否則 %4", "if path is %1 %2 then %3 else %4"),
           "args0":[
-            {"type":"field_dropdown","name":"DIR","options":[["前面","ahead"],["右邊","right"],["左邊","left"]]},
+            {"type":"field_dropdown","name":"DIR","options":[[tx("前面", "ahead"),"ahead"],[tx("右邊", "right"),"right"],[tx("左邊", "left"),"left"]]},
             {"type":"input_dummy"},
             {"type":"input_statement","name":"DO"},
             {"type":"input_statement","name":"ELSE"}
@@ -152,34 +164,34 @@ window.BlocklySetup = (()=>{
           "previousStatement":null,
           "nextStatement":null,
           "colour":BLOCK_COLORS.CONDITION,
-          "tooltip":"先判斷指定方向有沒有路；有路就執行上面，沒有路就執行否則。",
+          "tooltip":tx("先判斷指定方向有沒有路；有路就執行上面，沒有路就執行否則。", "Check whether the chosen direction has a path. If yes, run then; otherwise, run else."),
           "helpUrl":""
         },
-        { "type":"mw_if_path_ahead","message0":"如果前方有路 %1 就 %2 否則 %3","args0":[{"type":"input_dummy"},{"type":"input_statement","name":"DO"},{"type":"input_statement","name":"ELSE"}],"previousStatement":null,"nextStatement":null,"colour":BLOCK_COLORS.CONDITION,"tooltip":"舊版相容積木。","helpUrl":"" },
+        { "type":"mw_if_path_ahead","message0":tx("如果前方有路 %1 就 %2 否則 %3", "if path ahead %1 then %2 else %3"),"args0":[{"type":"input_dummy"},{"type":"input_statement","name":"DO"},{"type":"input_statement","name":"ELSE"}],"previousStatement":null,"nextStatement":null,"colour":BLOCK_COLORS.CONDITION,"tooltip":tx("舊版相容積木。", "Legacy compatible block."),"helpUrl":"" },
         {
-          "type":"mw_func_def_fire","message0":"定義火焰咒語 做 %1",
+          "type":"mw_func_def_fire","message0":tx("定義火焰咒語 做 %1", "define fire spell do %1"),
           "args0":[{"type":"input_statement","name":"DO"}],
-          "colour":BLOCK_COLORS.FUNCTION,"tooltip":"固定順序：左、右、右、左。可消滅前方冰塊。","helpUrl":""
+          "colour":BLOCK_COLORS.FUNCTION,"tooltip":tx("固定順序：左、右、右、左。可消滅前方冰塊。", "Fixed order: left, right, right, left. Melts the ice ahead."),"helpUrl":""
         },
-        { "type":"mw_func_call_fire","message0":"施放火焰咒語","previousStatement":null,"nextStatement":null,"colour":BLOCK_COLORS.FUNCTION },
+        { "type":"mw_func_call_fire","message0":tx("施放火焰咒語", "cast fire spell"),"previousStatement":null,"nextStatement":null,"colour":BLOCK_COLORS.FUNCTION },
         {
-          "type":"mw_func_def_rain","message0":"定義暴雨咒語 做 %1",
+          "type":"mw_func_def_rain","message0":tx("定義暴雨咒語 做 %1", "define rain spell do %1"),
           "args0":[{"type":"input_statement","name":"DO"}],
-          "colour":BLOCK_COLORS.FUNCTION,"tooltip":"固定順序：右、左、左、右。可消滅前方火焰。","helpUrl":""
+          "colour":BLOCK_COLORS.FUNCTION,"tooltip":tx("固定順序：右、左、左、右。可消滅前方火焰。", "Fixed order: right, left, left, right. Puts out the flame ahead."),"helpUrl":""
         },
-        { "type":"mw_func_call_rain","message0":"施放暴雨咒語","previousStatement":null,"nextStatement":null,"colour":BLOCK_COLORS.FUNCTION },
+        { "type":"mw_func_call_rain","message0":tx("施放暴雨咒語", "cast rain spell"),"previousStatement":null,"nextStatement":null,"colour":BLOCK_COLORS.FUNCTION },
         {
-          "type":"mw_func_def_purify","message0":"定義驅邪咒語 做 %1",
+          "type":"mw_func_def_purify","message0":tx("定義驅邪咒語 做 %1", "define purify spell do %1"),
           "args0":[{"type":"input_statement","name":"DO"}],
-          "colour":BLOCK_COLORS.FUNCTION,"tooltip":"固定順序：左、左、右、右。可消滅前方妖怪。","helpUrl":""
+          "colour":BLOCK_COLORS.FUNCTION,"tooltip":tx("固定順序：左、左、右、右。可消滅前方妖怪。", "Fixed order: left, left, right, right. Removes the monster ahead."),"helpUrl":""
         },
-        { "type":"mw_func_call_purify","message0":"施放驅邪咒語","previousStatement":null,"nextStatement":null,"colour":BLOCK_COLORS.FUNCTION },
+        { "type":"mw_func_call_purify","message0":tx("施放驅邪咒語", "cast purify spell"),"previousStatement":null,"nextStatement":null,"colour":BLOCK_COLORS.FUNCTION },
         {
-          "type":"mw_func_def_fly","message0":"定義飛行咒語 做 %1",
+          "type":"mw_func_def_fly","message0":tx("定義飛行咒語 做 %1", "define fly spell do %1"),
           "args0":[{"type":"input_statement","name":"DO"}],
-          "colour":BLOCK_COLORS.FUNCTION,"tooltip":"固定順序：右、右、左、左。可穿過前方河流。","helpUrl":""
+          "colour":BLOCK_COLORS.FUNCTION,"tooltip":tx("固定順序：右、右、左、左。可穿過前方河流。", "Fixed order: right, right, left, left. Crosses the river ahead."),"helpUrl":""
         },
-        { "type":"mw_func_call_fly","message0":"施放飛行咒語","previousStatement":null,"nextStatement":null,"colour":BLOCK_COLORS.FUNCTION }
+        { "type":"mw_func_call_fly","message0":tx("施放飛行咒語", "cast fly spell"),"previousStatement":null,"nextStatement":null,"colour":BLOCK_COLORS.FUNCTION }
       ]);
     }
 
@@ -307,10 +319,10 @@ ${elseCode}}
 
   function getWorld4SpellConfig(levelId){
     const map = {
-      L1: { name:'飛行咒語', defType:'mw_func_def_fly', callType:'mw_func_call_fly', target:'L' },
-      L2: { name:'火焰咒語', defType:'mw_func_def_fire', callType:'mw_func_call_fire', target:'X' },
-      L3: { name:'暴雨咒語', defType:'mw_func_def_rain', callType:'mw_func_call_rain', target:'F' },
-      L4: { name:'驅邪咒語', defType:'mw_func_def_purify', callType:'mw_func_call_purify', target:'O' }
+      L1: { name:tx('飛行咒語', 'fly spell'), defType:'mw_func_def_fly', callType:'mw_func_call_fly', target:'L' },
+      L2: { name:tx('火焰咒語', 'fire spell'), defType:'mw_func_def_fire', callType:'mw_func_call_fire', target:'X' },
+      L3: { name:tx('暴雨咒語', 'rain spell'), defType:'mw_func_def_rain', callType:'mw_func_call_rain', target:'F' },
+      L4: { name:tx('驅邪咒語', 'purify spell'), defType:'mw_func_def_purify', callType:'mw_func_call_purify', target:'O' }
     };
     return map[normalizeLevelId(levelId)] || null;
   }
@@ -318,10 +330,10 @@ ${elseCode}}
   function getSpellConfigByObstacle(symbol){
     const key = String(symbol || '').trim().toUpperCase();
     const map = {
-      X: { name:'火焰咒語', defType:'mw_func_def_fire', callType:'mw_func_call_fire', target:'X' },
-      F: { name:'暴雨咒語', defType:'mw_func_def_rain', callType:'mw_func_call_rain', target:'F' },
-      O: { name:'驅邪咒語', defType:'mw_func_def_purify', callType:'mw_func_call_purify', target:'O' },
-      L: { name:'飛行咒語', defType:'mw_func_def_fly', callType:'mw_func_call_fly', target:'L' }
+      X: { name:tx('火焰咒語', 'fire spell'), defType:'mw_func_def_fire', callType:'mw_func_call_fire', target:'X' },
+      F: { name:tx('暴雨咒語', 'rain spell'), defType:'mw_func_def_rain', callType:'mw_func_call_rain', target:'F' },
+      O: { name:tx('驅邪咒語', 'purify spell'), defType:'mw_func_def_purify', callType:'mw_func_call_purify', target:'O' },
+      L: { name:tx('飛行咒語', 'fly spell'), defType:'mw_func_def_fly', callType:'mw_func_call_fly', target:'L' }
     };
     return map[key] || null;
   }

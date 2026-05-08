@@ -1,4 +1,9 @@
 (function(){
+  const I18N = window.MagicMazeI18n;
+  const BOSS_LANG = I18N?.getLang?.() || 'zh';
+  const EN = BOSS_LANG === 'en';
+  function tx(zh, en){ return EN ? en : zh; }
+
   function qs(key){
     const url = new URL(location.href);
     return url.searchParams.get(key) || '';
@@ -227,6 +232,109 @@
 
   const config = WORLD_CONFIG[worldId] || WORLD_CONFIG.world1;
 
+  const BOSS_COPY_EN = {
+    world1: {
+      worldLabel:'World 1 | Magic Academy', pageTitle:'Boss Battle: Professor',
+      intro:'Independent Boss Battle mode. If you lose, you can retry or return to the level screen to prepare your items.',
+      bossName:'Magic Professor', bossShortName:'Professor',
+      winText:'You defeated the Magic Professor and cleared World 1!',
+      nextText:'Enter World 2 Level 1',
+      phaseNames:['Exam Mode','Final Trial'],
+      cards:{
+        potion:{title:'Mana Crystal',desc:'Recover 10 HP and gain 1 power.'},
+        dagger:{title:'Novice Wand',desc:'Deal 8 magic damage immediately.'},
+        shield:{title:'Academy Robe',desc:'Gain 10 shield.'},
+        freeze:{title:'Seal Scroll',desc:'Stop the Professor from acting next turn.'}
+      },
+      patterns:{
+        1:[['Chalk Shot','Single normal damage.'],['Magic Bolt','Steady damage. Healing first is also fine.'],['Exam Storm','A heavy phase-one hit. Defend first.']],
+        2:[['Lightning Grading','High damage. Shield first if you can.'],['Double Spell','Two hits in a row. Shields are useful.'],['Forbidden Book Release','A big phase-two attack. Do not take it unprepared.']]
+      }
+    },
+    world2: {
+      worldLabel:'World 2 | Rune Forest', pageTitle:'Boss Battle: Wolf King',
+      intro:'Independent Boss Battle mode. If you lose, you can retry or return to the level screen to prepare your items.',
+      bossName:'Forest Wolf King', bossShortName:'Wolf King',
+      winText:'You defeated the Forest Wolf King and cleared World 2!',
+      nextText:'Enter World 3 Level 1',
+      phaseNames:['Forest Probe','Rage Mode'],
+      cards:{
+        potion:{title:'Healing Potion',desc:'Restore all HP immediately.'},
+        dagger:{title:'Dagger Strike',desc:'A quick strike that deals 9 damage.'},
+        shield:{title:'Wooden Shield',desc:'Gain 12 shield this turn.'},
+        freeze:{title:'Frozen Vine',desc:'Stop the Boss from acting for 2 turns.'}
+      },
+      patterns:{
+        1:[['Claw Attack','Normal attack.'],['Claw Attack','Normal attack.'],['Pouncing Roar','Stronger than a normal attack. Defend first.']],
+        2:[['Leaping Smash','High damage. Heal or defend first.'],['Double Claw Combo','Two hits in a row. Shields are useful.'],['Wolf King Howl','A big phase-two attack. It hurts if you are not ready.']]
+      }
+    },
+    world3: {
+      worldLabel:'World 3 | Time Library', pageTitle:'Boss Battle: Librarian',
+      intro:'Independent Boss Battle mode. If you lose, you can retry or return to the level screen to prepare your items.',
+      bossName:'Time Librarian', bossShortName:'Librarian',
+      winText:'You defeated the Time Librarian and cleared World 3!',
+      nextText:'Enter World 4 Level 1',
+      phaseNames:['Sorting Shelves','Time Distortion'],
+      cards:{
+        potion:{title:'Time Hourglass',desc:'Recover 9 HP and slow the Librarian.'},
+        dagger:{title:'Magic Quill',desc:'Write a counterspell, deal 8 damage, and gain 1 power.'},
+        shield:{title:'Prophecy Page',desc:'Foresee the attack and gain 11 shield.'},
+        freeze:{title:'Time Key',desc:'Deal 6 damage and freeze the Librarian for 1 turn.'}
+      },
+      patterns:{
+        1:[['Flying Pages','A single attack. You can observe first.'],['Rewind Seal','Low damage, but the rhythm is tricky.'],['Bookshelf Crash','A direct heavy hit. Shield first.']],
+        2:[['Clock Tremor','Three hits. Shields are valuable.'],['Echo of History','Medium-high damage. Heal soon.'],['Time Collapse','A big phase-two attack. Avoid taking it directly.']]
+      }
+    },
+    world4: {
+      worldLabel:'World 4 | Mechanical Castle', pageTitle:'Boss Battle: Mechanical Overlord',
+      intro:'Independent final Boss Battle mode. If you lose, you can retry or return to prepare your items and rhythm.',
+      bossName:'Mechanical Overlord', bossShortName:'Overlord',
+      winText:'You defeated the Mechanical Overlord and cleared World 4!',
+      nextText:'Return Home',
+      phaseNames:['System Scan','Overload Rampage'],
+      cards:{
+        potion:{title:'Gear Core',desc:'Recover 8 HP and add +2 to your next basic attack.'},
+        dagger:{title:'Steam Gauntlet',desc:'Heavy strike for 10 damage.'},
+        shield:{title:'Spell Chip',desc:'Deploy a barrier and gain 12 shield.'},
+        freeze:{title:'Clockwork Key',desc:'Jam the gears, stop the Overlord next turn, and deal 5 damage.'}
+      },
+      patterns:{
+        1:[['Steel Arm Smash','Single high damage. Shields help.'],['Flywheel Barrage','Three hits. Do not underestimate it.'],['Steam Impact','A big phase-one attack.']],
+        2:[['Laser Calibration','Steady high damage. Watch your HP.'],['Gear Pursuit','Two heavy hits in a row.'],['Core Overload','The most dangerous attack. Defend or lock it down.']]
+      }
+    }
+  };
+
+  function applyEnglishBossConfig(){
+    if (!EN) return;
+    const copy = BOSS_COPY_EN[worldId];
+    if (!copy) return;
+    ['worldLabel','pageTitle','intro','bossName','bossShortName','winText','nextText'].forEach(key => {
+      if (copy[key]) config[key] = copy[key];
+    });
+    if (copy.phaseNames) config.phaseNames = copy.phaseNames.slice();
+    Object.entries(copy.cards || {}).forEach(([key, cardCopy]) => {
+      const card = config.cards?.[key];
+      if (!card) return;
+      card.zhTitle = card.zhTitle || card.title;
+      card.title = cardCopy.title;
+      card.desc = cardCopy.desc;
+    });
+    Object.entries(copy.patterns || {}).forEach(([phase, list]) => {
+      const patterns = config.patterns?.[phase];
+      if (!Array.isArray(patterns)) return;
+      list.forEach((entry, idx) => {
+        if (!patterns[idx]) return;
+        patterns[idx].label = entry[0];
+        patterns[idx].hint = entry[1];
+      });
+    });
+  }
+
+  applyEnglishBossConfig();
+
   const COMBAT_RULES = {
     basePlayerCrit: 0.18,
     baseBossCrit: 0.14,
@@ -247,10 +355,10 @@
   };
 
   const ACTION_META = {
-    basic: { icon:'⚔️', label:'攻擊', buttonClass:'primary', state:'造成基礎傷害', note:()=>`會造成 ${config.stats.basicDamage} 點基礎傷害，再加上目前蓄力值。若連續一直用普通攻擊，Boss 可能會反制。`, confirm:'確認攻擊' },
-    defend: { icon:'🛡️', label:'防禦', buttonClass:'secondary', state:'先撐住這回合', note:()=>`本回合獲得 ${config.stats.defendShield} 點護盾，並提高閃避率，適合用來扛 Boss 的大招。`, confirm:'確認防禦' },
-    focus: { icon:'✨', label:'蓄力', buttonClass:'utility', state:'準備下次爆發', note:()=>`本回合不攻擊，改為累積 ${config.stats.focusGain} 點蓄力，讓下一次普通攻擊更強。`, confirm:'確認蓄力' },
-    skip: { icon:'⏭️', label:'略過', buttonClass:'danger', state:'直接結束這回合', note:()=>`不做任何行動，直接輪到 Boss。通常不建議亂用，除非想故意測試 Boss 出招。`, confirm:'確認略過' }
+    basic: { icon:'⚔️', label:tx('攻擊','Attack'), buttonClass:'primary', state:tx('造成基礎傷害','Deal basic damage'), note:()=>tx(`會造成 ${config.stats.basicDamage} 點基礎傷害，再加上目前蓄力值。若連續一直用普通攻擊，Boss 可能會反制。`, `Deals ${config.stats.basicDamage} basic damage plus your current power. If you keep using basic attacks, the Boss may counter.`), confirm:tx('確認攻擊','Confirm Attack') },
+    defend: { icon:'🛡️', label:tx('防禦','Defend'), buttonClass:'secondary', state:tx('先撐住這回合','Hold this turn'), note:()=>tx(`本回合獲得 ${config.stats.defendShield} 點護盾，並提高閃避率，適合用來扛 Boss 的大招。`, `Gain ${config.stats.defendShield} shield this turn and increase dodge chance. Good against big Boss attacks.`), confirm:tx('確認防禦','Confirm Defend') },
+    focus: { icon:'✨', label:tx('蓄力','Focus'), buttonClass:'utility', state:tx('準備下次爆發','Prepare a stronger next hit'), note:()=>tx(`本回合不攻擊，改為累積 ${config.stats.focusGain} 點蓄力，讓下一次普通攻擊更強。`, `Do not attack this turn. Gain ${config.stats.focusGain} power to strengthen your next basic attack.`), confirm:tx('確認蓄力','Confirm Focus') },
+    skip: { icon:'⏭️', label:tx('略過','Skip'), buttonClass:'danger', state:tx('直接結束這回合','End this turn'), note:()=>tx(`不做任何行動，直接輪到 Boss。通常不建議亂用，除非想故意測試 Boss 出招。`, `Take no action and let the Boss act. Usually not recommended unless you are testing the Boss pattern.`), confirm:tx('確認略過','Confirm Skip') }
   };
 
   const TEACHER_BOSS_SIM_KEY = 'mw_teacher_boss_sim_v1';
@@ -555,8 +663,61 @@
     }
   };
 
+  const WORLD_UNLOCK_GUIDE_EN = {
+    world1: {
+      title: 'New Instruction Unlocked: Loops',
+      intro: 'Great job clearing World 1! You can now use loop blocks to combine repeated actions.',
+      exampleTitle: 'How do loops work?',
+      bullets: [
+        'When you need to do the same action again and again, use repeat times.',
+        'For example, instead of placing three move forward blocks, use: repeat 3 times -> move forward.',
+        'This makes your program shorter, cleaner, and more like real programming.'
+      ],
+      example: 'repeat 3 times -> move forward 1 step',
+      nextHint: 'Go to World 2 Level 1 and try using loops to reduce your block count.'
+    },
+    world2: {
+      title: 'New Instruction Unlocked: Conditionals',
+      intro: 'Great job clearing World 2! You can now use if...then...else to check the situation ahead.',
+      exampleTitle: 'How do conditionals work?',
+      bullets: [
+        'When the route can change, check first, then decide whether to move or turn.',
+        'Example: if path ahead, move forward; else, turn right.',
+        'This makes your character smarter instead of following only one fixed route.'
+      ],
+      example: 'if path ahead -> move forward; else -> turn right',
+      nextHint: 'Go to World 3 Level 1 and start learning to observe before acting.'
+    },
+    world3: {
+      title: 'New Instruction Unlocked: Functions (Spells)',
+      intro: 'Great job clearing World 3! You can now organize repeated routes into reusable spells.',
+      exampleTitle: 'How do functions work?',
+      bullets: [
+        'When the same route appears again, define it as a spell first.',
+        'Then cast that spell whenever you need to run the same actions again.',
+        'This keeps programs shorter and easier to change.'
+      ],
+      example: 'define spell A: move forward -> move forward -> turn right\ncast spell A',
+      nextHint: 'Go to World 4 Level 1 and practice organizing repeated routes into functions.'
+    },
+    world4: {
+      title: 'All Worlds Complete!',
+      intro: 'You completed every world and learned sequences, loops, conditionals, and functions.',
+      exampleTitle: 'What you know now',
+      bullets: [
+        'Sequence: place instructions step by step.',
+        'Loop: repeat the same actions.',
+        'Conditional: make different choices in different situations.',
+        'Function: organize common actions into reusable spells.'
+      ],
+      example: 'You completed the full maze programming adventure.',
+      nextHint: 'Return home to replay levels or keep expanding the adventure.'
+    }
+  };
+
   function getUnlockGuide(){
-    return WORLD_UNLOCK_GUIDE[worldId] || WORLD_UNLOCK_GUIDE.world1;
+    const source = EN ? WORLD_UNLOCK_GUIDE_EN : WORLD_UNLOCK_GUIDE;
+    return source[worldId] || source.world1;
   }
 
   function renderUnlockGuideHtml(){
@@ -570,7 +731,7 @@
         <ul style="margin:8px 0 0 20px;padding:0;color:#4f3a18;line-height:1.8;font-weight:700;">
           ${bullets}
         </ul>
-        <div style="margin-top:12px;padding:12px 14px;border-radius:16px;background:#fffdf7;border:1px dashed #d9be7a;color:#5a4216;font-weight:900;white-space:pre-line;">🧩 例子：${guide.example}</div>
+        <div style="margin-top:12px;padding:12px 14px;border-radius:16px;background:#fffdf7;border:1px dashed #d9be7a;color:#5a4216;font-weight:900;white-space:pre-line;">🧩 ${tx('例子', 'Example')}：${guide.example}</div>
         <div style="margin-top:12px;padding:12px 14px;border-radius:16px;background:#eef8ee;border:1px solid #b9d9bc;color:#214728;font-weight:900;">➡️ ${guide.nextHint}</div>
       </div>
     `;
@@ -1101,8 +1262,8 @@
   function getPlayerCharacterMeta(){
     const key = getPlayerCharacter();
     return key === 'girl'
-      ? { key, label: '精靈法師', hpLabel: '精靈法師 HP', img: 'img/girl.png' }
-      : { key, label: '冒險少年', hpLabel: '冒險少年 HP', img: 'img/boy.png' };
+      ? { key, label: tx('精靈法師', 'Elf Mage'), hpLabel: tx('精靈法師 HP', 'Elf Mage HP'), img: 'img/girl.png' }
+      : { key, label: tx('冒險少年', 'Adventurer'), hpLabel: tx('冒險少年 HP', 'Adventurer HP'), img: 'img/boy.png' };
   }
 
   function scoreKey(){
@@ -1115,7 +1276,7 @@
     return Object.values(config.cards).map(card => ({
       ...card,
       used: false,
-      locked: !ownedItems.includes(card.title)
+      locked: !ownedItems.includes(card.zhTitle || card.title)
     }));
   }
 
@@ -1147,15 +1308,18 @@
       repeatedActionCount: 0,
       consecutiveBasicCount: 0,
       cards: getCardsForBoss(),
-      log: [`戰鬥開始！先觀察${config.bossShortName}的下一招，再決定是否防禦或進攻。`, `本世界裝備：${(inventory.equipments || []).length ? inventory.equipments.join('、') : '尚未取得'}。玩家加成：生命 +${Number(inventory.hpBonus || 0)}、攻擊 +${Number(inventory.atkBonus || 0)}、防禦 +${Number(inventory.defBonus || 0)}。`],
+      log: [
+        tx(`戰鬥開始！先觀察${config.bossShortName}的下一招，再決定是否防禦或進攻。`, `Battle started! Watch ${config.bossShortName}'s next move, then choose attack, defend, or item.`),
+        tx(`本世界裝備：${(inventory.equipments || []).length ? inventory.equipments.join('、') : '尚未取得'}。玩家加成：生命 +${Number(inventory.hpBonus || 0)}、攻擊 +${Number(inventory.atkBonus || 0)}、防禦 +${Number(inventory.defBonus || 0)}。`, `World equipment: ${(inventory.equipments || []).length ? inventory.equipments.join(', ') : 'none'}. Player bonuses: HP +${Number(inventory.hpBonus || 0)}, Attack +${Number(inventory.atkBonus || 0)}, Defense +${Number(inventory.defBonus || 0)}.`)
+      ],
       finished: false,
       busy: false,
       startedAt: Date.now(),
-      fxText: '⚔️ Boss 戰開始！',
-      lastBossAction: '尚未行動',
-      lastPlayerAction: '尚未行動',
-      lastPlayerRoll: '尚未觸發',
-      lastBossRoll: '尚未觸發',
+      fxText: tx('⚔️ Boss 戰開始！', '⚔️ Boss Battle Start!'),
+      lastBossAction: tx('尚未行動', 'No action yet'),
+      lastPlayerAction: tx('尚未行動', 'No action yet'),
+      lastPlayerRoll: tx('尚未觸發', 'Not triggered'),
+      lastBossRoll: tx('尚未觸發', 'Not triggered'),
       playerCharacter: getPlayerCharacterMeta(),
       actionHintShown: {},
       awaitingBossContinue: false,
@@ -1349,13 +1513,13 @@
     const used = bossState.bossSupportUsed;
     const candidates = [];
     if (!used.heal && bossState.bossHp > 0 && bossState.bossHp <= Math.ceil(bossState.bossMaxHp * 0.72)) {
-      candidates.push({ type:'heal', label:'生命回流', icon:'💚', hint:'Boss 會恢復生命。' });
+      candidates.push({ type:'heal', label:tx('生命回流', 'Life Return'), icon:'💚', hint:tx('Boss 會恢復生命。', 'The Boss may recover HP.') });
     }
     if (!used.seal && bossState.turn >= 2) {
-      candidates.push({ type:'seal', label:'封印咒文', icon:'🔒', hint:'Boss 會封住玩家的蓄力。' });
+      candidates.push({ type:'seal', label:tx('封印咒文', 'Seal Spell'), icon:'🔒', hint:tx('Boss 會封住玩家的蓄力。', 'The Boss may seal your stored power.') });
     }
     if (!used.shield && bossState.bossArmor <= 10) {
-      candidates.push({ type:'shield', label:'護盾魔法', icon:'🟡', hint:'Boss 會展開防護。' });
+      candidates.push({ type:'shield', label:tx('護盾魔法', 'Shield Magic'), icon:'🟡', hint:tx('Boss 會展開防護。', 'The Boss may create armor.') });
     }
     return candidates;
   }
@@ -1380,10 +1544,10 @@
       const before = Number(bossState.bossHp || 0);
       bossState.bossHp = Math.min(bossState.bossMaxHp, before + amount);
       const healed = bossState.bossHp - before;
-      bossState.fxText = `💚 ${config.bossShortName}施放生命回流，恢復 ${healed} 點生命！`;
-      pushBossLog(`<strong>${config.bossShortName}輔助魔法：</strong>生命回流，恢復 ${healed} 點生命（本場限用一次）。`);
+      bossState.fxText = tx(`💚 ${config.bossShortName}施放生命回流，恢復 ${healed} 點生命！`, `💚 ${config.bossShortName} used Life Return and recovered ${healed} HP!`);
+      pushBossLog(`<strong>${config.bossShortName}${tx('輔助魔法', ' Support Magic')}：</strong>${tx(`生命回流，恢復 ${healed} 點生命（本場限用一次）。`, `Life Return recovered ${healed} HP. This support magic can be used once per battle.`)}`);
       showHealFx('boss', healed);
-      setBattleBanner(`${config.bossShortName}：生命回流`, `Boss 恢復 ${healed} 點生命`);
+      setBattleBanner(`${config.bossShortName}: ${tx('生命回流', 'Life Return')}`, tx(`Boss 恢復 ${healed} 點生命`, `Boss recovered ${healed} HP`));
       return true;
     }
 
@@ -1391,21 +1555,21 @@
       const lostPower = Math.max(0, Number(bossState.playerPower || 0));
       bossState.playerPower = 0;
       bossState.nextBasicWeakMultiplier = Math.max(Number(bossState.nextBasicWeakMultiplier || 0), 0.72);
-      bossState.fxText = `🔒 ${config.bossShortName}施放封印咒文，你的蓄力被清空，下一次普攻變弱！`;
-      pushBossLog(`<strong>${config.bossShortName}輔助魔法：</strong>封印咒文，清除玩家蓄力 ${lostPower}，並削弱下一次普通攻擊（本場限用一次）。`);
+      bossState.fxText = tx(`🔒 ${config.bossShortName}施放封印咒文，你的蓄力被清空，下一次普攻變弱！`, `🔒 ${config.bossShortName} used Seal Spell. Your power was cleared and your next basic attack is weakened!`);
+      pushBossLog(`<strong>${config.bossShortName}${tx('輔助魔法', ' Support Magic')}：</strong>${tx(`封印咒文，清除玩家蓄力 ${lostPower}，並削弱下一次普通攻擊（本場限用一次）。`, `Seal Spell cleared ${lostPower} power and weakened your next basic attack. This support magic can be used once per battle.`)}`);
       showFreezeFx('player', 1);
-      setBattleBanner(`${config.bossShortName}：封印咒文`, '蓄力清空，下一次普通攻擊變弱');
+      setBattleBanner(`${config.bossShortName}: ${tx('封印咒文', 'Seal Spell')}`, tx('蓄力清空，下一次普通攻擊變弱', 'Power cleared. Next basic attack weakened.'));
       return true;
     }
 
     if (action.type === 'shield') {
       const gain = Math.max(6, Math.round(config.stats.defendShield * 0.9 + bossState.phase * 2));
       bossState.bossArmor = Math.max(0, Number(bossState.bossArmor || 0) + gain);
-      bossState.fxText = `🟡 ${config.bossShortName}施放護盾魔法，防護 +${gain}！`;
-      pushBossLog(`<strong>${config.bossShortName}輔助魔法：</strong>護盾魔法，防護 +${gain}（本場限用一次）。`);
+      bossState.fxText = tx(`🟡 ${config.bossShortName}施放護盾魔法，防護 +${gain}！`, `🟡 ${config.bossShortName} used Shield Magic. Armor +${gain}!`);
+      pushBossLog(`<strong>${config.bossShortName}${tx('輔助魔法', ' Support Magic')}：</strong>${tx(`護盾魔法，防護 +${gain}（本場限用一次）。`, `Shield Magic gave armor +${gain}. This support magic can be used once per battle.`)}`);
       showGuardFx('boss', gain, false);
       setPortraitStatus('boss', 'shield');
-      setBattleBanner(`${config.bossShortName}：護盾魔法`, `Boss 防護 +${gain}`);
+      setBattleBanner(`${config.bossShortName}: ${tx('護盾魔法', 'Shield Magic')}`, tx(`Boss 防護 +${gain}`, `Boss armor +${gain}`));
       return true;
     }
     return false;
@@ -1425,10 +1589,17 @@
   }
 
   function getBossIntentPreview(){
-    if (!bossState) return { icon:'❔', label:'未知', hint:'準備載入中…' };
+    if (!bossState) return { icon:'❔', label:tx('未知', 'Unknown'), hint:tx('準備載入中…', 'Loading...') };
     const candidates = getBossSupportCandidates();
     if (candidates.length) {
-      return { icon:'✨', label:'可能使用輔助魔法', hint:`${config.bossShortName}除了攻擊，也可能隨機使用補血、封印或護盾；每種本場最多一次。` };
+      return {
+        icon:'✨',
+        label:tx('可能使用輔助魔法', 'May Use Support Magic'),
+        hint:tx(
+          `${config.bossShortName}除了攻擊，也可能隨機使用補血、封印或護盾；每種本場最多一次。`,
+          `${config.bossShortName} may attack, or may randomly heal, seal, or shield. Each support magic can be used once per battle.`
+        )
+      };
     }
     return bossPatternAction(bossState.bossPatternIndex, getBossPhase());
   }
@@ -1490,13 +1661,13 @@
     bossState.tempBossDodgeBonus = 0;
     if (isDodged) {
       showDodgeFx('boss');
-      setBattleBanner(`${config.bossShortName} 閃開了！`, '這次攻擊沒有打中');
+      setBattleBanner(tx(`${config.bossShortName} 閃開了！`, `${config.bossShortName} dodged!`), tx('這次攻擊沒有打中', 'This attack missed.'));
     } else if (damage > 0) {
       showAttackFx('boss', damage, isCrit);
-      setBattleBanner(isCrit ? '爆擊命中！' : '攻擊命中！', `對${config.bossShortName}造成 ${damage} 點傷害`);
+      setBattleBanner(isCrit ? tx('爆擊命中！', 'Critical Hit!') : tx('攻擊命中！', 'Attack Hit!'), tx(`對${config.bossShortName}造成 ${damage} 點傷害`, `Dealt ${damage} damage to ${config.bossShortName}.`));
     } else if (armorBroken > 0) {
       showGuardFx('boss', armorBroken, false);
-      setBattleBanner('削弱防護！', `削掉 ${armorBroken} 點 Boss 防護`);
+      setBattleBanner(tx('削弱防護！', 'Armor Weakened!'), tx(`削掉 ${armorBroken} 點 Boss 防護`, `Boss armor -${armorBroken}`));
     }
     return { damage, armorBroken, isCrit, isDodged };
   }
@@ -1526,7 +1697,7 @@
       bossState.playerDodgeBonus = 0;
       bossState.tempBossDamageBonus = 0;
       showDodgeFx('player');
-      setBattleBanner('成功閃避！', '你向後退開，躲開了這次攻擊');
+      setBattleBanner(tx('成功閃避！', 'Dodged!'), tx('你向後退開，躲開了這次攻擊', 'You stepped back and avoided the attack.'));
       return { damage, isCrit, isDodged };
     }
 
@@ -1563,13 +1734,13 @@
     bossState.tempBossDamageBonus = 0;
     if (isDodged) {
       showDodgeFx('player');
-      setBattleBanner('成功閃避！', '你躲開了這次攻擊');
+      setBattleBanner(tx('成功閃避！', 'Dodged!'), tx('你躲開了這次攻擊', 'You avoided this attack.'));
     } else if (damage > 0) {
       showAttackFx('player', damage, isCrit);
-      setBattleBanner(isCrit ? `${config.bossShortName} 爆擊！` : `${config.bossShortName} 命中！`, `你受到 ${damage} 點傷害`);
+      setBattleBanner(isCrit ? tx(`${config.bossShortName} 爆擊！`, `${config.bossShortName} critical hit!`) : tx(`${config.bossShortName} 命中！`, `${config.bossShortName} hit!`), tx(`你受到 ${damage} 點傷害`, `You took ${damage} damage.`));
     } else {
       showGuardFx('player', 0, false);
-      setBattleBanner('完全防住！', '護盾和裝備幫你擋下了攻擊');
+      setBattleBanner(tx('完全防住！', 'Fully Blocked!'), tx('護盾和裝備幫你擋下了攻擊', 'Your shield and equipment blocked the attack.'));
     }
     return { damage, isCrit, isDodged };
   }
@@ -1596,7 +1767,7 @@
     bossState.bossPatternIndex += 1;
     bossState.lastBossAction = action.label;
     showWarningFx(`Boss：${action.label}`);
-    setBattleBanner(`Boss 準備：${action.label}`, action.hint || '小心下一波攻擊');
+    setBattleBanner(tx(`Boss 準備：${action.label}`, `Boss prepares: ${action.label}`), action.hint || tx('小心下一波攻擊', 'Watch out for the next attack.'));
 
     if (action.type === 'multi') {
       let total = 0;
@@ -1647,7 +1818,7 @@
   }
 
   function goBackToLevelSelect(){
-    location.href = getExitTargetPage();
+    location.href = `${getExitTargetPage()}?lang=${encodeURIComponent(BOSS_LANG)}`;
   }
 
   function goHome(){
@@ -1660,7 +1831,7 @@
       return;
     }
     const from = cameFromTeacherPage() || isTeacherMode() ? '&from=teacher' : '';
-    location.href = `game.html?world=${encodeURIComponent(config.nextWorld)}&level=level1${from}`;
+    location.href = `game.html?world=${encodeURIComponent(config.nextWorld)}&level=level1${from}&lang=${encodeURIComponent(BOSS_LANG)}`;
   }
 
   function goToRetryBoss(){
@@ -1710,19 +1881,19 @@
       <div class="result-inner final-victory-screen" style="max-height:min(88vh,900px);overflow:auto;text-align:center;">
         <img
           src="img/victory.jpeg"
-          alt="恭喜闖關成功"
+          alt="${tx('恭喜闖關成功', 'Adventure clear')}"
           style="display:block;width:100%;max-width:980px;margin:0 auto 16px;border-radius:22px;box-shadow:0 18px 42px rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.28);"
         >
-        <h3 style="margin-top:0;">恭喜闖關成功！</h3>
-        <p style="font-weight:800;">你成功擊敗機械主宰，完成四個世界的所有冒險！</p>
+        <h3 style="margin-top:0;">${tx('恭喜闖關成功！', 'Adventure Clear!')}</h3>
+        <p style="font-weight:800;">${tx('你成功擊敗機械主宰，完成四個世界的所有冒險！', 'You defeated the Mechanical Overlord and completed all four worlds!')}</p>
         <div class="result-badges" style="justify-content:center;">
-          <span>回合數：${turnsUsed}</span>
-          <span>剩餘生命：${bossState.playerHp}</span>
-          <span>Boss 分數：${score}</span>
+          <span>${tx('回合數', 'Turns')}：${turnsUsed}</span>
+          <span>${tx('剩餘生命', 'HP Left')}：${bossState.playerHp}</span>
+          <span>${tx('Boss 分數', 'Boss Score')}：${score}</span>
         </div>
         <div class="result-actions" style="margin-top:18px;justify-content:center;">
-          <button type="button" class="next" id="resultBackHome">返回選關頁面</button>
-          <button type="button" class="retry" id="resultRetryWin">重新挑戰最終 Boss</button>
+          <button type="button" class="next" id="resultBackHome">${tx('返回選關頁面', 'Back to Level Select')}</button>
+          <button type="button" class="retry" id="resultRetryWin">${tx('重新挑戰最終 Boss', 'Retry Final Boss')}</button>
         </div>
       </div>
     `;
@@ -1743,17 +1914,17 @@
       resultEl.className = isFinalWorldVictory(win) ? 'result-card good final-victory-card' : 'result-card good';
       resultEl.innerHTML = isFinalWorldVictory(win) ? renderFinalVictoryHtml(turnsUsed, score) : `
         <div class="result-inner" style="max-height:min(88vh,900px);overflow:auto;">
-          <h3>Boss 戰勝利！</h3>
-          <p>${config.winText}<br>${config.nextWorld ? '你不只通關了，還學會了新的程式能力。先看完下面的新指令說明，再前往下一個世界第 1 關。' : '你已完成目前所有世界，現在可以返回選關頁面繼續挑戰其他關卡。'}</p>
+          <h3>${tx('Boss 戰勝利！', 'Boss Battle Victory!')}</h3>
+          <p>${config.winText}<br>${config.nextWorld ? tx('你不只通關了，還學會了新的程式能力。先看完下面的新指令說明，再前往下一個世界第 1 關。', 'You cleared the world and learned a new programming skill. Review the new instruction below, then go to the next world.') : tx('你已完成目前所有世界，現在可以返回選關頁面繼續挑戰其他關卡。', 'You have completed all current worlds. Return to level select to keep challenging other levels.')}</p>
           <div class="result-badges">
-            <span>回合數：${turnsUsed}</span>
-            <span>剩餘生命：${bossState.playerHp}</span>
-            <span>Boss 分數：${score}</span>
+            <span>${tx('回合數', 'Turns')}：${turnsUsed}</span>
+            <span>${tx('剩餘生命', 'HP Left')}：${bossState.playerHp}</span>
+            <span>${tx('Boss 分數', 'Boss Score')}：${score}</span>
           </div>
           ${renderUnlockGuideHtml()}
           <div class="result-actions" style="margin-top:18px;">
             <button type="button" class="next" id="resultNextWorld">${config.nextText}</button>
-            <button type="button" class="retry" id="resultRetryWin">重新挑戰</button>
+            <button type="button" class="retry" id="resultRetryWin">${tx('重新挑戰', 'Retry')}</button>
           </div>
         </div>
       `;
@@ -1761,16 +1932,16 @@
       resultEl.className = 'result-card bad';
       resultEl.innerHTML = `
         <div class="result-inner">
-          <h3>挑戰失敗</h3>
-          <p>這次被${config.bossShortName}擊退了。<br>請先整理策略、補齊前面關卡的星星與道具，再回來挑戰。</p>
+          <h3>${tx('挑戰失敗', 'Challenge Failed')}</h3>
+          <p>${tx(`這次被${config.bossShortName}擊退了。<br>請先整理策略、補齊前面關卡的星星與道具，再回來挑戰。`, `${config.bossShortName} defeated you this time.<br>Review your strategy, collect more stars and items, then challenge again.`)}</p>
           <div class="result-badges">
-            <span>回合數：${turnsUsed}</span>
-            <span>Boss 剩餘生命：${Math.max(0, bossState.bossHp)}</span>
-            <span>你的剩餘生命：${Math.max(0, bossState.playerHp)}</span>
+            <span>${tx('回合數', 'Turns')}：${turnsUsed}</span>
+            <span>${tx('Boss 剩餘生命', 'Boss HP Left')}：${Math.max(0, bossState.bossHp)}</span>
+            <span>${tx('你的剩餘生命', 'Your HP Left')}：${Math.max(0, bossState.playerHp)}</span>
           </div>
           <div class="result-actions" style="margin-top:18px;">
-            <button type="button" class="retry" id="resultRetryLose">再次挑戰</button>
-            <button type="button" class="back" id="resultBackLevel">返回關卡畫面</button>
+            <button type="button" class="retry" id="resultRetryLose">${tx('再次挑戰', 'Try Again')}</button>
+            <button type="button" class="back" id="resultBackLevel">${tx('返回關卡畫面', 'Back to Level Screen')}</button>
           </div>
         </div>
       `;
@@ -1808,8 +1979,8 @@
         bossState.nextBasicWeakMultiplier = 0;
         pushBossLog(`<strong>${config.bossShortName}：</strong>你的普通攻擊被反制，只剩 ${Math.round(weakenMultiplier * 100)}% 威力。`);
       }
-      const result = applyDamageToBoss(total, `普通攻擊${Number(bossState.playerAtkBonus || 0) > 0 ? `（裝備 +${Number(bossState.playerAtkBonus || 0)}）` : ''}${extra > 0 ? `（含蓄力 +${extra}）` : ''}`, { armorBreakPenalty: Number(mechanics.basicArmorBreakPenalty || 0) });
-      bossState.lastPlayerAction = `普通攻擊 ${result.damage}${result.armorBroken > 0 ? `｜削甲 ${result.armorBroken}` : ''}${result.isCrit ? '（爆擊）' : ''}${result.isDodged ? '（被閃避）' : ''}`;
+      const result = applyDamageToBoss(total, tx(`普通攻擊${Number(bossState.playerAtkBonus || 0) > 0 ? `（裝備 +${Number(bossState.playerAtkBonus || 0)}）` : ''}${extra > 0 ? `（含蓄力 +${extra}）` : ''}`, `Basic Attack${Number(bossState.playerAtkBonus || 0) > 0 ? ` (equipment +${Number(bossState.playerAtkBonus || 0)})` : ''}${extra > 0 ? ` (power +${extra})` : ''}`), { armorBreakPenalty: Number(mechanics.basicArmorBreakPenalty || 0) });
+      bossState.lastPlayerAction = tx(`普通攻擊 ${result.damage}${result.armorBroken > 0 ? `｜削甲 ${result.armorBroken}` : ''}${result.isCrit ? '（爆擊）' : ''}${result.isDodged ? '（被閃避）' : ''}`, `Basic Attack ${result.damage}${result.armorBroken > 0 ? ` | armor -${result.armorBroken}` : ''}${result.isCrit ? ' (critical)' : ''}${result.isDodged ? ' (dodged)' : ''}`);
       bossState.playerPower = 0;
       applyBasicSpamCounterIfNeeded();
       if (bossState.playerHp <= 0) {
@@ -1828,39 +1999,40 @@
         dodgeBonus += 0.08;
       }
       bossState.playerDodgeBonus = Math.max(bossState.playerDodgeBonus || 0, dodgeBonus);
-      bossState.lastPlayerAction = perfectGuard ? '完美防禦' : '防禦姿態';
+      bossState.lastPlayerAction = perfectGuard ? tx('完美防禦', 'Perfect Guard') : tx('防禦姿態', 'Defensive Stance');
       bossState.lastPlayerRoll = perfectGuard
-        ? `完美防禦成功！額外閃避 ${Math.round(dodgeBonus * 100)}%`
-        : `下回合閃避 +${Math.round(dodgeBonus * 100)}%`;
+        ? tx(`完美防禦成功！額外閃避 ${Math.round(dodgeBonus * 100)}%`, `Perfect guard! Extra dodge ${Math.round(dodgeBonus * 100)}%`)
+        : tx(`下回合閃避 +${Math.round(dodgeBonus * 100)}%`, `Next-turn dodge +${Math.round(dodgeBonus * 100)}%`);
       bossState.fxText = perfectGuard
-        ? `🛡️ 完美防禦！護盾共 +${actualGain}，下次更容易閃避！`
-        : `🛡️ 你架起防禦姿態，護盾 +${actualGain}，下次閃避率提升！`;
-      pushBossLog(`<strong>玩家：</strong>${perfectGuard ? '完美防禦' : '進入防禦姿態'}，護盾增加 ${actualGain}，下次閃避率提升。`);
+        ? tx(`🛡️ 完美防禦！護盾共 +${actualGain}，下次更容易閃避！`, `🛡️ Perfect guard! Shield +${actualGain}, easier to dodge next time!`)
+        : tx(`🛡️ 你架起防禦姿態，護盾 +${actualGain}，下次閃避率提升！`, `🛡️ Defensive stance. Shield +${actualGain}, dodge chance increased!`);
+      pushBossLog(`<strong>${tx('玩家', 'Player')}：</strong>${perfectGuard ? tx('完美防禦', 'Perfect guard') : tx('進入防禦姿態', 'Defensive stance')}，${tx(`護盾增加 ${actualGain}，下次閃避率提升。`, `shield +${actualGain}, next dodge chance increased.`)}`);
       showGuardFx('player', actualGain, perfectGuard);
       setPortraitStatus('player', 'shield');
-      setBattleBanner(perfectGuard ? '完美防禦！' : '防禦姿態！', `護盾 +${actualGain}`);
+      setBattleBanner(perfectGuard ? tx('完美防禦！', 'Perfect Guard!') : tx('防禦姿態！', 'Defensive Stance!'), tx(`護盾 +${actualGain}`, `Shield +${actualGain}`));
     } else if (actionKey === 'focus') {
       bossState.playerPower += config.stats.focusGain;
-      bossState.lastPlayerAction = '專注蓄力';
-      bossState.lastPlayerRoll = '蓄力中';
-      bossState.fxText = `✨ 你正在蓄力，下次普通攻擊 +${config.stats.focusGain}！`;
-      pushBossLog(`<strong>玩家：</strong>專注蓄力，下次普通攻擊 +${config.stats.focusGain} 傷害。`);
-      showBuffFx(`蓄力 +${config.stats.focusGain}`, 'player');
-      setBattleBanner('專注蓄力！', `下次普通攻擊 +${config.stats.focusGain}`);
+      bossState.lastPlayerAction = tx('專注蓄力', 'Focused Power');
+      bossState.lastPlayerRoll = tx('蓄力中', 'Charging');
+      bossState.fxText = tx(`✨ 你正在蓄力，下次普通攻擊 +${config.stats.focusGain}！`, `✨ Charging power. Next basic attack +${config.stats.focusGain}!`);
+      pushBossLog(`<strong>${tx('玩家', 'Player')}：</strong>${tx(`專注蓄力，下次普通攻擊 +${config.stats.focusGain} 傷害。`, `Focused power. Next basic attack +${config.stats.focusGain} damage.`)}`);
+      showBuffFx(tx(`蓄力 +${config.stats.focusGain}`, `Power +${config.stats.focusGain}`), 'player');
+      setBattleBanner(tx('專注蓄力！', 'Focused Power!'), tx(`下次普通攻擊 +${config.stats.focusGain}`, `Next basic attack +${config.stats.focusGain}`));
     } else if (actionKey === 'skip') {
-      bossState.lastPlayerAction = '略過回合';
-      bossState.fxText = `👀 你選擇觀察${config.bossShortName}。`;
-      pushBossLog(`<strong>玩家：</strong>先觀察${config.bossShortName}的動作。`);
-      setBattleBanner('先觀察局勢', `看看${config.bossShortName}接下來想做什麼`);
+      bossState.lastPlayerAction = tx('略過回合', 'Skipped Turn');
+      bossState.fxText = tx(`👀 你選擇觀察${config.bossShortName}。`, `👀 You observe ${config.bossShortName}.`);
+      pushBossLog(`<strong>${tx('玩家', 'Player')}：</strong>${tx(`先觀察${config.bossShortName}的動作。`, `Observe ${config.bossShortName}'s move first.`)}`);
+      setBattleBanner(tx('先觀察局勢', 'Observe First'), tx(`看看${config.bossShortName}接下來想做什麼`, `See what ${config.bossShortName} does next`));
     } else {
       const card = bossState.cards.find(c => c.key === actionKey);
       if (!card || card.used || card.locked) { bossState.busy = false; return; }
       card.used = true;
-      bossState.lastPlayerAction = `使用卡牌：${card.title}`;
+      bossState.lastPlayerAction = tx(`使用卡牌：${card.title}`, `Used card: ${card.title}`);
       const prevFreezeTurns = Number(bossState.bossFreezeTurns || 0);
       const hpBefore = Number(bossState.playerHp || 0);
       const shieldBefore = Number(bossState.playerShield || 0);
       const result = typeof card.effect === 'function' ? card.effect(bossState) : null;
+      if (EN) bossState.fxText = `${card.title} activated!`;
       const requestedFreezeTurns = Math.max(0, Number(bossState.bossFreezeTurns || 0));
       let preserveControlFx = false;
       if (requestedFreezeTurns > prevFreezeTurns) {
@@ -1874,31 +2046,31 @@
       const healed = Math.max(0, Number(bossState.playerHp || 0) - hpBefore);
       const shieldGained = Math.max(0, Number(bossState.playerShield || 0) - shieldBefore);
       if (typeof result === 'string' && result) {
-        pushBossLog(`<strong>玩家卡牌：</strong>${card.title}${result}`);
+        pushBossLog(`<strong>${tx('玩家卡牌', 'Player Card')}：</strong>${EN ? `${card.title} activated.` : `${card.title}${result}`}`);
       } else if (result && typeof result === 'object') {
         if (result.damage) {
           const hit = applyDamageToBoss(result.damage, card.title, { armorBreakBonus: Number(mechanics.cardArmorBreakBonus || 0) });
-          bossState.lastPlayerAction = `使用卡牌：${card.title}${hit.damage > 0 ? `｜傷害 ${hit.damage}` : ''}${hit.armorBroken > 0 ? `｜削甲 ${hit.armorBroken}` : ''}${hit.isCrit ? '（爆擊）' : ''}${hit.isDodged ? '（被閃避）' : ''}`;
+          bossState.lastPlayerAction = tx(`使用卡牌：${card.title}${hit.damage > 0 ? `｜傷害 ${hit.damage}` : ''}${hit.armorBroken > 0 ? `｜削甲 ${hit.armorBroken}` : ''}${hit.isCrit ? '（爆擊）' : ''}${hit.isDodged ? '（被閃避）' : ''}`, `Used card: ${card.title}${hit.damage > 0 ? ` | damage ${hit.damage}` : ''}${hit.armorBroken > 0 ? ` | armor -${hit.armorBroken}` : ''}${hit.isCrit ? ' (critical)' : ''}${hit.isDodged ? ' (dodged)' : ''}`);
         }
-        if (result.log) pushBossLog(`<strong>玩家卡牌：</strong>${result.log}`);
-        if (result.fxText && !preserveControlFx) bossState.fxText = result.fxText;
+        if (result.log) pushBossLog(`<strong>${tx('玩家卡牌', 'Player Card')}：</strong>${EN ? `${card.title} activated.` : result.log}`);
+        if (result.fxText && !preserveControlFx) bossState.fxText = EN ? `${card.title} activated!` : result.fxText;
       }
       if (healed > 0) {
         showHealFx('player', healed);
-        setBattleBanner(`${card.title}！`, `恢復 ${healed} 點生命`);
+        setBattleBanner(`${card.title}！`, tx(`恢復 ${healed} 點生命`, `Recovered ${healed} HP`));
       }
       if (shieldGained > 0) {
         showGuardFx('player', shieldGained, false);
         setPortraitStatus('player', 'shield');
-        setBattleBanner(`${card.title}！`, `護盾 +${shieldGained}`);
+        setBattleBanner(`${card.title}！`, tx(`護盾 +${shieldGained}`, `Shield +${shieldGained}`));
       }
       if (requestedFreezeTurns > prevFreezeTurns) {
         showFreezeFx('boss', Math.max(1, requestedFreezeTurns - prevFreezeTurns));
-        setBattleBanner(`${card.title}！`, `${config.bossShortName} 暫時無法行動`);
+        setBattleBanner(`${card.title}！`, tx(`${config.bossShortName} 暫時無法行動`, `${config.bossShortName} cannot act for now`));
       }
       if (healed <= 0 && shieldGained <= 0 && requestedFreezeTurns <= prevFreezeTurns && !(result && typeof result === 'object' && result.damage)) {
         showBuffFx(card.title, 'player');
-        setBattleBanner(`${card.title}！`, '道具效果已發動');
+        setBattleBanner(`${card.title}！`, tx('道具效果已發動', 'Item effect activated'));
       }
     }
 
@@ -1912,7 +2084,7 @@
     // ✅ 回合節奏：玩家先出招，停在結果畫面；老師或學生點一下戰況框後，Boss 才後行。
     bossState.awaitingBossContinue = true;
     bossState.busy = true;
-    setBattleBanner('玩家行動完成', '請先看完玩家行動結果，再點擊這個戰況框讓 Boss 後行。');
+    setBattleBanner(tx('玩家行動完成', 'Player action complete'), tx('請先看完玩家行動結果，再點擊這個戰況框讓 Boss 後行。', 'Review the result, then tap this battle box so the Boss can act.'));
     render();
   }
 
@@ -1921,7 +2093,7 @@
     bossState.awaitingBossContinue = false;
     clearPortraitStatuses();
     bossState.continuingBossTurn = true;
-    setBattleBanner(`${config.bossShortName}準備行動`, 'Boss 後行，請觀察結果');
+    setBattleBanner(tx(`${config.bossShortName}準備行動`, `${config.bossShortName} is ready to act`), tx('Boss 後行，請觀察結果', 'The Boss acts after you. Watch the result.'));
     render();
     await sleep(350);
 
@@ -1960,10 +2132,10 @@
         iconValue: card.resolvedImg || card.img || '',
         fallbackIcon: '🧩',
         label: card.title,
-        state: card.locked ? '尚未取得' : (card.used ? '已使用' : '可使用 1 次'),
-        desc: card.locked ? '這張卡還沒在一般關取得，所以這場戰鬥不能使用。' : card.desc,
-        note: card.locked ? '先在一般關拿到這個道具，Boss 戰才會開放。' : '點確認後才會真正使用這張卡，避免 iPad 誤觸。',
-        confirmText: '確認使用',
+        state: card.locked ? tx('尚未取得', 'Locked') : (card.used ? tx('已使用', 'Used') : tx('可使用 1 次', 'Can use once')),
+        desc: card.locked ? tx('這張卡還沒在一般關取得，所以這場戰鬥不能使用。', 'You have not collected this card in a normal level yet, so it cannot be used in this battle.') : card.desc,
+        note: card.locked ? tx('先在一般關拿到這個道具，Boss 戰才會開放。', 'Collect this item in a normal level to unlock it for Boss Battles.') : tx('點確認後才會真正使用這張卡，避免 iPad 誤觸。', 'The card is only used after confirmation, preventing accidental taps.'),
+        confirmText: tx('確認使用', 'Confirm Use'),
         confirmClass: 'boss-action-confirm',
         disabled: !!(card.used || card.locked || bossState.finished || bossState.busy)
       };
@@ -1979,7 +2151,7 @@
       label: meta.label,
       state: meta.state,
       desc: meta.note(),
-      note: '點確認後才會真正執行，避免 iPad 誤觸。',
+      note: tx('點確認後才會真正執行，避免 iPad 誤觸。', 'The action only happens after confirmation, preventing accidental taps.'),
       confirmText: meta.confirm,
       confirmClass: `boss-action-confirm ${meta.buttonClass === 'danger' ? 'danger' : ''}`.trim(),
       disabled: !!(bossState.finished || bossState.busy)
@@ -2058,7 +2230,9 @@
     return bossState.cards.map(card => {
       const cardImg = card.resolvedImg || card.img || '';
       const stateClass = card.used ? 'is-used' : (card.locked ? 'is-locked' : '');
-      const stateText = card.locked ? '未取得' : (card.used ? '已使用' : (hasSeenActionHint(card.key) ? '再次點擊使用' : '首次點擊說明'));
+      const stateText = card.locked
+        ? tx('未取得', 'Locked')
+        : (card.used ? tx('已使用', 'Used') : (hasSeenActionHint(card.key) ? tx('再次點擊使用', 'Tap again to use') : tx('首次點擊說明', 'Tap for details')));
       const cardImgHtml = cardImg
         ? `<img src="${escapeHtml(cardImg)}" alt="${escapeHtml(card.title)}" onerror="this.style.display='none'; this.parentElement.textContent='🧩';">`
         : '🧩';
@@ -2078,7 +2252,7 @@
     const recentLogs = (bossState.log || []).slice(0, 4);
     return recentLogs.length
       ? recentLogs.map(item => `<span class="boss-log-pill">${item.replace(/<[^>]*>/g, '')}</span>`).join('')
-      : '<span class="boss-log-pill">戰鬥開始！</span>';
+      : `<span class="boss-log-pill">${tx('戰鬥開始！', 'Battle started!')}</span>`;
   }
 
   function bindButtons(){
@@ -2118,7 +2292,8 @@
   }
 
   async function applyTheme(){
-    document.title = `${config.pageTitle}｜魔法迷宮`;
+    document.documentElement.lang = EN ? 'en' : 'zh-Hant';
+    document.title = EN ? `${config.pageTitle} | Magic Maze` : `${config.pageTitle}｜魔法迷宮`;
     document.documentElement.style.setProperty('--bg','#dfe8dc');
 
     const title = document.getElementById('pageTitle');
@@ -2131,9 +2306,39 @@
 
     if (title) title.textContent = config.pageTitle;
     if (intro) intro.textContent = config.intro;
+    const backBtn = document.getElementById('btnBackGame');
+    const retryBtn = document.getElementById('btnRetry');
+    const exitBtn = document.getElementById('btnExit');
+    if (backBtn) backBtn.textContent = tx('回首頁', 'Home');
+    if (retryBtn) retryBtn.textContent = tx('重新挑戰', 'Retry');
+    if (exitBtn) exitBtn.textContent = tx('離開關卡', 'Exit Level');
+    const panelTitles = document.querySelectorAll('.panel-title');
+    if (panelTitles[0]) panelTitles[0].textContent = tx('玩家狀態', 'Player Status');
+    if (panelTitles[1]) panelTitles[1].textContent = tx('Boss 狀態', 'Boss Status');
+    const playerSub = document.querySelectorAll('.hp-capsule .panel-sub')[0];
+    const bossSub = document.querySelectorAll('.hp-capsule .panel-sub')[2];
+    if (playerSub) playerSub.innerHTML = `<span>${tx('護盾', 'Shield')}：<b id="playerShield">0</b></span><span>${tx('蓄力', 'Power')}：<b id="playerPower">0</b></span>`;
+    if (bossSub) bossSub.innerHTML = `<span>${tx('階段', 'Phase')}：<b id="bossPhase">${config.phaseNames[0]}</b></span><span>${tx('冰凍', 'Freeze')}：<b id="bossFreeze">0</b></span>`;
+    const sectionTitles = document.querySelectorAll('.section-title');
+    if (sectionTitles[0]) sectionTitles[0].textContent = tx('卡牌區', 'Cards');
+    if (sectionTitles[1]) sectionTitles[1].textContent = tx('玩家行動', 'Player Actions');
+    const bannerLabel = document.querySelector('.battle-banner-label');
+    if (bannerLabel) bannerLabel.textContent = tx('本回合戰況', 'This Turn');
+    const modalTitle = document.getElementById('bossActionTitle');
+    const modalState = document.getElementById('bossActionState');
+    const modalDesc = document.getElementById('bossActionDesc');
+    const modalNote = document.getElementById('bossActionNote');
+    const modalCancel = document.getElementById('bossActionCancel');
+    const modalConfirm = document.getElementById('bossActionConfirm');
+    if (modalTitle) modalTitle.textContent = tx('動作說明', 'Action Details');
+    if (modalState) modalState.textContent = tx('準備中', 'Ready');
+    if (modalDesc) modalDesc.textContent = tx('請確認後再執行。', 'Confirm before taking action.');
+    if (modalNote) modalNote.textContent = tx('點擊確認後才會真正出招，避免 iPad 誤觸。', 'The action only happens after confirmation, preventing accidental taps.');
+    if (modalCancel) modalCancel.textContent = tx('返回', 'Back');
+    if (modalConfirm) modalConfirm.textContent = tx('確認使用', 'Confirm');
     if (bossName) bossName.textContent = config.bossName;
     if (phase) phase.textContent = config.phaseNames[0];
-    if (turnText) turnText.textContent = `第 1 回合｜${config.bossShortName}下一招`;
+    if (turnText) turnText.textContent = EN ? `Turn 1 | ${config.bossShortName}'s next move` : `第 1 回合｜${config.bossShortName}下一招`;
 
     await resolveConfigAssets();
 
@@ -2192,7 +2397,9 @@
     const playerCritPct = Math.round(clampRate(COMBAT_RULES.basePlayerCrit + bossState.playerAtkBonus * 0.01 + bossState.playerPower * 0.005) * 100);
     const playerDodgePct = Math.round(clampRate(COMBAT_RULES.basePlayerDodge + bossState.playerDodgeBonus) * 100);
     const basicRisk = getBossCounterRisk();
-    if (playerHintEl) playerHintEl.textContent = `裝備：${bossState.playerEquipments?.length ? bossState.playerEquipments.join('、') : '尚未取得'}｜攻擊 +${bossState.playerAtkBonus}｜防禦 +${bossState.playerDefBonus}｜爆擊 ${playerCritPct}%｜閃避 ${playerDodgePct}%${basicRisk.streak > 0 ? `｜連續普攻 ${basicRisk.streak}` : ''}${bossState.nextBasicWeakMultiplier > 0 ? '｜下次普攻被削弱' : ''}`;
+    if (playerHintEl) playerHintEl.textContent = EN
+      ? `Equipment: ${bossState.playerEquipments?.length ? bossState.playerEquipments.join(', ') : 'none'} | Attack +${bossState.playerAtkBonus} | Defense +${bossState.playerDefBonus} | Crit ${playerCritPct}% | Dodge ${playerDodgePct}%${basicRisk.streak > 0 ? ` | Basic streak ${basicRisk.streak}` : ''}${bossState.nextBasicWeakMultiplier > 0 ? ' | Next basic weakened' : ''}`
+      : `裝備：${bossState.playerEquipments?.length ? bossState.playerEquipments.join('、') : '尚未取得'}｜攻擊 +${bossState.playerAtkBonus}｜防禦 +${bossState.playerDefBonus}｜爆擊 ${playerCritPct}%｜閃避 ${playerDodgePct}%${basicRisk.streak > 0 ? `｜連續普攻 ${basicRisk.streak}` : ''}${bossState.nextBasicWeakMultiplier > 0 ? '｜下次普攻被削弱' : ''}`;
     document.getElementById('bossHpText').textContent = `${bossState.bossHp} / ${bossState.bossMaxHp}`;
     document.getElementById('playerShield').textContent = bossState.playerShield;
     document.getElementById('playerPower').textContent = bossState.playerPower;
@@ -2201,12 +2408,16 @@
     const bossHintEl = document.getElementById('bossHintText');
     const bossCritPct = Math.round(clampRate(COMBAT_RULES.baseBossCrit + (bossState.phase >= 2 ? 0.06 : 0) + Number(getBossMechanics().enrageCritPerStack || 0) * Number(bossState.enrageStacks || 0)) * 100);
     const bossDodgePct = Math.round(clampRate(COMBAT_RULES.baseBossDodge + (bossState.phase >= 2 ? 0.04 : 0) + Number(bossState.tempBossDodgeBonus || 0)) * 100);
-    if (bossHintEl) bossHintEl.textContent = `防護 ${bossState.bossArmor}｜狂暴 ${bossState.enrageStacks}｜爆擊 ${bossCritPct}%｜閃避 ${bossDodgePct}%`;
+    if (bossHintEl) bossHintEl.textContent = EN
+      ? `Armor ${bossState.bossArmor} | Rage ${bossState.enrageStacks} | Crit ${bossCritPct}% | Dodge ${bossDodgePct}%`
+      : `防護 ${bossState.bossArmor}｜狂暴 ${bossState.enrageStacks}｜爆擊 ${bossCritPct}%｜閃避 ${bossDodgePct}%`;
     const topBossBadge = document.getElementById('topBossBadge');
     if (topBossBadge) topBossBadge.textContent = config.bossName;
-    document.getElementById('turnText').textContent = `第 ${bossState.turn} 回合｜${config.bossShortName}下一招`;
+    document.getElementById('turnText').textContent = EN ? `Turn ${bossState.turn} | ${config.bossShortName}'s next move` : `第 ${bossState.turn} 回合｜${config.bossShortName}下一招`;
     document.getElementById('intentMain').textContent = `${intent.icon} ${intent.label}`;
-    document.getElementById('intentSub').textContent = `${intent.hint}${bossState.bossArmor > 0 ? `｜目前有 ${bossState.bossArmor} 點防護` : ''}${basicRisk.counterAt > 0 && basicRisk.streak >= basicRisk.warnAt ? `｜小心：連續普攻 ${basicRisk.counterAt} 次會被反制` : ''}`;
+    document.getElementById('intentSub').textContent = EN
+      ? `${intent.hint}${bossState.bossArmor > 0 ? ` | Armor ${bossState.bossArmor}` : ''}${basicRisk.counterAt > 0 && basicRisk.streak >= basicRisk.warnAt ? ` | Warning: ${basicRisk.counterAt} basic attacks in a row can be countered` : ''}`
+      : `${intent.hint}${bossState.bossArmor > 0 ? `｜目前有 ${bossState.bossArmor} 點防護` : ''}${basicRisk.counterAt > 0 && basicRisk.streak >= basicRisk.warnAt ? `｜小心：連續普攻 ${basicRisk.counterAt} 次會被反制` : ''}`;
     document.getElementById('playerHpBar').style.width = `${playerPct}%`;
     document.getElementById('bossHpBar').style.width = `${bossPct}%`;
     document.getElementById('bossCards').innerHTML = bossCardsHtml();
@@ -2218,8 +2429,8 @@
     if (fxEl) fxEl.textContent = bossState.fxText || `${bossState.lastPlayerAction}｜${bossState.lastBossAction}`;
     const fxSubEl = document.getElementById('fxSubText');
     if (fxSubEl) fxSubEl.textContent = bossState.awaitingBossContinue
-      ? `玩家：${bossState.lastPlayerAction}｜點擊戰況框後 Boss 才會行動`
-      : `玩家：${bossState.lastPlayerAction}｜Boss：${bossState.lastBossAction}`;
+      ? (EN ? `Player: ${bossState.lastPlayerAction} | Tap the battle box for the Boss action` : `玩家：${bossState.lastPlayerAction}｜點擊戰況框後 Boss 才會行動`)
+      : (EN ? `Player: ${bossState.lastPlayerAction} | Boss: ${bossState.lastBossAction}` : `玩家：${bossState.lastPlayerAction}｜Boss：${bossState.lastBossAction}`);
 
     const battleBanner = document.querySelector('.battle-banner');
     if (battleBanner) battleBanner.classList.toggle('is-clickable', !!bossState.awaitingBossContinue);
