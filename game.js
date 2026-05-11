@@ -3207,6 +3207,10 @@ window.GamePage = (()=>{
     toast(requestedStepMode ? (isEnglish ? "Step mode running..." : "步進模式進行中…") : UI.common.running);
     if (!startAt) startClock();
 
+    if (normalizeWorldId(world?.worldId) === 'W4') {
+      BlocklySetup?.enforceWorld4SingleSpell?.(workspace, normalizeLevelId(level?.levelId || ''), { reposition:false });
+    }
+
     const api = makeAPI(expectedGeneration);
     const code = BlocklySetup.workspaceToAsyncCode(workspace);
 

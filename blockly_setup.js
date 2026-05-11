@@ -442,6 +442,17 @@ ${elseCode}}
       if(next) walk(next);
     }
     walk(block);
+
+    try{
+      let tail = block;
+      const inputChild = block.getInput?.('DO')?.connection?.targetBlock?.() || null;
+      if(inputChild) tail = inputChild;
+      while(tail?.getNextBlock?.()) tail = tail.getNextBlock();
+      if(tail?.nextConnection?.isConnected?.()) tail.nextConnection.disconnect();
+      if(tail?.nextConnection && typeof tail.nextConnection.setCheck === 'function') {
+        tail.nextConnection.setCheck('__mw_locked_spell_tail__');
+      }
+    }catch(_err){}
   }
 
   function rebuildWorld4SpellBody(workspace, defBlock, cfg){
