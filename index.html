@@ -977,6 +977,18 @@
     return raw.toUpperCase();
   }
 
+  function getWorldNumber(worldId){
+    const m = normalizeWorldId(worldId).match(/^W(\d+)$/);
+    return m ? Number(m[1]) : 0;
+  }
+
+  function getTeacherOpenWorldMaxForSession(session){
+    if(session?.role !== 'student') return 0;
+    const classId = String(session.classId || String(session.userId || '').slice(0,3) || '').trim();
+    const setting = StorageAPI.getClassSetting?.(classId);
+    return Number(setting?.openWorldMax || 0);
+  }
+
   function normalizeLevelId(levelId){
     const raw = String(levelId || '').trim();
     if(!raw) return '';
@@ -1029,6 +1041,7 @@
   function renderWorlds(){
     const s = StorageAPI.getSession();
     const isTeacher = (s?.role === 'teacher');
+    const teacherOpenWorldMax = getTeacherOpenWorldMaxForSession(s);
     const progress = StorageAPI.getProgress();
     const userId = s?.role === 'student' ? s.userId : null;
 
@@ -1041,9 +1054,11 @@
     }
 
     LEVELS.forEach(world => {
-      const worldUnlocked = isTeacher ? true : (userId ? getWorldUnlocked(world, progress, userId) : false);
+      const worldNum = getWorldNumber(world.worldId);
+      const worldUnlockedByTeacher = teacherOpenWorldMax > 0 && worldNum > 0 && worldNum <= teacherOpenWorldMax;
+      const worldUnlocked = isTeacher ? true : (teacherOpenWorldMax > 0 ? worldUnlockedByTeacher : (userId ? getWorldUnlocked(world, progress, userId) : false));
       const normalLevels = getHomeNormalLevels(world);
-      const bossUnlocked = isTeacher ? true : (worldUnlocked && userId && isBossUnlocked(progress, userId, world));
+      const bossUnlocked = isTeacher ? true : (teacherOpenWorldMax > 0 ? worldUnlocked : (worldUnlocked && userId && isBossUnlocked(progress, userId, world)));
 
       const worldId = normalizeWorldId(world.worldId);
       const theme = WORLD_THEME[worldId] || WORLD_THEME.W1;
@@ -1062,7 +1077,7 @@
       title.style.alignItems = 'center';
       title.style.gap = '8px';
       title.innerHTML = `<div style="color:${theme.title};"><b>${getDisplayWorldName(world)}</b></div>
-                         <div class="badge" style="background:${theme.badgeBg};border:${theme.badgeBd};color:${theme.title};">${isTeacher ? (currentLang === 'en' ? 'Teacher access' : '教師可進入') : (worldUnlocked ? (currentLang === 'en' ? 'Unlocked' : '已解鎖') : (currentLang === 'en' ? 'Locked' : '未解鎖'))}</div>`;
+                         <div class="badge" style="background:${theme.badgeBg};border:${theme.badgeBd};color:${theme.title};">${isTeacher ? (currentLang === 'en' ? 'Teacher access' : '教師可進入') : (worldUnlocked ? (teacherOpenWorldMax > 0 ? (currentLang === 'en' ? 'Teacher opened' : '教師已開放') : (currentLang === 'en' ? 'Unlocked' : '已解鎖')) : (currentLang === 'en' ? 'Locked' : '未解鎖'))}</div>`;
       wCard.appendChild(title);
 
       const list = document.createElement('div');
@@ -1072,7 +1087,7 @@
         const best = userId ? getBestRecord(progress, userId, world.worldId, lv.levelId) : null;
         const prevLv = normalLevels[idx - 1];
         const prevBest = (userId && prevLv) ? getBestRecord(progress, userId, world.worldId, prevLv.levelId) : null;
-        const levelUnlocked = isTeacher ? true : (idx === 0 ? true : !!prevBest);
+        const levelUnlocked = isTeacher ? true : (teacherOpenWorldMax > 0 ? worldUnlocked : (idx === 0 ? true : !!prevBest));
         const canPlay = isTeacher ? true : !!(worldUnlocked && userId && levelUnlocked);
 
         const btn = document.createElement('button');

@@ -8,6 +8,7 @@ const LS_KEYS = {
   session: "mw_session",
   progress: "mw_progress",
   leaderboard: "mw_leaderboard",
+  classSettings: "mw_class_settings",
 };
 
 const PROGRAM_STORE_KEY = "maze_saved_programs_v1";
@@ -29,6 +30,24 @@ function loadJSON(key, fallback){
 
 function saveJSON(key, value){
   localStorage.setItem(key, JSON.stringify(value));
+}
+
+function normalizeOpenWorldMax(value){
+  const n = Number(value || 0);
+  if(!Number.isFinite(n)) return 0;
+  if(n <= 0) return 0;
+  return Math.max(1, Math.min(4, Math.floor(n)));
+}
+
+function normalizeClassSettings(settings = {}, classId = ""){
+  const cid = String(settings.classId || classId || "").trim();
+  const openWorldMax = normalizeOpenWorldMax(settings.openWorldMax);
+  return {
+    classId: cid,
+    openWorldMax,
+    mode: openWorldMax > 0 ? "teacher" : "progress",
+    updatedAt: settings.updatedAt || null
+  };
 }
 
 function getToken(){
@@ -266,6 +285,29 @@ window.StorageAPI = {
     saveJSON(LS_KEYS.leaderboard, Array.isArray(list) ? list : []);
   },
 
+  getClassSettings(){
+    return loadJSON(LS_KEYS.classSettings, {});
+  },
+
+  saveClassSettings(settings){
+    saveJSON(LS_KEYS.classSettings, settings && typeof settings === "object" ? settings : {});
+  },
+
+  getClassSetting(classId){
+    const cid = String(classId || "").trim();
+    const settings = this.getClassSettings();
+    return normalizeClassSettings(settings[cid] || {}, cid);
+  },
+
+  saveClassSetting(classId, setting){
+    const cid = String(classId || setting?.classId || "").trim();
+    if(!/^\d{3}$/.test(cid)) return null;
+    const settings = this.getClassSettings();
+    settings[cid] = normalizeClassSettings(setting || {}, cid);
+    this.saveClassSettings(settings);
+    return settings[cid];
+  },
+
   async syncMyProgressFromBackend(){
     const s = this.getSession();
     if(!s?.token || s.role !== "student") return this.getProgress();
@@ -294,6 +336,7 @@ window.StorageAPI = {
     const data = await apiFetch("/api/progress/class");
     const remoteMap = normalizeProgressArrayToMap(data.progress || []);
     const classId = String(data.classId || s.classId || String(s.userId).slice(0,3));
+    if(data.classSettings) this.saveClassSetting(classId, data.classSettings);
 
     try{
       sessionStorage.setItem('mw_last_class_sync_result', JSON.stringify({
@@ -359,6 +402,33 @@ window.StorageAPI = {
     Object.assign(local, remoteMap);
     this.saveProgress(local);
     return local;
+  },
+
+  async syncTeacherClassSettingFromBackend(classId){
+    const s = this.getSession();
+    const cid = String(classId || "").trim();
+    if(!s?.token || s.role !== "teacher") {
+      throw new Error("教師登入狀態沒有後端 token，請回首頁重新登入教師帳號。");
+    }
+    if(!/^\d{3}$/.test(cid)) return null;
+
+    const data = await apiFetch(`/api/teacher/class-settings/${encodeURIComponent(cid)}`);
+    return this.saveClassSetting(cid, data.settings || {});
+  },
+
+  async saveTeacherClassSettingToBackend(classId, setting = {}){
+    const s = this.getSession();
+    const cid = String(classId || "").trim();
+    if(!s?.token || s.role !== "teacher") {
+      throw new Error("教師登入狀態沒有後端 token，請回首頁重新登入教師帳號。");
+    }
+    if(!/^\d{3}$/.test(cid)) throw new Error("請先選擇單一班級。");
+
+    const data = await apiFetch(`/api/teacher/class-settings/${encodeURIComponent(cid)}`, {
+      method: "PUT",
+      body: JSON.stringify({ openWorldMax: normalizeOpenWorldMax(setting.openWorldMax) })
+    });
+    return this.saveClassSetting(cid, data.settings || {});
   },
 
   async syncLeaderboardFromBackend(params = {}){

@@ -113,6 +113,23 @@ function normalizeLevelKey(levelKey) {
   return String(levelKey || '').trim();
 }
 
+function normalizeOpenWorldMax(value) {
+  const n = Number(value || 0);
+  if (!Number.isFinite(n)) return 0;
+  if (n <= 0) return 0;
+  return Math.max(1, Math.min(4, Math.floor(n)));
+}
+
+function publicClassSettings(item = {}, classId = '') {
+  const cid = String(item.classId || classId || '').trim();
+  return {
+    classId: cid,
+    openWorldMax: normalizeOpenWorldMax(item.openWorldMax),
+    mode: normalizeOpenWorldMax(item.openWorldMax) > 0 ? 'teacher' : 'progress',
+    updatedAt: item.updatedAt || null
+  };
+}
+
 function sanitizeRecord(record = {}) {
   return {
     score: Number(record.score || 0),
@@ -363,7 +380,8 @@ app.get('/api/progress/class', requireAuth, async (req, res) => {
     .filter(item => String(item.classId || '') === classId)
     .sort((a, b) => String(a.seat || '').localeCompare(String(b.seat || '')) || String(a.userId || '').localeCompare(String(b.userId || '')));
 
-  res.json({ ok: true, classId, count: normalized.length, progress: normalized });
+  const settingsDoc = await collections.classSettings.findOne({ classId }, { projection: { _id: 0 } });
+  res.json({ ok: true, classId, count: normalized.length, progress: normalized, classSettings: publicClassSettings(settingsDoc || {}, classId) });
 });
 
 app.put('/api/progress/level', requireAuth, async (req, res) => {
@@ -447,6 +465,35 @@ app.get('/api/teacher/classes', requireAuth, requireTeacher, async (req, res) =>
     .sort((a, b) => a.localeCompare(b));
 
   res.json({ ok: true, classIds });
+});
+
+app.get('/api/teacher/class-settings/:classId', requireAuth, requireTeacher, async (req, res) => {
+  const classId = String(req.params.classId || '').trim();
+  if (!/^\d{3}$/.test(classId)) return res.status(400).json({ ok: false, message: '班級代碼必須是 3 碼數字。' });
+
+  const settings = await collections.classSettings.findOne({ classId }, { projection: { _id: 0 } });
+  res.json({ ok: true, settings: publicClassSettings(settings || {}, classId) });
+});
+
+app.put('/api/teacher/class-settings/:classId', requireAuth, requireTeacher, async (req, res) => {
+  const classId = String(req.params.classId || '').trim();
+  if (!/^\d{3}$/.test(classId)) return res.status(400).json({ ok: false, message: '班級代碼必須是 3 碼數字。' });
+
+  const openWorldMax = normalizeOpenWorldMax(req.body.openWorldMax);
+  const next = {
+    classId,
+    openWorldMax,
+    mode: openWorldMax > 0 ? 'teacher' : 'progress',
+    updatedAt: now()
+  };
+
+  await collections.classSettings.updateOne(
+    { classId },
+    { $set: next, $setOnInsert: { createdAt: now() } },
+    { upsert: true }
+  );
+
+  res.json({ ok: true, settings: publicClassSettings(next, classId) });
 });
 
 app.get('/api/teacher/progress', requireAuth, requireTeacher, async (req, res) => {
@@ -542,7 +589,8 @@ async function start() {
   collections = {
     users: db.collection('users'),
     progress: db.collection('progress'),
-    leaderboard: db.collection('leaderboard')
+    leaderboard: db.collection('leaderboard'),
+    classSettings: db.collection('classSettings')
   };
 
   async function ensureIndex(collection, keys, options = {}) {
@@ -559,6 +607,7 @@ async function start() {
   await ensureIndex(collections.progress, { classId: 1, seat: 1 });
   await ensureIndex(collections.leaderboard, { userId: 1, levelKey: 1 }, { unique: true });
   await ensureIndex(collections.leaderboard, { classId: 1, levelKey: 1, score: -1, steps: 1 });
+  await ensureIndex(collections.classSettings, { classId: 1 }, { unique: true });
 
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`Magic Maze backend running on port ${PORT}`);

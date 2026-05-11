@@ -149,6 +149,76 @@ window.TeacherPage = (()=>{
     return getDefaultTeacherClassId();
   }
 
+  function normalizeOpenWorldMax(value){
+    const n = Number(value || 0);
+    if(!Number.isFinite(n)) return 0;
+    if(n <= 0) return 0;
+    return Math.max(1, Math.min(4, Math.floor(n)));
+  }
+
+  function updateOpenWorldStatus(setting = null, classId = ''){
+    const selectedClass = String(classId || getCurrentFilterClass()).trim();
+    const select = document.getElementById('openWorldMax');
+    const status = document.getElementById('openWorldStatus');
+    const saveBtn = document.getElementById('btnSaveOpenWorld');
+    const isSingleClass = /^\d{3}$/.test(selectedClass);
+    const current = setting || (isSingleClass ? StorageAPI.getClassSetting?.(selectedClass) : null);
+    const openWorldMax = normalizeOpenWorldMax(current?.openWorldMax);
+
+    if(select){
+      select.disabled = !isTeacherLoggedIn() || !isSingleClass;
+      select.value = String(openWorldMax);
+    }
+    if(saveBtn) saveBtn.disabled = !isTeacherLoggedIn() || !isSingleClass;
+    if(status){
+      if(!isSingleClass){
+        status.textContent = '選擇單一班級後，可設定學生可進入的世界範圍。';
+      }else if(openWorldMax > 0){
+        status.textContent = `${selectedClass} 班目前開放世界 1-${openWorldMax}；超出範圍的世界會先鎖住。`;
+      }else{
+        status.textContent = `${selectedClass} 班目前依學生個人進度解鎖。`;
+      }
+    }
+  }
+
+  async function loadOpenWorldSetting(classId = getCurrentFilterClass()){
+    const cid = String(classId || '').trim();
+    if(!/^\d{3}$/.test(cid)){
+      updateOpenWorldStatus(null, cid);
+      return null;
+    }
+    updateOpenWorldStatus(StorageAPI.getClassSetting?.(cid), cid);
+    if(!isTeacherLoggedIn()) return null;
+    try{
+      const setting = await StorageAPI.syncTeacherClassSettingFromBackend(cid);
+      updateOpenWorldStatus(setting, cid);
+      return setting;
+    }catch(err){
+      console.warn('讀取班級開放設定失敗：', err);
+      updateOpenWorldStatus(StorageAPI.getClassSetting?.(cid), cid);
+      return null;
+    }
+  }
+
+  async function saveOpenWorldSetting(){
+    if(!requireTeacherOrBlock('儲存開放範圍')) return;
+    const classId = String(document.getElementById('filterClass')?.value || '').trim();
+    if(!/^\d{3}$/.test(classId)){
+      toast('請先選擇單一班級，再儲存開放範圍。');
+      return;
+    }
+    const openWorldMax = normalizeOpenWorldMax(document.getElementById('openWorldMax')?.value);
+    try{
+      const setting = await StorageAPI.saveTeacherClassSettingToBackend(classId, { openWorldMax });
+      updateOpenWorldStatus(setting, classId);
+      toast(openWorldMax > 0
+        ? `✅ 已設定 ${classId} 班開放世界 1-${openWorldMax}`
+        : `✅ 已設定 ${classId} 班改回依學生進度解鎖`);
+    }catch(err){
+      toast(`❌ 儲存開放範圍失敗：${err.message || err}`);
+    }
+  }
+
   function getLocalClassIds(){
     try{
       const progress = StorageAPI.getProgress?.() || {};
@@ -427,7 +497,7 @@ window.TeacherPage = (()=>{
     const isTeacher = isTeacherLoggedIn();
 
     const ids = [
-      'btnClearAll', 'btnRefresh', 'filterClass', 'sortMode',
+      'btnClearAll', 'btnRefresh', 'filterClass', 'sortMode', 'openWorldMax', 'btnSaveOpenWorld',
       'teacherWorld', 'teacherLevel',
       'btnOpenBoss', 'btnSaveBest', 'btnLoadBest', 'btnClearBest', 'btnExportBestCode',
       'btnLoadLevelData', 'btnSaveLevelEdit', 'btnPreviewLevelEdit', 'btnExportLevelJson', 'btnClearLevelEdit',
@@ -458,6 +528,7 @@ window.TeacherPage = (()=>{
     if(!badge) return;
     badge.textContent = isTeacherLoggedIn() ? '教師已登入' : '教師未登入';
     updateControlsLock();
+    updateOpenWorldStatus();
   }
 
   function buildCandidatePath(page){
@@ -628,6 +699,7 @@ window.TeacherPage = (()=>{
     if(filterSelect){
       const currentValue = filterClass || getDefaultTeacherClassId();
       filterClass = setFilterClassOptions([...new Set([...getKnownClassIds(), ...allClassIds])], currentValue);
+      updateOpenWorldStatus(StorageAPI.getClassSetting?.(filterClass), filterClass);
     }
 
     const allStudents = Object.keys(progress)
@@ -1523,6 +1595,7 @@ window.LEVELS = ${JSON.stringify(exported, null, 2)};
       }
       toast('教師登入成功，正在同步目前班級雲端資料…');
       const selectedClass = await refreshTeacherClassOptionsFromCloud(getDefaultTeacherClassId());
+      await loadOpenWorldSetting(selectedClass);
       await refreshTeacherProgressFromCloud({ silent:true, classId:selectedClass });
       setBadge();
       startTeacherProgressAutoSync();
@@ -1554,6 +1627,7 @@ window.LEVELS = ${JSON.stringify(exported, null, 2)};
       const selected = String(filterClassEl.value || getDefaultTeacherClassId()).trim();
       if(selected !== 'all') rememberDefaultTeacherClass(selected);
       render();
+      await loadOpenWorldSetting(selected);
       await refreshTeacherProgressFromCloud({ silent:true, classId:selected });
       const btnClearAll = document.getElementById('btnClearAll');
       if(btnClearAll){
@@ -1563,6 +1637,8 @@ window.LEVELS = ${JSON.stringify(exported, null, 2)};
       }
     };
     if(sortModeEl) sortModeEl.onchange = ()=>{ if(requireTeacherOrBlock('切換排序方式')) render(); };
+    const btnSaveOpenWorld = document.getElementById('btnSaveOpenWorld');
+    if(btnSaveOpenWorld) btnSaveOpenWorld.onclick = saveOpenWorldSetting;
 
     const btnClearAll = document.getElementById('btnClearAll');
     const updateClearButtonText = ()=>{
@@ -1643,6 +1719,7 @@ window.LEVELS = ${JSON.stringify(exported, null, 2)};
     if(isTeacherLoggedIn()){
       toast('正在從 MongoDB 讀取目前班級資料…');
       const selectedClass = await refreshTeacherClassOptionsFromCloud(getDefaultTeacherClassId());
+      await loadOpenWorldSetting(selectedClass);
       await refreshTeacherProgressFromCloud({ silent:true, classId:selectedClass });
       startTeacherProgressAutoSync();
     }
