@@ -41,22 +41,23 @@
       bodyBg: "url('img/world1_bg_magic_academy.jpeg') center/cover no-repeat fixed",
       arenaBg: "transparent",
       bossImg: 'img/world1_boss_professor.png',
-      stats: { playerMaxHp: 24, bossMaxHp: 36, basicDamage: 4, defendShield: 7, focusGain: 3 },
+      stats: { playerMaxHp: 24, bossMaxHp: 30, basicDamage: 4, defendShield: 7, focusGain: 3 },
       mechanics: {
-        armorByPhase: { 1: 0, 2: 6 },
+        armorByPhase: { 1: 0, 2: 3 },
         basicWarnAt: 3,
         basicCounterAt: 4,
         counterMode: 'retaliate',
         counterLabel: '批改反震',
         counterDamage: 3,
-        enrageStartTurn: 6,
+        enrageStartTurn: 9,
         enrageEvery: 2,
         enrageDamagePerStack: 1,
         enrageCritPerStack: 0.02,
         controlImmuneAfter: 99,
         controlDecayStep: 0,
         basicArmorBreakPenalty: 0,
-        cardArmorBreakBonus: 1
+        cardArmorBreakBonus: 1,
+        supportChanceMultiplier: 0.45
       },
       cards: {
         potion: { key: 'potion', title: '魔力水晶', desc: '回復 10 點生命，並獲得 1 點蓄力。', img: 'img/world1_item_01_mana_crystal.png', effect(state){ state.playerHp = Math.min(state.playerMaxHp, state.playerHp + 10); state.playerPower += 1; state.fxText = '🔷 魔力充能，恢復 10 點生命並蓄力 +1！'; return '恢復了 10 點生命，並獲得 1 點蓄力。'; } },
@@ -1528,7 +1529,8 @@
     const candidates = getBossSupportCandidates();
     if (!candidates.length) return null;
     const bossHpRate = bossState.bossHp / Math.max(1, bossState.bossMaxHp);
-    const baseRate = bossHpRate <= 0.45 ? 0.42 : 0.28;
+    const chanceMultiplier = Number(getBossMechanics().supportChanceMultiplier ?? 1);
+    const baseRate = (bossHpRate <= 0.45 ? 0.42 : 0.28) * Math.max(0, chanceMultiplier);
     if (!rollChance(baseRate)) return null;
     return candidates[Math.floor(Math.random() * candidates.length)];
   }
