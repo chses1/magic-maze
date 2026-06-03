@@ -152,7 +152,8 @@
 
     .home-panels[hidden]{display:none !important;}
 
-    body.home-page.student-logged-in .home-start-wrap{display:none !important;}
+    body.home-page.student-logged-in .home-start-wrap,
+    body.home-page.teacher-logged-in .home-start-wrap{display:none !important;}
 
     .home-card{
       background:var(--home-panel-bg);
@@ -169,6 +170,8 @@
     .home-rank-card{
       width:100%;
     }
+
+    .home-rank-card[hidden]{display:none !important;}
 
     .home-worlds-grid{
       display:grid;
@@ -1037,18 +1040,24 @@
   function renderSession(){
     const s = StorageAPI.getSession();
     const panels = document.getElementById('homePanels');
-    document.body.classList.toggle('student-logged-in', !!s && s.role === 'student');
+    const rankCard = document.querySelector('.home-rank-card');
+    const isStudent = !!s && s.role === 'student';
+    const isTeacher = !!s && s.role === 'teacher';
+    document.body.classList.toggle('student-logged-in', isStudent);
+    document.body.classList.toggle('teacher-logged-in', isTeacher);
 
     if(!s){
       panels.hidden = true;
+      if(rankCard) rankCard.hidden = false;
       return null;
     }
 
-    if(s.role === 'student'){
+    if(isStudent || isTeacher){
       panels.hidden = false;
     }else{
       panels.hidden = true;
     }
+    if(rankCard) rankCard.hidden = !isStudent;
     return s;
   }
 
