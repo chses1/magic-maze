@@ -1542,8 +1542,9 @@
     }
   };
 
-  document.getElementById('btnLogout').onclick = ()=>{
-    Auth.logout();
+  document.getElementById('btnLogout').onclick = async ()=>{
+    toast(currentLang === 'en' ? 'Logging out...' : '正在登出…');
+    await Auth.logout();
     toast(currentLang === 'en' ? 'Logged out.' : '已登出。');
     teacherToast('');
     document.getElementById('teacherCode').value = '';

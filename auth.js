@@ -57,11 +57,42 @@ async function getGoogleIdTokenFromFirebase(){
   const provider = new window.firebase.auth.GoogleAuthProvider();
   provider.addScope("profile");
   provider.addScope("email");
+  provider.setCustomParameters({ prompt: "select_account" });
 
   const result = await auth.signInWithPopup(provider);
   const idToken = await result.user?.getIdToken?.();
   if(!idToken) throw new Error("Google 登入成功，但沒有取得 Firebase 登入憑證。");
   return idToken;
+}
+
+async function clearFirebaseClientPersistence(){
+  try{
+    const auth = await ensureFirebaseAuth();
+    await auth.signOut();
+  }catch(_err){}
+
+  try{
+    const dbs = await indexedDB.databases?.();
+    if(Array.isArray(dbs)){
+      await Promise.all(dbs
+        .map(db => db?.name)
+        .filter(name => String(name || "").startsWith("firebaseLocalStorageDb"))
+        .map(name => new Promise(resolve => {
+          const req = indexedDB.deleteDatabase(name);
+          req.onsuccess = req.onerror = req.onblocked = resolve;
+        })));
+    }
+  }catch(_err){}
+
+  try{
+    [localStorage, sessionStorage].forEach(store => {
+      const keys = [];
+      for(let i = 0; i < store.length; i++) keys.push(store.key(i));
+      keys
+        .filter(key => /^firebase[:.]/i.test(String(key || "")) || String(key || "").includes("firebaseLocalStorage"))
+        .forEach(key => store.removeItem(key));
+    });
+  }catch(_err){}
 }
 
 function buildStudentSession(data, fallback = {}){
@@ -248,10 +279,10 @@ window.Auth = {
     }
   },
 
-  logout(){
-    try{ window.firebase?.auth?.().signOut?.(); }catch(_err){}
+  async logout(){
     pendingGoogleIdToken = "";
     StorageAPI.clearSession();
+    await clearFirebaseClientPersistence();
   },
 
   requireRole(role){

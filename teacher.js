@@ -1621,8 +1621,9 @@ window.LEVELS = ${JSON.stringify(exported, null, 2)};
       loadSelectedLevelIntoEditor();
     };
 
-    document.getElementById('btnTeacherLogout').onclick = ()=>{
-      Auth.logout();
+    document.getElementById('btnTeacherLogout').onclick = async ()=>{
+      toast('正在登出…');
+      await Auth.logout();
       stopTeacherProgressAutoSync();
       toast('已登出。');
       setBadge();
