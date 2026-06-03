@@ -1,6 +1,6 @@
 // auth.js
 // ✅ 教師密碼不再寫在前端；改由 Render 後端驗證。
-// ✅ Google 登入使用 Firebase Auth 取得 Google idToken，再交給 Render 後端換成遊戲 JWT。
+// ✅ Google 登入使用 Firebase Auth 取得 Firebase idToken，再交給 Render 後端換成遊戲 JWT。
 
 const MAGIC_MAZE_FIREBASE_CONFIG = {
   apiKey: "AIzaSyAH4cDZMCFP61OCjJKJuufk5pfxneaY16Y",
@@ -59,9 +59,8 @@ async function getGoogleIdTokenFromFirebase(){
   provider.addScope("email");
 
   const result = await auth.signInWithPopup(provider);
-  const credential = window.firebase.auth.GoogleAuthProvider.credentialFromResult(result);
-  const idToken = credential?.idToken || "";
-  if(!idToken) throw new Error("Google 登入成功，但沒有取得可驗證的 idToken。");
+  const idToken = await result.user?.getIdToken?.();
+  if(!idToken) throw new Error("Google 登入成功，但沒有取得 Firebase 登入憑證。");
   return idToken;
 }
 

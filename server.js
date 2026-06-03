@@ -3,8 +3,8 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const { MongoClient } = require('mongodb');
-const { OAuth2Client } = require('google-auth-library');
 
 const app = express();
 const PORT = Number(process.env.PORT || 10000);
@@ -13,9 +13,8 @@ const JWT_SECRET = process.env.JWT_SECRET;
 const TEACHER_PASSWORD = process.env.TEACHER_PASSWORD;
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || '*';
 const DB_NAME = process.env.DB_NAME || 'magic_maze';
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
+const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || 'magic-maze-39321';
 const TEACHER_EMAILS = process.env.TEACHER_EMAILS || 'cairo1680@apps.chses.tyc.edu.tw';
-const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID || undefined);
 
 if (!MONGODB_URI) throw new Error('缺少 MONGODB_URI，請在 .env 或 Render Environment 設定。');
 if (!JWT_SECRET) throw new Error('缺少 JWT_SECRET，請在 .env 或 Render Environment 設定。');
@@ -122,7 +121,7 @@ function normalizeStudentId(studentId) {
 
 function publicGoogleProfile(payload = {}) {
   return {
-    googleSub: String(payload.sub || ''),
+    googleSub: String(payload.uid || payload.sub || ''),
     email: String(payload.email || '').trim().toLowerCase(),
     emailVerified: payload.email_verified === true,
     displayName: String(payload.name || ''),
@@ -130,19 +129,70 @@ function publicGoogleProfile(payload = {}) {
   };
 }
 
+let firebaseCertCache = { expiresAt: 0, certs: {} };
+
+function decodeBase64UrlJson(value) {
+  const text = Buffer.from(String(value || ''), 'base64url').toString('utf8');
+  return JSON.parse(text);
+}
+
+async function getFirebaseCerts() {
+  if (firebaseCertCache.expiresAt > Date.now() && Object.keys(firebaseCertCache.certs).length) {
+    return firebaseCertCache.certs;
+  }
+
+  const res = await fetch('https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com');
+  if (!res.ok) throw new Error('無法取得 Firebase 驗證公鑰。');
+
+  const certs = await res.json();
+  const cacheControl = String(res.headers.get('cache-control') || '');
+  const maxAgeMatch = cacheControl.match(/max-age=(\d+)/);
+  const maxAgeMs = maxAgeMatch ? Number(maxAgeMatch[1]) * 1000 : 60 * 60 * 1000;
+  firebaseCertCache = { expiresAt: Date.now() + maxAgeMs, certs };
+  return certs;
+}
+
 async function verifyGoogleIdToken(idToken) {
   const token = String(idToken || '').trim();
-  if (!token) throw new Error('缺少 Google 登入憑證。');
+  if (!token) throw new Error('缺少 Firebase 登入憑證。');
 
-  const options = { idToken: token };
-  if (GOOGLE_CLIENT_ID) options.audience = GOOGLE_CLIENT_ID;
+  const parts = token.split('.');
+  if (parts.length !== 3) throw new Error('Firebase 登入憑證格式錯誤。');
 
-  const ticket = await googleClient.verifyIdToken(options);
-  const payload = ticket.getPayload();
-  const profile = publicGoogleProfile(payload || {});
+  let header;
+  let payload;
+  try {
+    header = decodeBase64UrlJson(parts[0]);
+    payload = decodeBase64UrlJson(parts[1]);
+  } catch (_err) {
+    throw new Error('Firebase 登入憑證內容無法解析。');
+  }
 
-  if (!profile.googleSub || !profile.email) throw new Error('Google 帳號資料不完整。');
-  if (!profile.emailVerified) throw new Error('Google 信箱尚未驗證。');
+  if (header.alg !== 'RS256') throw new Error('Firebase 登入憑證演算法不正確。');
+  if (!header.kid) throw new Error('Firebase 登入憑證缺少 key id。');
+
+  const certs = await getFirebaseCerts();
+  const cert = certs[header.kid];
+  if (!cert) throw new Error('找不到 Firebase 登入憑證對應的公鑰。');
+
+  const verifier = crypto.createVerify('RSA-SHA256');
+  verifier.update(`${parts[0]}.${parts[1]}`);
+  verifier.end();
+  const signatureOk = verifier.verify(cert, parts[2], 'base64url');
+  if (!signatureOk) throw new Error('Firebase 登入憑證簽章驗證失敗。');
+
+  const nowSec = Math.floor(Date.now() / 1000);
+  const expectedIssuer = `https://securetoken.google.com/${FIREBASE_PROJECT_ID}`;
+  if (payload.aud !== FIREBASE_PROJECT_ID) throw new Error('Firebase 專案 ID 不符合。');
+  if (payload.iss !== expectedIssuer) throw new Error('Firebase 登入憑證發行者不符合。');
+  if (!payload.sub) throw new Error('Firebase 登入憑證缺少使用者 ID。');
+  if (Number(payload.exp || 0) <= nowSec) throw new Error('Firebase 登入已過期，請重新登入。');
+  if (Number(payload.iat || 0) > nowSec + 300) throw new Error('Firebase 登入憑證時間不正確。');
+
+  const profile = publicGoogleProfile({ ...payload, uid: payload.sub });
+
+  if (!profile.googleSub || !profile.email) throw new Error('Firebase 帳號資料不完整。');
+  if (!profile.emailVerified) throw new Error('Firebase 信箱尚未驗證。');
   return profile;
 }
 
@@ -297,7 +347,7 @@ app.get('/api', (req, res) => {
 app.get('/api/config', (req, res) => {
   res.json({
     ok: true,
-    googleClientId: GOOGLE_CLIENT_ID,
+    firebaseProjectId: FIREBASE_PROJECT_ID,
     googleAuthEnabled: true,
     teacherGoogleAuthEnabled: teacherEmailSet.size > 0
   });
