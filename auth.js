@@ -1,6 +1,123 @@
 // auth.js
 // ✅ 教師密碼不再寫在前端；改由 Render 後端驗證。
+// ✅ Google 登入使用 Firebase Auth 取得 Google idToken，再交給 Render 後端換成遊戲 JWT。
+
+const MAGIC_MAZE_FIREBASE_CONFIG = {
+  apiKey: "AIzaSyAH4cDZMCFP61OCjJKJuufk5pfxneaY16Y",
+  authDomain: "magic-maze-39321.firebaseapp.com",
+  projectId: "magic-maze-39321",
+  storageBucket: "magic-maze-39321.firebasestorage.app",
+  messagingSenderId: "1044442713897",
+  appId: "1:1044442713897:web:a01d67c8824b9a13f5b138",
+  measurementId: "G-LEN3EDNEYD"
+};
+
+let firebaseInitPromise = null;
+
+function loadExternalScript(src){
+  return new Promise((resolve, reject)=>{
+    const existing = document.querySelector(`script[src="${src}"]`);
+    if(existing){
+      if(existing.dataset.loaded === "1") resolve();
+      else existing.addEventListener("load", resolve, { once:true });
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = src;
+    script.async = true;
+    script.dataset.loaded = "0";
+    script.onload = ()=> {
+      script.dataset.loaded = "1";
+      resolve();
+    };
+    script.onerror = ()=> reject(new Error(`無法載入 ${src}`));
+    document.head.appendChild(script);
+  });
+}
+
+async function ensureFirebaseAuth(){
+  if(firebaseInitPromise) return firebaseInitPromise;
+
+  firebaseInitPromise = (async()=>{
+    await loadExternalScript("https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js");
+    await loadExternalScript("https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js");
+
+    if(!window.firebase?.apps?.length){
+      window.firebase.initializeApp(MAGIC_MAZE_FIREBASE_CONFIG);
+    }
+    return window.firebase.auth();
+  })();
+
+  return firebaseInitPromise;
+}
+
+async function getGoogleIdTokenFromFirebase(){
+  const auth = await ensureFirebaseAuth();
+  const provider = new window.firebase.auth.GoogleAuthProvider();
+  provider.addScope("profile");
+  provider.addScope("email");
+
+  const result = await auth.signInWithPopup(provider);
+  const credential = window.firebase.auth.GoogleAuthProvider.credentialFromResult(result);
+  const idToken = credential?.idToken || "";
+  if(!idToken) throw new Error("Google 登入成功，但沒有取得可驗證的 idToken。");
+  return idToken;
+}
+
+function buildStudentSession(data, fallback = {}){
+  const uid = String(data.user?.userId || fallback.studentId || "").trim();
+  return {
+    ...(data.user || {}),
+    token: data.token,
+    role: "student",
+    userId: uid,
+    classId: data.user?.classId || uid.slice(0,3),
+    seat: data.user?.seat || uid.slice(3,5),
+    name: fallback.name || data.user?.name || data.user?.displayName || "",
+    character: data.user?.character || fallback.character || "boy",
+    loginAt: Date.now()
+  };
+}
+
+function buildTeacherSession(data){
+  return {
+    ...(data.user || {}),
+    token: data.token,
+    role: "teacher",
+    userId: "teacher",
+    name: data.user?.displayName || data.user?.name || "教師",
+    loginAt: Date.now()
+  };
+}
+
 window.Auth = {
+  async loginStudentWithGoogle({ studentId, character } = {}){
+    const uid = String(studentId || "").trim();
+    if(uid && !/^\d{5}$/.test(uid)) return null;
+
+    try{
+      const idToken = await getGoogleIdTokenFromFirebase();
+      const data = await StorageAPI.apiFetch("/api/auth/google/student", {
+        method: "POST",
+        body: JSON.stringify({
+          idToken,
+          studentId: uid,
+          character: ["boy","girl"].includes(String(character || "").trim()) ? String(character).trim() : "boy"
+        })
+      });
+
+      const session = buildStudentSession(data, { studentId: uid, character });
+      StorageAPI.setSession(session);
+
+      try{ await StorageAPI.flushPendingProgressToBackend?.(); }catch(_err){}
+      try{ await StorageAPI.syncMyProgressFromBackend(); }catch(_err){}
+      return session;
+    }catch(err){
+      console.error("Google 學生登入失敗", err);
+      return null;
+    }
+  },
+
   async loginStudent({ studentId, classId, seat, name, character }){
     let uid = "";
 
@@ -23,17 +140,7 @@ window.Auth = {
         })
       });
 
-      const session = {
-        ...(data.user || {}),
-        token: data.token,
-        role: "student",
-        userId: uid,
-        classId: uid.slice(0,3),
-        seat: uid.slice(3,5),
-        name: name || data.user?.name || "",
-        character: data.user?.character || character || "boy",
-        loginAt: Date.now()
-      };
+      const session = buildStudentSession(data, { studentId: uid, name, character });
       StorageAPI.setSession(session);
 
       try{ await StorageAPI.flushPendingProgressToBackend?.(); }catch(_err){}
@@ -52,17 +159,8 @@ window.Auth = {
         body: JSON.stringify({ teacherCode: String(teacherCode || "") })
       });
 
-      const session = {
-        ...(data.user || {}),
-        token: data.token,
-        role: "teacher",
-        userId: "teacher",
-        name: "教師",
-        loginAt: Date.now()
-      };
+      const session = buildTeacherSession(data);
       StorageAPI.setSession(session);
-
-      try{ await StorageAPI.syncTeacherProgressFromBackend(); }catch(_err){}
       return session;
     }catch(err){
       console.error("教師登入失敗", err);
@@ -70,7 +168,25 @@ window.Auth = {
     }
   },
 
+  async loginTeacherWithGoogle(){
+    try{
+      const idToken = await getGoogleIdTokenFromFirebase();
+      const data = await StorageAPI.apiFetch("/api/auth/google/teacher", {
+        method: "POST",
+        body: JSON.stringify({ idToken })
+      });
+
+      const session = buildTeacherSession(data);
+      StorageAPI.setSession(session);
+      return session;
+    }catch(err){
+      console.error("Google 教師登入失敗", err);
+      return null;
+    }
+  },
+
   logout(){
+    try{ window.firebase?.auth?.().signOut?.(); }catch(_err){}
     StorageAPI.clearSession();
   },
 

@@ -142,7 +142,10 @@
     .teacherToolsGridCompact{grid-template-columns:repeat(2,minmax(220px,1fr));}
     .teacherEditorSection{margin-top:16px;padding-top:16px;}
     .teacherCompactCard .small{color:rgba(248,244,234,.78);}    
-    .teacherHiddenAuth{display:none !important;}
+    .teacherAuthCard{margin-top:14px;}
+    .teacherAuthGrid{display:grid;grid-template-columns:minmax(220px,1fr) auto auto;gap:12px;align-items:end;}
+    .teacherAuthGrid input{min-height:44px;}
+    @media (max-width: 720px){.teacherAuthGrid{grid-template-columns:1fr;}}
     .teacherToastLine{color:#ffe39a;text-shadow:0 2px 8px rgba(0,0,0,.28);}
     .teacherCardHead h2{color:#fff0c8;}
     .teacherPanelTools{display:grid;grid-template-columns:minmax(170px,210px) minmax(170px,210px) minmax(190px,230px) auto;gap:12px;align-items:end;margin-bottom:12px;}
@@ -188,9 +191,19 @@
       </div>
     </div>
 
-    <div class="teacherHiddenAuth" aria-hidden="true">
-      <input id="teacherCode" type="hidden" value="" inputmode="numeric" />
-      <button id="btnTeacherLogin" type="button" tabindex="-1">登入</button>
+    <div class="card teacherCompactCard teacherAuthCard" id="teacherLoginCard">
+      <div class="teacherCardHead">
+        <h2>教師登入</h2>
+      </div>
+      <div class="teacherAuthGrid">
+        <div>
+          <label for="teacherCode">舊版教師密碼</label>
+          <input id="teacherCode" type="password" value="" placeholder="可留空，建議使用 Google 登入" />
+        </div>
+        <button class="primary" id="btnTeacherGoogleLogin" type="button">使用 Google 登入</button>
+        <button id="btnTeacherLogin" type="button">舊版密碼登入</button>
+      </div>
+      <div class="small" style="margin-top:10px;">教師 Google 登入只允許白名單信箱進入後台。</div>
     </div>
 
     <div class="teacherToastLine" id="toast"></div>
@@ -199,7 +212,7 @@
       <div class="teacherCardHead">
         <div class="teacherCardTitleRow">
           <h2>教師模式快捷工具</h2>
-          <span class="badge teacherAutoSyncBadge" id="teacherAutoSyncBadge">成績自動更新：每 30 秒</span>
+          <span class="badge teacherAutoSyncBadge" id="teacherAutoSyncBadge">成績自動更新：每 2 分鐘</span>
         </div>
         <button type="button" class="teacherCollapseBtn" id="btnToggleTeacherTools" aria-expanded="true">最小化 ▲</button>
       </div>

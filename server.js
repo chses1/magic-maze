@@ -4,6 +4,7 @@ const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const { MongoClient } = require('mongodb');
+const { OAuth2Client } = require('google-auth-library');
 
 const app = express();
 const PORT = Number(process.env.PORT || 10000);
@@ -12,10 +13,20 @@ const JWT_SECRET = process.env.JWT_SECRET;
 const TEACHER_PASSWORD = process.env.TEACHER_PASSWORD;
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || '*';
 const DB_NAME = process.env.DB_NAME || 'magic_maze';
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
+const TEACHER_EMAILS = process.env.TEACHER_EMAILS || 'cairo1680@apps.chses.tyc.edu.tw';
+const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID || undefined);
 
 if (!MONGODB_URI) throw new Error('缺少 MONGODB_URI，請在 .env 或 Render Environment 設定。');
 if (!JWT_SECRET) throw new Error('缺少 JWT_SECRET，請在 .env 或 Render Environment 設定。');
 if (!TEACHER_PASSWORD) throw new Error('缺少 TEACHER_PASSWORD，請在 .env 或 Render Environment 設定。');
+
+const teacherEmailSet = new Set(
+  TEACHER_EMAILS
+    .split(',')
+    .map(email => email.trim().toLowerCase())
+    .filter(Boolean)
+);
 
 function isAllowedOrigin(origin) {
   // 沒有 origin 的請求通常是 Render 健康檢查、瀏覽器直接開 API、Postman 或 curl。
@@ -107,6 +118,37 @@ function normalizeStudentId(studentId) {
   const uid = String(studentId || '').trim();
   if (!/^\d{5}$/.test(uid)) return null;
   return uid;
+}
+
+function publicGoogleProfile(payload = {}) {
+  return {
+    googleSub: String(payload.sub || ''),
+    email: String(payload.email || '').trim().toLowerCase(),
+    emailVerified: payload.email_verified === true,
+    displayName: String(payload.name || ''),
+    picture: String(payload.picture || '')
+  };
+}
+
+async function verifyGoogleIdToken(idToken) {
+  const token = String(idToken || '').trim();
+  if (!token) throw new Error('缺少 Google 登入憑證。');
+
+  const options = { idToken: token };
+  if (GOOGLE_CLIENT_ID) options.audience = GOOGLE_CLIENT_ID;
+
+  const ticket = await googleClient.verifyIdToken(options);
+  const payload = ticket.getPayload();
+  const profile = publicGoogleProfile(payload || {});
+
+  if (!profile.googleSub || !profile.email) throw new Error('Google 帳號資料不完整。');
+  if (!profile.emailVerified) throw new Error('Google 信箱尚未驗證。');
+  return profile;
+}
+
+function requireTeacherEmail(email) {
+  const normalized = String(email || '').trim().toLowerCase();
+  return normalized && teacherEmailSet.has(normalized);
 }
 
 function normalizeLevelKey(levelKey) {
@@ -249,7 +291,16 @@ app.get('/', (req, res) => {
 
 // ✅ API 路由清單，方便老師檢查後端功能
 app.get('/api', (req, res) => {
-  res.json({ ok: true, service: 'magic-maze-backend', message: '後端 API 正常運作。遊戲前端請使用 GitHub Pages 開啟。', endpoints: ['GET /api/health','POST /api/auth/student','POST /api/auth/teacher','GET /api/progress/me','GET /api/progress/class','PUT /api/progress/level','GET /api/leaderboard','GET /api/teacher/progress'] });
+  res.json({ ok: true, service: 'magic-maze-backend', message: '後端 API 正常運作。遊戲前端請使用 GitHub Pages 開啟。', endpoints: ['GET /api/health','GET /api/config','POST /api/auth/student','POST /api/auth/teacher','POST /api/auth/google/student','POST /api/auth/google/teacher','GET /api/progress/me','GET /api/progress/class','PUT /api/progress/level','GET /api/leaderboard','GET /api/teacher/progress'] });
+});
+
+app.get('/api/config', (req, res) => {
+  res.json({
+    ok: true,
+    googleClientId: GOOGLE_CLIENT_ID,
+    googleAuthEnabled: true,
+    teacherGoogleAuthEnabled: teacherEmailSet.size > 0
+  });
 });
 
 app.get('/api/health', async (req, res) => {
@@ -304,6 +355,85 @@ app.post('/api/auth/student', async (req, res) => {
   res.json({ ok: true, token: createToken(user), user: publicUser(user) });
 });
 
+app.post('/api/auth/google/student', async (req, res) => {
+  let profile;
+  try {
+    profile = await verifyGoogleIdToken(req.body.idToken);
+  } catch (err) {
+    return res.status(401).json({ ok: false, message: err.message || 'Google 登入驗證失敗。' });
+  }
+
+  const requestedStudentId = normalizeStudentId(req.body.studentId);
+  const existingByGoogle = await collections.users.findOne({ googleSub: profile.googleSub, role: 'student' });
+  const studentId = existingByGoogle?.userId || requestedStudentId;
+
+  if (!studentId) {
+    return res.status(400).json({ ok: false, message: '第一次使用 Google 登入時，請輸入 5 碼班級座號。' });
+  }
+
+  if (existingByGoogle && requestedStudentId && requestedStudentId !== existingByGoogle.userId) {
+    return res.status(409).json({ ok: false, message: `這個 Google 帳號已綁定 ${existingByGoogle.userId}，請使用原本的班級座號。` });
+  }
+
+  const existingByStudentId = await collections.users.findOne({ userId: studentId, role: 'student' });
+  if (existingByStudentId?.googleSub && existingByStudentId.googleSub !== profile.googleSub) {
+    return res.status(409).json({ ok: false, message: '這個班級座號已綁定其他 Google 帳號，請聯絡老師處理。' });
+  }
+
+  const character = ['boy', 'girl'].includes(String(req.body.character || existingByStudentId?.character || '').trim())
+    ? String(req.body.character || existingByStudentId.character).trim()
+    : 'boy';
+
+  const user = {
+    role: 'student',
+    userId: studentId,
+    classId: studentId.slice(0, 3),
+    seat: studentId.slice(3, 5),
+    name: existingByStudentId?.name || profile.displayName || '',
+    character,
+    email: profile.email,
+    googleSub: profile.googleSub,
+    displayName: profile.displayName,
+    picture: profile.picture,
+    updatedAt: now(),
+    createdAt: existingByStudentId?.createdAt || now()
+  };
+
+  await collections.users.updateOne(
+    { userId: studentId },
+    {
+      $set: {
+        role: 'student',
+        classId: user.classId,
+        seat: user.seat,
+        character,
+        email: profile.email,
+        googleSub: profile.googleSub,
+        displayName: profile.displayName,
+        picture: profile.picture,
+        updatedAt: now()
+      },
+      $setOnInsert: { userId: studentId, name: user.name, createdAt: now() }
+    },
+    { upsert: true }
+  );
+
+  await collections.progress.updateOne(
+    { userId: studentId },
+    {
+      $set: {
+        classId: user.classId,
+        seat: user.seat,
+        updatedAt: now()
+      },
+      $setOnInsert: { userId: studentId, best: {}, meta: {}, createdAt: now() }
+    },
+    { upsert: true }
+  );
+
+  res.json({ ok: true, token: createToken(user), user: publicUser(user), linkedExistingStudent: !!existingByGoogle });
+});
+
 app.post('/api/auth/teacher', async (req, res) => {
   const teacherCode = String(req.body.teacherCode || '');
   if (teacherCode !== TEACHER_PASSWORD) {
@@ -311,6 +441,27 @@ app.post('/api/auth/teacher', async (req, res) => {
   }
 
   const user = { role: 'teacher', userId: 'teacher', name: '教師' };
+  res.json({ ok: true, token: createToken(user), user: publicUser(user) });
+});
+
+app.post('/api/auth/google/teacher', async (req, res) => {
+  let profile;
+  try {
+    profile = await verifyGoogleIdToken(req.body.idToken);
+  } catch (err) {
+    return res.status(401).json({ ok: false, message: err.message || 'Google 登入驗證失敗。' });
+  }
+
+  if (!requireTeacherEmail(profile.email)) {
+    return res.status(403).json({ ok: false, message: '這個 Google 帳號不在教師白名單內。' });
+  }
+
+  const user = {
+    role: 'teacher',
+    userId: 'teacher',
+    name: '教師'
+  };
+
   res.json({ ok: true, token: createToken(user), user: publicUser(user) });
 });
 
@@ -603,6 +754,8 @@ async function start() {
   }
 
   await ensureIndex(collections.users, { userId: 1 }, { unique: true });
+  await ensureIndex(collections.users, { googleSub: 1 });
+  await ensureIndex(collections.users, { email: 1 });
   await ensureIndex(collections.progress, { userId: 1 }, { unique: true });
   await ensureIndex(collections.progress, { classId: 1, seat: 1 });
   await ensureIndex(collections.leaderboard, { userId: 1, levelKey: 1 }, { unique: true });

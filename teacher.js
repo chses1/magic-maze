@@ -6,7 +6,7 @@ window.TeacherPage = (()=>{
   const LEVEL_TARGET_BLOCK_OVERRIDE_KEY = 'mw_published_level_overrides_v1';
   const LEVEL_EDIT_OVERRIDE_KEY = 'mw_teacher_level_edits_v1';
   const TEACHER_TOOLS_COLLAPSED_KEY = 'mw_teacher_tools_collapsed_v1';
-  const TEACHER_PROGRESS_AUTO_SYNC_MS = 30000;
+  const TEACHER_PROGRESS_AUTO_SYNC_MS = 120000;
   const TEACHER_DEFAULT_CLASS_KEY = 'mw_teacher_default_class_v1';
   const TEACHER_KNOWN_CLASSES_KEY = 'mw_teacher_known_classes_v1';
 
@@ -328,7 +328,7 @@ window.TeacherPage = (()=>{
       render();
       const count = Object.keys(remoteMap || {}).filter(uid => /^\d{5}$/.test(uid) && (!classId || classId === 'all' || String(uid).slice(0,3) === classId)).length;
       const timeText = new Date().toLocaleTimeString('zh-TW', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
-      setTeacherSyncBadge(`已同步 ${timeText}｜雲端 ${count} 人｜每 30 秒`);
+      setTeacherSyncBadge(`已同步 ${timeText}｜雲端 ${count} 人｜每 2 分鐘`);
       if(!silent) toast('✅ 已從 MongoDB 更新學生通關成績。');
       return true;
     }catch(err){
@@ -527,6 +527,8 @@ window.TeacherPage = (()=>{
     const badge = document.getElementById('sessionBadge');
     if(!badge) return;
     badge.textContent = isTeacherLoggedIn() ? '教師已登入' : '教師未登入';
+    const loginCard = document.getElementById('teacherLoginCard');
+    if(loginCard) loginCard.style.display = isTeacherLoggedIn() ? 'none' : '';
     updateControlsLock();
     updateOpenWorldStatus();
   }
@@ -1584,6 +1586,23 @@ window.LEVELS = ${JSON.stringify(exported, null, 2)};
   }
 
   function bindUI(){
+    document.getElementById('btnTeacherGoogleLogin').onclick = async ()=>{
+      toast('正在開啟 Google 教師登入…');
+      const s = await Auth.loginTeacherWithGoogle();
+      if(!s){
+        toast('Google 教師登入失敗，請確認使用白名單內的教師信箱。');
+        setBadge();
+        return;
+      }
+      toast('教師登入成功，正在同步目前班級雲端資料…');
+      const selectedClass = await refreshTeacherClassOptionsFromCloud(getDefaultTeacherClassId());
+      await loadOpenWorldSetting(selectedClass);
+      await refreshTeacherProgressFromCloud({ silent:true, classId:selectedClass });
+      setBadge();
+      startTeacherProgressAutoSync();
+      loadSelectedLevelIntoEditor();
+    };
+
     document.getElementById('btnTeacherLogin').onclick = async ()=>{
       const code = document.getElementById('teacherCode').value.trim();
       toast('正在連線驗證教師密碼，請稍候…');

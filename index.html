@@ -702,7 +702,8 @@
             </div>
 
             <div class="home-actions">
-              <button class="home-primary-btn" id="btnStudentLogin">登入並選關</button>
+              <button class="home-primary-btn" id="btnStudentGoogleLogin">使用 Google 登入並選關</button>
+              <button id="btnStudentLogin" type="button">舊版代碼登入</button>
             </div>
             <div class="home-toast" id="toast"></div>
           </div>
@@ -726,7 +727,8 @@
             <label for="teacherCode">教師密碼</label>
             <input id="teacherCode" type="password" placeholder="請輸入教師密碼" />
             <div class="home-actions">
-              <button class="home-primary-btn" id="btnTeacherLogin">登入教師視窗</button>
+              <button class="home-primary-btn" id="btnTeacherGoogleLogin">使用 Google 登入教師視窗</button>
+              <button id="btnTeacherLogin" type="button">舊版密碼登入</button>
             </div>
             <div class="home-toast" id="teacherToast"></div>
           </div>
@@ -763,7 +765,7 @@
     threeStar: { zh: '3 星', en: '3 stars' },
     rankLogin: { zh: '請先以學生登入後再查看。', en: 'Log in as a student to view this.' },
     loginTitle: { zh: '登入冒險大廳', en: 'Adventure Lobby Login' },
-    loginIntro: { zh: '學生可輸入五碼班級座號並選擇角色，教師可輸入教師密碼進入教師視窗。', en: 'Students enter a 5-digit class and seat number, then choose a character. Teachers enter the teacher password.' },
+    loginIntro: { zh: '學生使用 Google 登入並綁定五碼班級座號，教師使用白名單 Google 帳號進入教師視窗。', en: 'Students sign in with Google and bind a 5-digit class and seat number. Teachers use an allowlisted Google account.' },
     studentTab: { zh: '學生登入', en: 'Student Login' },
     teacherTab: { zh: '教師登入', en: 'Teacher Login' },
     studentId: { zh: '班級座號五碼數字', en: '5-digit class and seat number' },
@@ -773,14 +775,16 @@
     boyDesc: { zh: '劍士造型，適合勇者冒險感。', en: 'A brave swordfighter look for classic adventure.' },
     girlName: { zh: '精靈法師', en: 'Elf Mage' },
     girlDesc: { zh: '法杖造型，適合法術冒險感。', en: 'A staff-wielding mage look for magical adventure.' },
-    loginAndPick: { zh: '登入並選關', en: 'Log In and Pick a Level' },
+    googleLoginAndPick: { zh: '使用 Google 登入並選關', en: 'Sign in with Google' },
+    legacyStudentLogin: { zh: '舊版代碼登入', en: 'Legacy Code Login' },
     guideTitle: { zh: '操作說明', en: 'How to Start' },
-    guideBody: { zh: '1. 輸入前三碼班級＋後兩碼座號。<br>2. 選擇男角色或女角色。<br>3. 登入成功後，下方會出現世界與關卡。<br>4. 點選關卡後即可進入遊戲。', en: '1. Enter the first 3 digits for class and the last 2 digits for seat number.<br>2. Choose a character.<br>3. After login, worlds and levels will appear below.<br>4. Select a level to enter the game.' },
+    guideBody: { zh: '1. 輸入前三碼班級＋後兩碼座號。<br>2. 按「使用 Google 登入」完成帳號綁定。<br>3. 登入成功後，下方會出現世界與關卡。<br>4. 點選關卡後即可進入遊戲。', en: '1. Enter the first 3 digits for class and the last 2 digits for seat number.<br>2. Press “Sign in with Google” to bind the account.<br>3. After login, worlds and levels will appear below.<br>4. Select a level to enter the game.' },
     teacherCode: { zh: '教師密碼', en: 'Teacher Password' },
     teacherPlaceholder: { zh: '請輸入教師密碼', en: 'Enter teacher password' },
-    teacherLoginBtn: { zh: '登入教師視窗', en: 'Open Teacher View' },
+    teacherGoogleLoginBtn: { zh: '使用 Google 登入教師視窗', en: 'Teacher Google Sign-in' },
+    teacherLoginBtn: { zh: '舊版密碼登入', en: 'Legacy Password Login' },
     teacherFeatureTitle: { zh: '教師功能', en: 'Teacher Tools' },
-    teacherFeatureBody: { zh: '教師登入後會進入教師後台，可查看全班成績、管理關卡、開啟教師工具與編輯地圖。', en: 'Teachers can view class results, manage levels, open teacher tools, and edit maps.' },
+    teacherFeatureBody: { zh: '教師登入後會進入教師後台，可查看全班成績、管理關卡、開啟教師工具與編輯地圖。只有白名單內的 Google 信箱可進入。', en: 'Teachers can view class results, manage levels, open teacher tools, and edit maps. Only allowlisted Google emails can enter.' },
     footerHint: { zh: '登入視窗風格已與首頁背景一致，可直接作為首頁使用。', en: 'This login window is ready to use as the game home screen.' }
   };
 
@@ -884,12 +888,14 @@
     setText('[data-character="boy"] .character-desc', ht('boyDesc'));
     setText('[data-character="girl"] .character-name', ht('girlName'));
     setText('[data-character="girl"] .character-desc', ht('girlDesc'));
-    setText('#btnStudentLogin', ht('loginAndPick'));
+    setText('#btnStudentGoogleLogin', ht('googleLoginAndPick'));
+    setText('#btnStudentLogin', ht('legacyStudentLogin'));
     setText('#studentPanel .login-box:nth-child(2) h4', ht('guideTitle'));
     setHtml('#studentPanel .home-helper', ht('guideBody'));
     setText('#teacherPanel .login-box:nth-child(1) h4', ht('teacherTab'));
     setText('label[for="teacherCode"]', ht('teacherCode'));
     document.getElementById('teacherCode')?.setAttribute('placeholder', ht('teacherPlaceholder'));
+    setText('#btnTeacherGoogleLogin', ht('teacherGoogleLoginBtn'));
     setText('#btnTeacherLogin', ht('teacherLoginBtn'));
     setText('#teacherPanel .login-box:nth-child(2) h4', ht('teacherFeatureTitle'));
     setText('#teacherPanel .home-helper', ht('teacherFeatureBody'));
@@ -1312,12 +1318,46 @@
     closeLoginModal();
   }
 
+  async function handleStudentGoogleLogin(){
+    const studentId = document.getElementById('studentId').value.trim();
+    if(!/^\d{5}$/.test(studentId)){
+      toast(currentLang === 'en' ? 'Please enter 5 digits before Google sign-in, for example 30105.' : '請先輸入 5 位班級座號，例如 30105，再使用 Google 登入。');
+      return;
+    }
+
+    const character = document.getElementById('selectedCharacter')?.value || 'boy';
+    toast(currentLang === 'en' ? 'Opening Google sign-in...' : "正在開啟 Google 登入…");
+    const s = await Auth.loginStudentWithGoogle({ studentId, character });
+    if(!s){
+      toast(currentLang === 'en' ? 'Google login failed. Please check the account, Firebase authorized domain, or backend settings.' : 'Google 登入失敗：請確認帳號、Firebase 授權網域或後端設定。');
+      return;
+    }
+
+    try{ await StorageAPI.syncClassProgressFromBackend(); }catch(err){ console.warn('Google 登入後同步本班進度失敗：', err); }
+    toast(currentLang === 'en' ? 'Login successful. Choose a level to start.' : 'Google 登入成功！請選關開始。');
+    renderSession();
+    renderWorlds();
+    renderClassRank();
+    closeLoginModal();
+  }
+
   async function handleTeacherLogin(){
     const teacherCode = document.getElementById('teacherCode').value.trim();
     teacherToast(currentLang === 'en' ? 'Checking teacher password...' : "正在驗證教師密碼，請稍候…");
     const s = await Auth.loginTeacher({ teacherCode });
     if(!s){
       teacherToast(currentLang === 'en' ? 'Incorrect teacher password.' : '教師密碼錯誤，請重新輸入。');
+      return;
+    }
+    teacherToast(currentLang === 'en' ? 'Login successful. Opening teacher view...' : '登入成功，正在前往教師視窗…');
+    location.href = 'teacher.html';
+  }
+
+  async function handleTeacherGoogleLogin(){
+    teacherToast(currentLang === 'en' ? 'Opening Google sign-in...' : "正在開啟 Google 登入…");
+    const s = await Auth.loginTeacherWithGoogle();
+    if(!s){
+      teacherToast(currentLang === 'en' ? 'Google teacher login failed. Please use an allowlisted email.' : 'Google 教師登入失敗，請確認使用白名單內的教師信箱。');
       return;
     }
     teacherToast(currentLang === 'en' ? 'Login successful. Opening teacher view...' : '登入成功，正在前往教師視窗…');
@@ -1343,7 +1383,9 @@
   document.getElementById('btnCloseLogin').onclick = closeLoginModal;
   document.getElementById('tabStudent').onclick = ()=> switchLoginTab('student');
   document.getElementById('tabTeacher').onclick = ()=> switchLoginTab('teacher');
+  document.getElementById('btnStudentGoogleLogin').onclick = handleStudentGoogleLogin;
   document.getElementById('btnStudentLogin').onclick = handleStudentLogin;
+  document.getElementById('btnTeacherGoogleLogin').onclick = handleTeacherGoogleLogin;
   document.getElementById('btnTeacherLogin').onclick = handleTeacherLogin;
   document.getElementById('btnLangZh').onclick = ()=>{
     I18N.setLang('zh');
@@ -1389,7 +1431,7 @@
   };
 
   document.getElementById('studentId').addEventListener('keydown', (e)=>{
-    if(e.key === 'Enter') handleStudentLogin();
+    if(e.key === 'Enter') handleStudentGoogleLogin();
   });
   document.getElementById('teacherCode').addEventListener('keydown', (e)=>{
     if(e.key === 'Enter') handleTeacherLogin();
@@ -1409,7 +1451,6 @@
     try{
       const s = StorageAPI.getSession();
       if(s?.role === 'student') await StorageAPI.syncClassProgressFromBackend();
-      if(s?.role === 'teacher') await StorageAPI.syncTeacherProgressFromBackend();
       renderSession();
       renderWorlds();
       renderClassRank();
