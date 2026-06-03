@@ -13,6 +13,7 @@ const MAGIC_MAZE_FIREBASE_CONFIG = {
 };
 
 let firebaseInitPromise = null;
+let pendingGoogleIdToken = "";
 
 function loadExternalScript(src){
   return new Promise((resolve, reject)=>{
@@ -91,6 +92,69 @@ function buildTeacherSession(data){
 }
 
 window.Auth = {
+  async loginGoogleLobby(){
+    try{
+      pendingGoogleIdToken = await getGoogleIdTokenFromFirebase();
+      const data = await StorageAPI.apiFetch("/api/auth/google/lobby", {
+        method: "POST",
+        body: JSON.stringify({ idToken: pendingGoogleIdToken })
+      });
+
+      if(data?.status === "needsStudentSetup"){
+        return { status:"needsStudentSetup", role:"student" };
+      }
+
+      if(data?.token && data?.user?.role === "teacher"){
+        const session = buildTeacherSession(data);
+        StorageAPI.setSession(session);
+        pendingGoogleIdToken = "";
+        return { status:"authenticated", role:"teacher", session };
+      }
+
+      if(data?.token && data?.user?.role === "student"){
+        const session = buildStudentSession(data);
+        StorageAPI.setSession(session);
+        pendingGoogleIdToken = "";
+        try{ await StorageAPI.flushPendingProgressToBackend?.(); }catch(_err){}
+        try{ await StorageAPI.syncMyProgressFromBackend(); }catch(_err){}
+        return { status:"authenticated", role:"student", session };
+      }
+
+      return null;
+    }catch(err){
+      pendingGoogleIdToken = "";
+      console.error("Google 身分判定失敗", err);
+      return null;
+    }
+  },
+
+  async completeStudentGoogleSetup({ studentId, character } = {}){
+    const uid = String(studentId || "").trim();
+    if(!pendingGoogleIdToken || !/^\d{5}$/.test(uid)) return null;
+
+    try{
+      const data = await StorageAPI.apiFetch("/api/auth/google/student", {
+        method: "POST",
+        body: JSON.stringify({
+          idToken: pendingGoogleIdToken,
+          studentId: uid,
+          character: ["boy","girl"].includes(String(character || "").trim()) ? String(character).trim() : "boy"
+        })
+      });
+
+      const session = buildStudentSession(data, { studentId: uid, character });
+      StorageAPI.setSession(session);
+      pendingGoogleIdToken = "";
+
+      try{ await StorageAPI.flushPendingProgressToBackend?.(); }catch(_err){}
+      try{ await StorageAPI.syncMyProgressFromBackend(); }catch(_err){}
+      return session;
+    }catch(err){
+      console.error("Google 學生資料綁定失敗", err);
+      return null;
+    }
+  },
+
   async loginStudentWithGoogle({ studentId, character } = {}){
     const uid = String(studentId || "").trim();
     if(uid && !/^\d{5}$/.test(uid)) return null;
@@ -187,6 +251,7 @@ window.Auth = {
 
   logout(){
     try{ window.firebase?.auth?.().signOut?.(); }catch(_err){}
+    pendingGoogleIdToken = "";
     StorageAPI.clearSession();
   },
 

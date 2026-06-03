@@ -283,6 +283,8 @@
       margin-bottom:14px;
     }
 
+    .home-login-tabs[hidden]{display:none !important;}
+
     .home-tab{
       padding:12px 14px;
       border-radius:16px;
@@ -300,6 +302,42 @@
     }
 
     .login-panel[hidden]{display:none !important;}
+
+    .identity-panel{
+      display:grid;
+      grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+      gap:16px;
+      align-items:stretch;
+    }
+
+    .identity-card{
+      min-height:220px;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      gap:14px;
+      text-align:center;
+    }
+
+    .identity-card h4{
+      font-size:24px;
+      margin-bottom:0;
+    }
+
+    .identity-card .home-helper{
+      max-width:420px;
+      margin:0 auto;
+    }
+
+    .identity-card .home-actions{
+      justify-content:center;
+    }
+
+    .legacy-login-box{
+      margin-top:14px;
+    }
+
+    .legacy-login-box[hidden]{display:none !important;}
 
     .login-grid{
       display:grid;
@@ -603,7 +641,8 @@
     @media (max-width: 980px){
       .home-worlds-grid,
       #worldList,
-      .login-grid{grid-template-columns:1fr;}
+      .login-grid,
+      .identity-panel{grid-template-columns:1fr;}
       .home-shell{padding:14px;}
       .home-brand{max-width:100%;}
       .home-modal{padding:18px;}
@@ -672,15 +711,40 @@
         <button class="home-close" id="btnCloseLogin" aria-label="關閉登入視窗">×</button>
       </div>
 
-      <div class="home-login-tabs">
+      <div class="home-login-tabs" hidden>
         <button type="button" class="home-tab active" id="tabStudent">學生登入</button>
         <button type="button" class="home-tab" id="tabTeacher">教師登入</button>
       </div>
 
-      <div class="login-panel" id="studentPanel">
+      <div class="login-panel" id="identityPanel">
+        <div class="identity-panel">
+          <div class="login-box identity-card">
+            <h4>Google 帳號登入</h4>
+            <div class="home-helper">
+              先使用 Google 登入，系統會自動判定教師或學生。教師會直接進入教師視窗，已綁定學生會直接進入遊戲。
+            </div>
+            <div class="home-actions">
+              <button class="home-primary-btn" id="btnGoogleLobbyLogin" type="button">使用 Google 登入</button>
+            </div>
+            <div class="home-toast" id="toast"></div>
+          </div>
+
+          <div class="login-box identity-card">
+            <h4>首次學生設定</h4>
+            <div class="home-helper">
+              第一次使用學生 Google 帳號登入後，才需要輸入 5 碼班級座號並選擇角色；之後會自動讀取先前設定。
+            </div>
+            <div class="home-actions" hidden>
+              <button id="btnShowLegacyLogin" type="button">舊版登入備援</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="login-panel" id="studentPanel" hidden>
         <div class="login-grid">
           <div class="login-box">
-            <h4>學生登入</h4>
+            <h4>首次學生設定</h4>
             <label for="studentId">班級座號五碼數字</label>
             <input id="studentId" placeholder="例如 30105" inputmode="numeric" maxlength="5" />
 
@@ -702,10 +766,10 @@
             </div>
 
             <div class="home-actions">
-              <button class="home-primary-btn" id="btnStudentGoogleLogin">使用 Google 登入並選關</button>
-              <button id="btnStudentLogin" type="button">舊版代碼登入</button>
+              <button class="home-primary-btn" id="btnStudentGoogleLogin">完成綁定並進入遊戲</button>
+              <button id="btnBackToGoogleLogin" type="button">返回 Google 登入</button>
             </div>
-            <div class="home-toast" id="toast"></div>
+            <div class="home-toast" id="studentSetupToast"></div>
           </div>
 
           <div class="login-box">
@@ -720,23 +784,32 @@
         </div>
       </div>
 
-      <div class="login-panel" id="teacherPanel" hidden>
+      <div class="login-panel legacy-login-box" id="teacherPanel" hidden>
         <div class="login-grid">
           <div class="login-box">
-            <h4>教師登入</h4>
+            <h4>舊版學生登入</h4>
+            <label for="legacyStudentId">班級座號五碼數字</label>
+            <input id="legacyStudentId" placeholder="例如 30105" inputmode="numeric" maxlength="5" />
+            <div class="home-actions">
+              <button id="btnStudentLogin" type="button">舊版代碼登入</button>
+            </div>
+            <div class="home-toast" id="legacyToast"></div>
+          </div>
+
+          <div class="login-box">
+            <h4>舊版教師登入</h4>
             <label for="teacherCode">教師密碼</label>
             <input id="teacherCode" type="password" placeholder="請輸入教師密碼" />
             <div class="home-actions">
-              <button class="home-primary-btn" id="btnTeacherGoogleLogin">使用 Google 登入教師視窗</button>
               <button id="btnTeacherLogin" type="button">舊版密碼登入</button>
             </div>
             <div class="home-toast" id="teacherToast"></div>
           </div>
 
           <div class="login-box">
-            <h4>教師功能</h4>
+            <h4>備援說明</h4>
             <div class="home-helper">
-              教師登入後會進入教師後台，可查看全班成績、管理關卡、開啟教師工具與編輯地圖。
+              若 Google 設定尚未完成，可暫時使用舊版登入。正式上課建議使用 Google 登入。
             </div>
           </div>
         </div>
@@ -843,6 +916,14 @@
   };
 
   const toast = (msg)=> document.getElementById('toast').textContent = msg || '';
+  const studentSetupToast = (msg)=> {
+    const el = document.getElementById('studentSetupToast');
+    if(el) el.textContent = msg || '';
+  };
+  const legacyToast = (msg)=> {
+    const el = document.getElementById('legacyToast');
+    if(el) el.textContent = msg || '';
+  };
   const teacherToast = (msg)=> document.getElementById('teacherToast').textContent = msg || '';
 
   function setText(selector, text){
@@ -880,7 +961,13 @@
     setText('.home-modal-head p', ht('loginIntro'));
     setText('#tabStudent', ht('studentTab'));
     setText('#tabTeacher', ht('teacherTab'));
-    setText('#studentPanel .login-box:nth-child(1) h4', ht('studentTab'));
+    setText('#identityPanel .login-box:nth-child(1) h4', currentLang === 'en' ? 'Google Sign-in' : 'Google 帳號登入');
+    setText('#identityPanel .login-box:nth-child(1) .home-helper', currentLang === 'en' ? 'Sign in with Google first. Teachers enter the teacher view, returning students enter the game, and new students complete setup once.' : '先使用 Google 登入，系統會自動判定教師或學生。教師會直接進入教師視窗，已綁定學生會直接進入遊戲。');
+    setText('#btnGoogleLobbyLogin', currentLang === 'en' ? 'Sign in with Google' : '使用 Google 登入');
+    setText('#identityPanel .login-box:nth-child(2) h4', currentLang === 'en' ? 'First Student Setup' : '首次學生設定');
+    setText('#identityPanel .login-box:nth-child(2) .home-helper', currentLang === 'en' ? 'New student accounts bind a 5-digit class/seat number and character once. Later logins load the saved setup automatically.' : '第一次使用學生 Google 帳號登入後，才需要輸入 5 碼班級座號並選擇角色；之後會自動讀取先前設定。');
+    setText('#btnShowLegacyLogin', currentLang === 'en' ? 'Legacy Login Backup' : '舊版登入備援');
+    setText('#studentPanel .login-box:nth-child(1) h4', currentLang === 'en' ? 'First Student Setup' : '首次學生設定');
     setText('label[for="studentId"]', ht('studentId'));
     document.getElementById('studentId')?.setAttribute('placeholder', ht('studentPlaceholder'));
     setText('.character-picker > label', ht('chooseCharacter'));
@@ -888,28 +975,27 @@
     setText('[data-character="boy"] .character-desc', ht('boyDesc'));
     setText('[data-character="girl"] .character-name', ht('girlName'));
     setText('[data-character="girl"] .character-desc', ht('girlDesc'));
-    setText('#btnStudentGoogleLogin', ht('googleLoginAndPick'));
-    setText('#btnStudentLogin', ht('legacyStudentLogin'));
+    setText('#btnStudentGoogleLogin', currentLang === 'en' ? 'Finish Setup and Enter Game' : '完成綁定並進入遊戲');
+    setText('#btnBackToGoogleLogin', currentLang === 'en' ? 'Back to Google Sign-in' : '返回 Google 登入');
     setText('#studentPanel .login-box:nth-child(2) h4', ht('guideTitle'));
     setHtml('#studentPanel .home-helper', ht('guideBody'));
-    setText('#teacherPanel .login-box:nth-child(1) h4', ht('teacherTab'));
+    setText('#teacherPanel .login-box:nth-child(1) h4', currentLang === 'en' ? 'Legacy Student Login' : '舊版學生登入');
+    setText('label[for="legacyStudentId"]', ht('studentId'));
+    document.getElementById('legacyStudentId')?.setAttribute('placeholder', ht('studentPlaceholder'));
+    setText('#btnStudentLogin', ht('legacyStudentLogin'));
+    setText('#teacherPanel .login-box:nth-child(2) h4', currentLang === 'en' ? 'Legacy Teacher Login' : '舊版教師登入');
     setText('label[for="teacherCode"]', ht('teacherCode'));
     document.getElementById('teacherCode')?.setAttribute('placeholder', ht('teacherPlaceholder'));
-    setText('#btnTeacherGoogleLogin', ht('teacherGoogleLoginBtn'));
     setText('#btnTeacherLogin', ht('teacherLoginBtn'));
-    setText('#teacherPanel .login-box:nth-child(2) h4', ht('teacherFeatureTitle'));
-    setText('#teacherPanel .home-helper', ht('teacherFeatureBody'));
+    setText('#teacherPanel .login-box:nth-child(3) h4', currentLang === 'en' ? 'Backup Notes' : '備援說明');
+    setText('#teacherPanel .login-box:nth-child(3) .home-helper', currentLang === 'en' ? 'Use the legacy login only while Google setup is still being prepared. For class use, Google sign-in is recommended.' : '若 Google 設定尚未完成，可暫時使用舊版登入。正式上課建議使用 Google 登入。');
     setText('.home-sub-actions .home-helper', ht('footerHint'));
   }
 
   function openLoginModal(defaultTab = 'student'){
     document.getElementById('loginModal').hidden = false;
-    switchLoginTab(defaultTab);
-    if(defaultTab === 'teacher'){
-      document.getElementById('teacherCode').focus();
-    }else{
-      document.getElementById('studentId').focus();
-    }
+    showLoginStep('identity');
+    document.getElementById('btnGoogleLobbyLogin')?.focus();
   }
 
   function closeLoginModal(){
@@ -920,8 +1006,21 @@
     const isTeacher = tab === 'teacher';
     document.getElementById('tabStudent').classList.toggle('active', !isTeacher);
     document.getElementById('tabTeacher').classList.toggle('active', isTeacher);
+    document.getElementById('identityPanel').hidden = true;
     document.getElementById('studentPanel').hidden = isTeacher;
     document.getElementById('teacherPanel').hidden = !isTeacher;
+  }
+
+  function showLoginStep(step){
+    const identity = step === 'identity';
+    const setup = step === 'studentSetup';
+    const legacy = step === 'legacy';
+    document.getElementById('identityPanel').hidden = !identity;
+    document.getElementById('studentPanel').hidden = !setup;
+    document.getElementById('teacherPanel').hidden = !legacy;
+    if(identity) document.getElementById('btnGoogleLobbyLogin')?.focus();
+    if(setup) document.getElementById('studentId')?.focus();
+    if(legacy) document.getElementById('legacyStudentId')?.focus();
   }
 
   function bindCharacterPicker(){
@@ -1296,17 +1395,17 @@
   }
 
   async function handleStudentLogin(){
-    const studentId = document.getElementById('studentId').value.trim();
+    const studentId = document.getElementById('legacyStudentId').value.trim();
     if(!/^\d{5}$/.test(studentId)){
-      toast(currentLang === 'en' ? 'Please enter 5 digits, for example 30105.' : '學號請輸入 5 位數，例如 30105');
+      legacyToast(currentLang === 'en' ? 'Please enter 5 digits, for example 30105.' : '學號請輸入 5 位數，例如 30105');
       return;
     }
 
     const character = document.getElementById('selectedCharacter')?.value || 'boy';
-    toast(currentLang === 'en' ? 'Logging in, please wait...' : "正在連線登入，請稍候…");
+    legacyToast(currentLang === 'en' ? 'Logging in, please wait...' : "正在連線登入，請稍候…");
     const s = await Auth.loginStudent({ studentId, character });
     if(!s){
-      toast(currentLang === 'en' ? 'Login failed. Please check the server or student ID format.' : '登入失敗：請確認後端是否已啟動，或學號格式是否正確。');
+      legacyToast(currentLang === 'en' ? 'Login failed. Please check the server or student ID format.' : '登入失敗：請確認後端是否已啟動，或學號格式是否正確。');
       return;
     }
 
@@ -1318,27 +1417,59 @@
     closeLoginModal();
   }
 
-  async function handleStudentGoogleLogin(){
-    const studentId = document.getElementById('studentId').value.trim();
-    if(!/^\d{5}$/.test(studentId)){
-      toast(currentLang === 'en' ? 'Please enter 5 digits before Google sign-in, for example 30105.' : '請先輸入 5 位班級座號，例如 30105，再使用 Google 登入。');
-      return;
-    }
-
-    const character = document.getElementById('selectedCharacter')?.value || 'boy';
-    toast(currentLang === 'en' ? 'Opening Google sign-in...' : "正在開啟 Google 登入…");
-    const s = await Auth.loginStudentWithGoogle({ studentId, character });
-    if(!s){
-      toast(currentLang === 'en' ? 'Google login failed. Please check the account, Firebase authorized domain, or backend settings.' : 'Google 登入失敗：請確認帳號、Firebase 授權網域或後端設定。');
-      return;
-    }
-
-    try{ await StorageAPI.syncClassProgressFromBackend(); }catch(err){ console.warn('Google 登入後同步本班進度失敗：', err); }
-    toast(currentLang === 'en' ? 'Login successful. Choose a level to start.' : 'Google 登入成功！請選關開始。');
+  async function enterStudentGameAfterLogin(message){
+    try{ await StorageAPI.syncClassProgressFromBackend(); }catch(err){ console.warn('登入後同步本班進度失敗：', err); }
+    toast(message || (currentLang === 'en' ? 'Login successful. Choose a level to start.' : '登入成功！請選關開始。'));
     renderSession();
     renderWorlds();
     renderClassRank();
     closeLoginModal();
+  }
+
+  async function handleGoogleLobbyLogin(){
+    toast(currentLang === 'en' ? 'Opening Google sign-in...' : "正在開啟 Google 登入…");
+    studentSetupToast('');
+    teacherToast('');
+    const result = await Auth.loginGoogleLobby();
+    if(!result){
+      toast(currentLang === 'en' ? 'Google login failed. Please check the account, Firebase authorized domain, or backend settings.' : 'Google 登入失敗：請確認帳號、Firebase 授權網域或後端設定。');
+      return;
+    }
+
+    if(result.role === 'teacher'){
+      toast(currentLang === 'en' ? 'Teacher login successful. Opening teacher view...' : '教師登入成功，正在前往教師視窗…');
+      location.href = 'teacher.html';
+      return;
+    }
+
+    if(result.role === 'student' && result.status === 'authenticated'){
+      await enterStudentGameAfterLogin(currentLang === 'en' ? 'Welcome back. Your saved setup has been loaded.' : '歡迎回來！已自動讀取你先前設定的資料。');
+      return;
+    }
+
+    if(result.status === 'needsStudentSetup'){
+      toast(currentLang === 'en' ? 'First login detected. Complete student setup once.' : '第一次使用此學生帳號，請完成班級座號與角色設定。');
+      showLoginStep('studentSetup');
+      return;
+    }
+  }
+
+  async function handleStudentGoogleLogin(){
+    const studentId = document.getElementById('studentId').value.trim();
+    if(!/^\d{5}$/.test(studentId)){
+      studentSetupToast(currentLang === 'en' ? 'Please enter 5 digits, for example 30105.' : '請輸入 5 位班級座號，例如 30105。');
+      return;
+    }
+
+    const character = document.getElementById('selectedCharacter')?.value || 'boy';
+    studentSetupToast(currentLang === 'en' ? 'Saving setup...' : "正在儲存綁定資料…");
+    const s = await Auth.completeStudentGoogleSetup({ studentId, character });
+    if(!s){
+      studentSetupToast(currentLang === 'en' ? 'Setup failed. Please check the student number or restart Google sign-in.' : '綁定失敗：請確認班級座號，或返回重新 Google 登入。');
+      return;
+    }
+
+    await enterStudentGameAfterLogin(currentLang === 'en' ? 'Setup complete. Choose a level to start.' : '設定完成！請選關開始。');
   }
 
   async function handleTeacherLogin(){
@@ -1347,17 +1478,6 @@
     const s = await Auth.loginTeacher({ teacherCode });
     if(!s){
       teacherToast(currentLang === 'en' ? 'Incorrect teacher password.' : '教師密碼錯誤，請重新輸入。');
-      return;
-    }
-    teacherToast(currentLang === 'en' ? 'Login successful. Opening teacher view...' : '登入成功，正在前往教師視窗…');
-    location.href = 'teacher.html';
-  }
-
-  async function handleTeacherGoogleLogin(){
-    teacherToast(currentLang === 'en' ? 'Opening Google sign-in...' : "正在開啟 Google 登入…");
-    const s = await Auth.loginTeacherWithGoogle();
-    if(!s){
-      teacherToast(currentLang === 'en' ? 'Google teacher login failed. Please use an allowlisted email.' : 'Google 教師登入失敗，請確認使用白名單內的教師信箱。');
       return;
     }
     teacherToast(currentLang === 'en' ? 'Login successful. Opening teacher view...' : '登入成功，正在前往教師視窗…');
@@ -1383,9 +1503,11 @@
   document.getElementById('btnCloseLogin').onclick = closeLoginModal;
   document.getElementById('tabStudent').onclick = ()=> switchLoginTab('student');
   document.getElementById('tabTeacher').onclick = ()=> switchLoginTab('teacher');
+  document.getElementById('btnGoogleLobbyLogin').onclick = handleGoogleLobbyLogin;
   document.getElementById('btnStudentGoogleLogin').onclick = handleStudentGoogleLogin;
   document.getElementById('btnStudentLogin').onclick = handleStudentLogin;
-  document.getElementById('btnTeacherGoogleLogin').onclick = handleTeacherGoogleLogin;
+  document.getElementById('btnBackToGoogleLogin').onclick = ()=> showLoginStep('identity');
+  document.getElementById('btnShowLegacyLogin').onclick = ()=> showLoginStep('legacy');
   document.getElementById('btnTeacherLogin').onclick = handleTeacherLogin;
   document.getElementById('btnLangZh').onclick = ()=>{
     I18N.setLang('zh');
@@ -1432,6 +1554,9 @@
 
   document.getElementById('studentId').addEventListener('keydown', (e)=>{
     if(e.key === 'Enter') handleStudentGoogleLogin();
+  });
+  document.getElementById('legacyStudentId').addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter') handleStudentLogin();
   });
   document.getElementById('teacherCode').addEventListener('keydown', (e)=>{
     if(e.key === 'Enter') handleTeacherLogin();

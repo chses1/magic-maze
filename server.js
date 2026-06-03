@@ -291,7 +291,7 @@ app.get('/', (req, res) => {
 
 // ✅ API 路由清單，方便老師檢查後端功能
 app.get('/api', (req, res) => {
-  res.json({ ok: true, service: 'magic-maze-backend', message: '後端 API 正常運作。遊戲前端請使用 GitHub Pages 開啟。', endpoints: ['GET /api/health','GET /api/config','POST /api/auth/student','POST /api/auth/teacher','POST /api/auth/google/student','POST /api/auth/google/teacher','GET /api/progress/me','GET /api/progress/class','PUT /api/progress/level','GET /api/leaderboard','GET /api/teacher/progress'] });
+  res.json({ ok: true, service: 'magic-maze-backend', message: '後端 API 正常運作。遊戲前端請使用 GitHub Pages 開啟。', endpoints: ['GET /api/health','GET /api/config','POST /api/auth/student','POST /api/auth/teacher','POST /api/auth/google/lobby','POST /api/auth/google/student','POST /api/auth/google/teacher','GET /api/progress/me','GET /api/progress/class','PUT /api/progress/level','GET /api/leaderboard','GET /api/teacher/progress'] });
 });
 
 app.get('/api/config', (req, res) => {
@@ -353,6 +353,54 @@ app.post('/api/auth/student', async (req, res) => {
   );
 
   res.json({ ok: true, token: createToken(user), user: publicUser(user) });
+});
+
+app.post('/api/auth/google/lobby', async (req, res) => {
+  let profile;
+  try {
+    profile = await verifyGoogleIdToken(req.body.idToken);
+  } catch (err) {
+    return res.status(401).json({ ok: false, message: err.message || 'Google 登入驗證失敗。' });
+  }
+
+  if (requireTeacherEmail(profile.email)) {
+    const user = { role: 'teacher', userId: 'teacher', name: '教師' };
+    return res.json({ ok: true, status: 'authenticated', token: createToken(user), user: publicUser(user) });
+  }
+
+  const existingByGoogle = await collections.users.findOne({ googleSub: profile.googleSub, role: 'student' });
+  if (!existingByGoogle) {
+    return res.json({ ok: true, status: 'needsStudentSetup', role: 'student' });
+  }
+
+  const userId = normalizeStudentId(existingByGoogle.userId);
+  if (!userId) {
+    return res.status(409).json({ ok: false, message: '這個 Google 帳號的學生資料不完整，請聯絡老師處理。' });
+  }
+
+  const user = {
+    role: 'student',
+    userId,
+    classId: existingByGoogle.classId || userId.slice(0, 3),
+    seat: existingByGoogle.seat || userId.slice(3, 5),
+    name: existingByGoogle.name || '',
+    character: existingByGoogle.character || 'boy'
+  };
+
+  await collections.progress.updateOne(
+    { userId },
+    {
+      $set: {
+        classId: user.classId,
+        seat: user.seat,
+        updatedAt: now()
+      },
+      $setOnInsert: { userId, best: {}, meta: {}, createdAt: now() }
+    },
+    { upsert: true }
+  );
+
+  res.json({ ok: true, status: 'authenticated', token: createToken(user), user: publicUser(user) });
 });
 
 app.post('/api/auth/google/student', async (req, res) => {
