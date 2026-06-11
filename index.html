@@ -679,7 +679,6 @@
       <div class="home-card home-worlds-card">
         <div class="home-logout-row">
           <button id="btnLogout">登出</button>
-          <button id="btnReopenLogin">切換登入</button>
         </div>
         <h2>世界與關卡</h2>
         <div id="worldList"></div>
@@ -736,9 +735,6 @@
             <h4>首次學生設定</h4>
             <div class="home-helper">
               第一次使用學生 Google 帳號登入後，才需要輸入 5 碼班級座號並選擇角色；之後會自動讀取先前設定。
-            </div>
-            <div class="home-actions" hidden>
-              <button id="btnShowLegacyLogin" type="button">舊版登入備援</button>
             </div>
           </div>
         </div>
@@ -831,7 +827,6 @@
   const HOME_TEXT = {
     start: { zh: '開始遊戲', en: 'Start Game' },
     logout: { zh: '登出', en: 'Log Out' },
-    switchLogin: { zh: '切換登入', en: 'Switch Login' },
     worldsTitle: { zh: '世界與關卡', en: 'Worlds and Levels' },
     classTitle: { zh: '本班闖關總覽', en: 'Class Progress' },
     refreshClass: { zh: '更新本班進度', en: 'Refresh Class Progress' },
@@ -947,7 +942,6 @@
     document.getElementById('btnLangEn')?.classList.toggle('active', currentLang === 'en');
     setText('#btnStartGame', ht('start'));
     setText('#btnLogout', ht('logout'));
-    setText('#btnReopenLogin', ht('switchLogin'));
     setText('.home-worlds-card h2', ht('worldsTitle'));
     setText('.class-progress-head h2', ht('classTitle'));
     setText('#btnClassRank', ht('refreshClass'));
@@ -969,7 +963,6 @@
     setText('#btnGoogleLobbyLogin', currentLang === 'en' ? 'Sign in with Google' : '使用 Google 登入');
     setText('#identityPanel .login-box:nth-child(2) h4', currentLang === 'en' ? 'First Student Setup' : '首次學生設定');
     setText('#identityPanel .login-box:nth-child(2) .home-helper', currentLang === 'en' ? 'New student accounts bind a 5-digit class/seat number and character once. Later logins load the saved setup automatically.' : '第一次使用學生 Google 帳號登入後，才需要輸入 5 碼班級座號並選擇角色；之後會自動讀取先前設定。');
-    setText('#btnShowLegacyLogin', currentLang === 'en' ? 'Legacy Login Backup' : '舊版登入備援');
     setText('#studentPanel .login-box:nth-child(1) h4', currentLang === 'en' ? 'First Student Setup' : '首次學生設定');
     setText('label[for="studentId"]', ht('studentId'));
     document.getElementById('studentId')?.setAttribute('placeholder', ht('studentPlaceholder'));
@@ -1508,7 +1501,6 @@
       openLoginModal('student');
     }
   });
-  document.getElementById('btnReopenLogin').onclick = ()=> openLoginModal('student');
   document.getElementById('btnCloseLogin').onclick = closeLoginModal;
   document.getElementById('tabStudent').onclick = ()=> switchLoginTab('student');
   document.getElementById('tabTeacher').onclick = ()=> switchLoginTab('teacher');
@@ -1516,7 +1508,6 @@
   document.getElementById('btnStudentGoogleLogin').onclick = handleStudentGoogleLogin;
   document.getElementById('btnStudentLogin').onclick = handleStudentLogin;
   document.getElementById('btnBackToGoogleLogin').onclick = ()=> showLoginStep('identity');
-  document.getElementById('btnShowLegacyLogin').onclick = ()=> showLoginStep('legacy');
   document.getElementById('btnTeacherLogin').onclick = handleTeacherLogin;
   document.getElementById('btnLangZh').onclick = ()=>{
     I18N.setLang('zh');
